@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -30,9 +31,8 @@ export function AppSidebar() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href} passHref legacyBehavior>
+              <Link href={item.href}>
                 <SidebarMenuButton
-                  asChild={!item.disabled}
                   className={cn(item.disabled && "cursor-not-allowed opacity-50")}
                   isActive={pathname === item.href}
                   disabled={item.disabled}
