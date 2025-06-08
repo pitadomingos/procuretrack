@@ -1,0 +1,22 @@
+import type { PropsWithChildren } from 'react';
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarInset,
+} from '@/components/ui/sidebar';
+import { AppSidebar } from './sidebar';
+import { AppHeader } from './header';
+
+export function AppLayout({ children }: PropsWithChildren) {
+  return (
+    <SidebarProvider defaultOpen>
+      <Sidebar>
+        <AppSidebar />
+      </Sidebar>
+      <SidebarInset>
+        <AppHeader />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
