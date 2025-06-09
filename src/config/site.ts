@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, FilePlus2, PackageCheck, ListChecks, Settings, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3 } from 'lucide-react'; // Removed PackageCheck
 
 export interface NavItem {
   title: string;
@@ -17,14 +17,9 @@ export const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Create PO',
-    href: '/purchase-orders/create',
-    icon: FilePlus2,
-  },
-  {
-    title: 'Receiving (GRN)',
-    href: '/receiving',
-    icon: PackageCheck,
+    title: 'Create Document', // New consolidated page
+    href: '/create-document',
+    icon: FilePlus2, // Re-using FilePlus2, consider a more generic icon if available/needed
   },
   {
     title: 'Activity Log',
@@ -42,3 +37,4 @@ export const navItems: NavItem[] = [
     icon: Settings,
   },
 ];
+

@@ -1,0 +1,2 @@
+csv
+poNumber,creationDate,creatorUserId,supplierId,approverUserId,siteId,status,subTotal,vatAmount,grandTotal,currency,pricesIncludeVat,notes,approvalDate,approvedByUserId
