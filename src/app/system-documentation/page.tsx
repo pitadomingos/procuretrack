@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileCode } from "lucide-react";
+import Image from 'next/image';
 
 export default function SystemDocumentationPage() {
   return (
@@ -75,6 +76,16 @@ export default function SystemDocumentationPage() {
               </div>
               <div>
                 <h3 className="text-lg font-medium">2.6 Data Flow (Simplified)</h3>
+                <div className="my-4 p-4 border border-dashed rounded-md bg-muted/20 flex justify-center items-center">
+                  <Image
+                    src="https://placehold.co/700x350.png"
+                    alt="Data Flow Diagram Placeholder"
+                    width={700}
+                    height={350}
+                    className="rounded-md"
+                    data-ai-hint="data flow"
+                  />
+                </div>
                 <p className="text-muted-foreground ml-4">
                   User interacts with Next.js frontend in browser ➔ Frontend (Client/Server Components) makes requests (e.g., via Server Actions or `fetch` to API routes) ➔
                   Next.js API routes or Server Actions may call Express.js backend API ➔ Express.js API interacts with MySQL Database ➔ Data flows back to the user.
