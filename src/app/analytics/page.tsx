@@ -6,18 +6,17 @@ import { SpendByVendorChart } from '@/components/analytics/spend-by-vendor-chart
 import { POCountByCategoryChart } from '@/components/analytics/po-count-by-category-chart';
 import { spendByVendorData, poCountByCategoryData } from '@/lib/mock-data';
 import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { FileSpreadsheet, BarChartHorizontalBig, Fuel } from 'lucide-react';
 
 export default function AnalyticsPage() {
-  // Placeholder for future filter logic
   const [filteredSpendData, setFilteredSpendData] = useState(spendByVendorData);
   const [filteredCategoryData, setFilteredCategoryData] = useState(poCountByCategoryData);
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
-    // In a real app, you would fetch or filter data based on these filters
-    // For now, we'll just log and use the full mock dataset
-    setFilteredSpendData(spendByVendorData); // Re-set to full mock data
-    setFilteredCategoryData(poCountByCategoryData); // Re-set to full mock data
+    setFilteredSpendData(spendByVendorData); 
+    setFilteredCategoryData(poCountByCategoryData); 
   };
 
   return (
@@ -29,13 +28,38 @@ export default function AnalyticsPage() {
         <POCountByCategoryChart data={filteredCategoryData} />
       </section>
       
-      {/* Add more charts or analytics components here as needed */}
-      {/* Example:
       <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
-        <SomeOtherChart data={...} />
-        <AndAnotherOne data={...} />
+        <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-headline text-xl">Quote Analysis</CardTitle>
+            <FileSpreadsheet className="h-6 w-6 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <CardDescription className="mb-4">Detailed analysis of quotation conversion rates and trends.</CardDescription>
+            <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon!</h3>
+              <p className="text-muted-foreground">
+                Charts and data related to quotation performance will be available here.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="font-headline text-xl">Fuel Usage Overview</CardTitle>
+            <Fuel className="h-6 w-6 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <CardDescription className="mb-4">Insights into fuel consumption patterns and efficiency.</CardDescription>
+            <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon!</h3>
+              <p className="text-muted-foreground">
+                Visualizations of fuel usage, costs, and vehicle performance metrics.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </section>
-      */}
     </div>
   );
 }

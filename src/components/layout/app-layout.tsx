@@ -10,7 +10,7 @@ import { AppHeader } from './header';
 export function AppLayout({ children }: PropsWithChildren) {
   return (
     <SidebarProvider defaultOpen>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <AppSidebar />
       </Sidebar>
       <SidebarInset>

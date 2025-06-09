@@ -13,31 +13,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, UserCircle, LogOut, Settings, ChevronLeft } from 'lucide-react';
+import { Bell, UserCircle, LogOut, Settings, ChevronLeft, Sun, Moon, Computer } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { navItems } from '@/config/site';
+import { useTheme } from 'next-themes';
 
 export function AppHeader() {
   const pathname = usePathname();
-  const currentNavItem = navItems.find(item => {
-    if (item.href === '/') return pathname === '/'; // Exact match for home
-    return pathname.startsWith(item.href); // StartsWith for other main sections
-  });
+  const { setTheme } = useTheme();
 
+  const currentNavItem = navItems.find(item => {
+    if (item.href === '/') return pathname === '/';
+    return pathname.startsWith(item.href) && item.href !== '/';
+  });
+  
   let pageTitle = currentNavItem ? currentNavItem.title : "ProcureTrack";
   let breadcrumbBase = null;
 
   if (pathname.startsWith('/management/') && pathname !== '/management') {
-    const subPageTitle = pageTitle; // Original title might be 'Management' from navItems
-                                    // Or, if we want more specific titles for subpages, that needs different logic
-    
-    // Attempt to find a more specific title for management subpages
     const managementSubPath = pathname.split('/').pop();
     if (managementSubPath) {
-      const subPageName = managementSubPath.charAt(0).toUpperCase() + managementSubPath.slice(1);
+      const subPageName = managementSubPath.charAt(0).toUpperCase() + managementSubPath.slice(1).replace(/-/g, ' ');
       pageTitle = `Manage ${subPageName}`;
     } else {
-      pageTitle = "Manage Entity"; // Fallback
+      pageTitle = "Manage Entity"; 
     }
     
     breadcrumbBase = {
@@ -49,7 +48,8 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-      <SidebarTrigger className="md:hidden" />
+      <SidebarTrigger className="md:hidden" /> {/* Mobile trigger always visible */}
+      <SidebarTrigger className="hidden md:flex" /> {/* Desktop trigger */}
       <div className="flex-1 flex items-center gap-2">
         {breadcrumbBase && (
           <>
@@ -62,11 +62,36 @@ export function AppHeader() {
         )}
         <h1 className="text-lg font-semibold font-headline md:text-xl">{pageTitle}</h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notifications</span>
         </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setTheme("light")}>
+              <Sun className="mr-2 h-4 w-4" />
+              <span>Light</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("dark")}>
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("system")}>
+              <Computer className="mr-2 h-4 w-4" />
+              <span>System</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
