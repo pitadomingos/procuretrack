@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FileCode } from "lucide-react";
-import Image from 'next/image';
+import { FileCode, Users, Server, Database, Brain, ArrowDown } from "lucide-react";
 
 export default function SystemDocumentationPage() {
   return (
@@ -75,21 +74,47 @@ export default function SystemDocumentationPage() {
                 </ul>
               </div>
               <div>
-                <h3 className="text-lg font-medium">2.6 Data Flow (Simplified)</h3>
-                <div className="my-4 p-4 border border-dashed rounded-md bg-muted/20 flex justify-center items-center">
-                  <Image
-                    src="https://placehold.co/700x350.png"
-                    alt="Data Flow Diagram Placeholder"
-                    width={700}
-                    height={350}
-                    className="rounded-md"
-                    data-ai-hint="data flow"
-                  />
+                <h3 className="text-lg font-medium">2.6 Data Flow & Architecture Overview</h3>
+                <div className="my-6 p-4 border border-dashed rounded-md bg-muted/20 flex flex-col items-center space-y-4">
+                  <h4 className="text-md font-semibold text-center mb-2 text-foreground">ProcureTrack Architecture</h4>
+
+                  {/* Frontend Client Block */}
+                  <div className="w-full max-w-md p-4 sm:p-6 border-2 border-dashed border-border rounded-lg text-center bg-card shadow-sm">
+                    <Users className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-primary" />
+                    <h5 className="text-sm sm:text-md font-semibold mb-1 text-card-foreground">Frontend Client</h5>
+                    <p className="text-xs text-muted-foreground">(Next.js, React, ShadCN UI, Tailwind)</p>
+                  </div>
+
+                  <ArrowDown className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+
+                  {/* API Backend Block */}
+                  <div className="w-full max-w-md p-4 sm:p-6 border-2 border-dashed border-border rounded-lg text-center bg-card shadow-sm">
+                    <Server className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-primary" />
+                    <h5 className="text-sm sm:text-md font-semibold mb-1 text-card-foreground">API Backend</h5>
+                    <p className="text-xs text-muted-foreground">(Node.js/Express for Data APIs)</p>
+                  </div>
+
+                  <ArrowDown className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                  
+                  {/* AI Services Block */}
+                  <div className="w-full max-w-md p-4 sm:p-6 border-2 border-dashed border-border rounded-lg text-center bg-card shadow-sm">
+                    <Brain className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-primary" />
+                    <h5 className="text-sm sm:text-md font-semibold mb-1 text-card-foreground">AI Services</h5>
+                    <p className="text-xs text-muted-foreground">(Genkit, Google AI / Gemini Models)</p>
+                  </div>
+
+                  <ArrowDown className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+
+                  {/* Database Block */}
+                  <div className="w-full max-w-md p-4 sm:p-6 border-2 border-dashed border-border rounded-lg text-center bg-card shadow-sm">
+                    <Database className="h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-2 sm:mb-3 text-primary" />
+                    <h5 className="text-sm sm:text-md font-semibold mb-1 text-card-foreground">Database</h5>
+                    <p className="text-xs text-muted-foreground">(MySQL)</p>
+                  </div>
                 </div>
                 <p className="text-muted-foreground ml-4">
                   User interacts with Next.js frontend in browser ➔ Frontend (Client/Server Components) makes requests (e.g., via Server Actions or `fetch` to API routes) ➔
-                  Next.js API routes or Server Actions may call Express.js backend API ➔ Express.js API interacts with MySQL Database ➔ Data flows back to the user.
-                  For AI features, Next.js will interact with Genkit flows.
+                  Next.js API routes or Server Actions may call Express.js backend API for data operations OR Genkit flows for AI tasks ➔ Express.js API interacts with MySQL Database / Genkit interacts with Google AI Models ➔ Data flows back to the user.
                 </p>
               </div>
             </div>
