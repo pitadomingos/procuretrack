@@ -21,18 +21,22 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem, Supplier } from '@/types';
+import type { POItem, Supplier } from '@/types'; // POItem will be implicitly updated by poItemSchema
 import { useState, useEffect } from 'react';
-import { mockSuppliers, mockApprovers } from '@/lib/mock-data'; // Import mockSuppliers
+import { mockSuppliers, mockApprovers } from '@/lib/mock-data';
 
 const poItemSchema = z.object({
+  partNumber: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
+  category: z.string().min(1, 'Category is required'),
+  allocation: z.string().min(1, 'Allocation is required'),
+  uom: z.string().min(1, 'UOM is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
   unitPrice: z.coerce.number().min(0.01, 'Unit price must be positive'),
 });
 
 const poFormSchema = z.object({
-  vendorName: z.string().min(1, 'Supplier name is required'), // This will store the selected supplier's name
+  vendorName: z.string().min(1, 'Supplier name is required'),
   vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   salesPerson: z.string().optional(),
   supplierContactNumber: z.string().optional(),
@@ -45,18 +49,29 @@ const poFormSchema = z.object({
   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
   poNumberDisplay: z.string().optional(),
 
+  currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
+  requestedBy: z.string().min(1, 'Requested By is required'),
+  approver: z.string().min(1, 'Approver is required'),
   expectedDeliveryDate: z.string().optional(),
+  pricesIncludeVat: z.boolean().default(false),
+
   paymentTerms: z.string().optional(),
   notes: z.string().optional(),
   items: z.array(poItemSchema).min(1, 'At least one item is required'),
-  approver: z.string().min(1, 'Approver is required'),
-  currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
-  pricesIncludeVat: z.boolean().default(false),
 });
 
 type POFormValues = z.infer<typeof poFormSchema>;
 
-const defaultItem: Omit<POItem, 'id' | 'total'> = { description: '', quantity: 1, unitPrice: 0 };
+// Update defaultItem to include new fields
+const defaultItem: Omit<z.infer<typeof poItemSchema>, 'id' | 'total'> = { 
+  partNumber: '', 
+  description: '', 
+  category: '', 
+  allocation: '', 
+  uom: '', 
+  quantity: 1, 
+  unitPrice: 0 
+};
 
 export function POForm() {
   const [subTotal, setSubTotal] = useState(0);
@@ -66,7 +81,7 @@ export function POForm() {
   const form = useForm<POFormValues>({
     resolver: zodResolver(poFormSchema),
     defaultValues: {
-      vendorName: '', // Will be set by the Select component's logic
+      vendorName: '',
       vendorEmail: '',
       salesPerson: '',
       supplierContactNumber: '',
@@ -76,13 +91,16 @@ export function POForm() {
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
       poNumberDisplay: '', 
+      
+      currency: 'MZN',
+      requestedBy: '', // New field
+      approver: '',
       expectedDeliveryDate: '',
+      pricesIncludeVat: false,
+
       paymentTerms: 'Net 30',
       notes: '',
       items: [defaultItem],
-      approver: '',
-      currency: 'MZN',
-      pricesIncludeVat: false,
     },
   });
 
@@ -94,7 +112,6 @@ export function POForm() {
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
   const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
-  // const watchedVendorName = form.watch('vendorName'); // Not strictly needed for this effect
 
   useEffect(() => {
     const items = watchedItems || [];
@@ -150,7 +167,6 @@ export function POForm() {
       form.setValue('nuit', supplier.nuit, { shouldValidate: true });
       form.setValue('billingAddress', supplier.address, { shouldValidate: true });
     } else {
-      // Optionally clear fields if supplier is not found (e.g., if selectedSupplierName is cleared)
       form.setValue('vendorEmail', '', { shouldValidate: true });
       form.setValue('salesPerson', '', { shouldValidate: true });
       form.setValue('supplierContactNumber', '', { shouldValidate: true });
@@ -159,70 +175,68 @@ export function POForm() {
     }
   };
 
-
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-xl">
+    <Card className="w-full max-w-6xl mx-auto shadow-xl"> {/* Increased max-width for more fields */}
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Create New Purchase Order</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8"> {/* Increased spacing */}
             
-            <h3 className="text-lg font-medium font-headline">Supplier & PO Information</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="vendorName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supplier Name</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        // field.onChange will be called by handleSupplierChange indirectly by setting vendorName
-                        handleSupplierChange(value);
-                      }}
-                      value={field.value} // Controlled by RHF
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a supplier" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {mockSuppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.name}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. lebreya@fulaho.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr Eugenio" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. 258 84 784 3306" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 401034676" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. EST741" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="poNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>PO Number Suffix</FormLabel> <FormControl><Input placeholder="e.g. 3566 (suffix for POXXXX)" {...field} /></FormControl><FormDescription>This will be part of PO number in the PDF.</FormDescription> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+            <div>
+              <h3 className="text-lg font-medium font-headline mb-2">Supplier & PO Information</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="vendorName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier Name</FormLabel>
+                      <Select onValueChange={handleSupplierChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a supplier" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockSuppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.name}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. lebreya@fulaho.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr Eugenio" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. 258 84 784 3306" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 401034676" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. EST741" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="poNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>PO Number Suffix</FormLabel> <FormControl><Input placeholder="e.g. 3566 (suffix for POXXXX)" {...field} /></FormControl><FormDescription>This will be part of PO number in the PDF.</FormDescription> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              </div>
             </div>
             
             <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's address e.g. En7, Matema Loja 3, Tete" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             <FormField control={form.control} name="shippingAddress" render={({ field }) => ( <FormItem> <FormLabel>Shipping Address (Delivery)</FormLabel> <FormControl><Textarea placeholder="Enter shipping address for delivery" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
 
-            <h3 className="text-lg font-medium font-headline">PO Configuration</h3>
-            <div className="grid md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="approver" render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{mockApprovers.map(approver => (<SelectItem key={approver.id} value={approver.id}>{approver.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="expectedDeliveryDate" render={({ field }) => ( <FormItem> <FormLabel>Expected Delivery Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+            <div>
+              <h3 className="text-lg font-medium font-headline mb-2">PO Configuration</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="requestedBy" render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="approver" render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{mockApprovers.map(approver => (<SelectItem key={approver.id} value={approver.id}>{approver.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="expectedDeliveryDate" render={({ field }) => ( <FormItem> <FormLabel>Expected Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              </div>
               <FormField
                 control={form.control}
                 name="pricesIncludeVat"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 md:col-span-2">
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -243,27 +257,93 @@ export function POForm() {
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
             {fields.map((field, index) => (
-              <div key={field.id} className="space-y-4 p-4 border rounded-md relative">
-                 <FormLabel>Item #{index +1}</FormLabel>
-                <FormField
-                  control={form.control}
-                  name={`items.${index}.description`}
-                  render={({ field: itemField }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Item description" {...itemField} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+              <div key={field.id} className="space-y-3 p-4 border rounded-md relative">
+                <div className="flex justify-between items-center mb-2">
+                  <FormLabel className="text-md font-semibold">Item #{index + 1}</FormLabel>
+                  {fields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => remove(index)}
+                      className="h-7 w-7" // smaller delete button
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
-                />
-                <div className="grid sm:grid-cols-3 gap-4">
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-x-3 gap-y-4 items-end">
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.partNumber`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                        <FormLabel>Part Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Part #" {...itemField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.description`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="xl:col-span-2 md:col-span-3 sm:col-span-2 col-span-1"> {/* Takes more space */}
+                        <FormLabel>Item Description</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Full description" {...itemField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.category`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                        <FormLabel>Category</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Stationery" {...itemField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.allocation`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                        <FormLabel>Allocation</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Admin" {...itemField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.uom`}
+                    render={({ field: itemField }) => (
+                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                        <FormLabel>UOM</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Each" {...itemField} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name={`items.${index}.quantity`}
                     render={({ field: itemField }) => (
-                      <FormItem>
+                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
                         <FormLabel>Quantity</FormLabel>
                         <FormControl>
                           <Input type="number" placeholder="1" {...itemField} />
@@ -276,8 +356,8 @@ export function POForm() {
                     control={form.control}
                     name={`items.${index}.unitPrice`}
                     render={({ field: itemField }) => (
-                      <FormItem>
-                        <FormLabel>Unit Price ({currencySymbol})</FormLabel>
+                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                        <FormLabel>Unit Cost ({currencySymbol})</FormLabel>
                         <FormControl>
                           <Input type="number" step="0.01" placeholder="0.00" {...itemField} />
                         </FormControl>
@@ -285,28 +365,21 @@ export function POForm() {
                       </FormItem>
                     )}
                   />
-                   <div className="text-right font-medium sm:col-span-1 sm:pt-8"> {/* Adjusted for alignment */}
-                     Item Total: {currencySymbol}
+                   <div className="text-right font-medium xl:col-span-1 md:col-span-1 sm:col-span-1 self-end pb-2"> {/* Adjusted for alignment & FormMessage space */}
+                     <FormLabel className="hidden sm:invisible sm:block">Total</FormLabel> {/* Spacer for alignment with labels */}
+                     <p>
+                     {currencySymbol}
                      {( (Number(form.watch(`items.${index}.quantity`)) || 0) * (Number(form.watch(`items.${index}.unitPrice`)) || 0) ).toFixed(2)}
+                     </p>
                    </div>
                 </div>
-                {fields.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    onClick={() => remove(index)}
-                    className="absolute top-2 right-2"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
             ))}
             <Button
               type="button"
               variant="outline"
               onClick={() => append(defaultItem)}
+              className="mt-0" // Adjust margin if needed
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
             </Button>
@@ -372,3 +445,4 @@ export function POForm() {
     </Card>
   );
 }
+
