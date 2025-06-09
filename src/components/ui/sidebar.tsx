@@ -81,15 +81,17 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        if (typeof document !== 'undefined') {
+          document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        }
       },
       [setOpenProp, open]
     )
 
     const toggleSidebar = React.useCallback(() => {
       return isMobile
-        ? setOpenMobile((open) => !open)
-        : setOpen((open) => !open)
+        ? setOpenMobile((openMobileState) => !openMobileState)
+        : setOpen((openState) => !openState)
     }, [isMobile, setOpen, setOpenMobile])
 
     React.useEffect(() => {
@@ -191,7 +193,7 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground " // Removed [&>button]:hidden as it was causing issues with close button
+            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground "
             style={
               {
                 "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -540,7 +542,7 @@ const SidebarMenuButton = React.forwardRef<
       size = "default",
       tooltip,
       className,
-      children, // Explicitly destructure children
+      children,
       ...props
     },
     ref
@@ -648,9 +650,8 @@ const SidebarMenuSkeleton = React.forwardRef<
     showIcon?: boolean
   }
 >(({ className, showIcon = false, ...props }, ref) => {
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+  // Use a fixed width to prevent hydration mismatch from Math.random()
+  const skeletonTextWidth = "75%"; 
 
   return (
     <div
@@ -666,11 +667,11 @@ const SidebarMenuSkeleton = React.forwardRef<
         />
       )}
       <Skeleton
-        className="h-4 flex-1 max-w-[--skeleton-width]"
+        className="h-4 flex-1" // Removed max-w-[--skeleton-width]
         data-sidebar="menu-skeleton-text"
         style={
           {
-            "--skeleton-width": width,
+            maxWidth: skeletonTextWidth, // Apply fixed width directly
           } as React.CSSProperties
         }
       />
