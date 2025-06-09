@@ -1,6 +1,6 @@
 
-import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier } from '@/types';
-import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers } from 'lucide-react';
+import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category } from '@/types';
+import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -51,14 +51,17 @@ export const activityLogData: ActivityLogEntry[] = [
   { id: '3', user: 'System', action: 'GRN #GRN007 received for PO #PO12300', timestamp: '2024-07-27 03:45 PM', details: 'Items: 5/10 received' },
   { id: '4', user: 'Carol White', action: 'Updated user permissions for David Lee', timestamp: '2024-07-27 01:20 PM' },
   { id: '5', user: 'Alice Smith', action: 'Generated Back Order Report', timestamp: '2024-07-27 11:00 AM', details: 'Date Range: 2024-07-01 to 2024-07-27' },
+  { id: '6', user: 'Eve Green', action: 'Added new supplier: MozTech Solutions', timestamp: '2024-07-29 11:00 AM' },
+  { id: '7', user: 'System', action: 'User Frank Black logged in', timestamp: '2024-07-29 11:05 AM' },
+  { id: '8', user: 'Grace Hall', action: 'Modified PO #PO12340 quantities', timestamp: '2024-07-29 11:15 AM', details: 'Item ID 2, new quantity 15' },
 ];
 
 export const managementTables = [
-  { name: 'Approvers', icon: Users, count: 15, description: "Manage PO approvers" },
-  { name: 'Users', icon: Users, count: 53, description: "Manage system users and roles" },
-  { name: 'Sites', icon: GanttChartSquare, count: 7, description: "Manage company sites/locations" },
-  { name: 'Allocations', icon: FileText, count: 30, description: "Manage cost allocations" },
-  { name: 'Categories', icon: Layers, count: 22, description: "Manage item and service categories" },
+  { name: 'Approvers', href: '/management/approvers', icon: Users, count: 5, description: "Manage PO approvers" },
+  { name: 'Users', href: '/management/users', icon: Users, count: 8, description: "Manage system users and roles" },
+  { name: 'Sites', href: '/management/sites', icon: Building, count: 4, description: "Manage company sites/locations" },
+  { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations/departments" },
+  { name: 'Categories', href: '/management/categories', icon: Tag, count: 12, description: "Manage item and service categories" },
 ];
 
 export const months = [
@@ -81,7 +84,6 @@ export const sites = [
   { value: 'all', label: 'All Sites' },
 ];
 
-// Mock data for Analytics Page
 export const spendByVendorData: ChartDataPoint[] = [
   { name: 'Lebreya Lda', Spend: 125000 },
   { name: 'Global Office Solutions', Spend: 85000 },
@@ -112,4 +114,59 @@ export const mockApprovers: { id: string; name: string }[] = [
   { id: 'approver2', name: 'Bob Director' },
   { id: 'approver3', name: 'Carol CFO' },
   { id: 'approver4', name: 'David Operations Head' },
+];
+
+// Mock Data for Management Pages
+export const mockApproversData: Approver[] = [
+  { id: 'APP001', name: 'Alice Wonderland', email: 'alice.w@example.com', department: 'Finance', isActive: true },
+  { id: 'APP002', name: 'Bob The Builder', email: 'bob.b@example.com', department: 'Operations', isActive: true },
+  { id: 'APP003', name: 'Charles Xavier', email: 'charles.x@example.com', department: 'Management', isActive: false },
+  { id: 'APP004', name: 'Diana Prince', email: 'diana.p@example.com', department: 'HR', isActive: true },
+  { id: 'APP005', name: 'Edward Scissorhands', email: 'edward.s@example.com', department: 'Procurement', isActive: true },
+];
+
+export const mockUsersData: User[] = [
+  { id: 'USR001', name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', siteAccess: ['SITE001', 'SITE002'], isActive: true },
+  { id: 'USR002', name: 'Jane Smith', email: 'jane.smith@example.com', role: 'Manager', siteAccess: ['SITE001'], isActive: true },
+  { id: 'USR003', name: 'Peter Pan', email: 'peter.pan@example.com', role: 'User', siteAccess: ['SITE002'], isActive: false },
+  { id: 'USR004', name: 'Clark Kent', email: 'clark.kent@example.com', role: 'Viewer', siteAccess: ['all'], isActive: true },
+  { id: 'USR005', name: 'Bruce Wayne', email: 'bruce.wayne@example.com', role: 'Manager', siteAccess: ['SITE003'], isActive: true },
+  { id: 'USR006', name: 'Selina Kyle', email: 'selina.kyle@example.com', role: 'User', siteAccess: ['SITE001'], isActive: true },
+  { id: 'USR007', name: 'Tony Stark', email: 'tony.stark@example.com', role: 'Admin', siteAccess: ['all'], isActive: false },
+  { id: 'USR008', name: 'Steve Rogers', email: 'steve.rogers@example.com', role: 'User', siteAccess: ['SITE003', 'SITE004'], isActive: true },
+];
+
+export const mockSitesData: Site[] = [
+  { id: 'SITE001', name: 'Head Office - Maputo', location: 'Maputo, Mozambique', siteCode: 'HQ-MPM' },
+  { id: 'SITE002', name: 'Tete Operations Base', location: 'Tete, Mozambique', siteCode: 'OPS-TET' },
+  { id: 'SITE003', name: 'Beira Warehouse', location: 'Beira, Mozambique', siteCode: 'WH-BEW' },
+  { id: 'SITE004', name: 'Nampula Branch', location: 'Nampula, Mozambique', siteCode: 'BR-NPL' },
+];
+
+export const mockAllocationsData: Allocation[] = [
+  { id: 'ALLOC001', name: 'Administration', code: 'ADM001', description: 'General administrative costs' },
+  { id: 'ALLOC002', name: 'Operations - Site A', code: 'OPS-A01', description: 'Operational costs for Site A' },
+  { id: 'ALLOC003', name: 'IT Department', code: 'ITD001', description: 'Information Technology expenses' },
+  { id: 'ALLOC004', name: 'Marketing & Sales', code: 'MKT001' },
+  { id: 'ALLOC005', name: 'Logistics', code: 'LOG001', description: 'Transport and logistics costs' },
+  { id: 'ALLOC006', name: 'Maintenance', code: 'MNT001' },
+  { id: 'ALLOC007', name: 'HR Department', code: 'HRD001' },
+  { id: 'ALLOC008', name: 'Project Alpha', code: 'PRJ-ALP' },
+  { id: 'ALLOC009', name: 'Project Beta', code: 'PRJ-BET' },
+  { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
+];
+
+export const mockCategoriesData: Category[] = [
+  { id: 'CAT001', name: 'Stationery', description: 'Office stationery supplies' },
+  { id: 'CAT002', name: 'IT Equipment', description: 'Computers, peripherals, software' },
+  { id: 'CAT003', name: 'Safety Gear (PPE)', parentCategory: 'CAT009' },
+  { id: 'CAT004', name: 'Tools & Hardware' },
+  { id: 'CAT005', name: 'Consultancy Services', description: 'External consulting fees' },
+  { id: 'CAT006', name: 'Vehicle Maintenance', parentCategory: 'CAT010' },
+  { id: 'CAT007', name: 'Office Furniture' },
+  { id: 'CAT008', name: 'Cleaning Supplies' },
+  { id: 'CAT009', name: 'Safety Equipment', description: 'General safety items' },
+  { id: 'CAT010', name: 'Fleet Management', description: 'Vehicle related expenses' },
+  { id: 'CAT011', name: 'Software Licenses', parentCategory: 'CAT002' },
+  { id: 'CAT012', name: 'Travel & Accommodation' },
 ];

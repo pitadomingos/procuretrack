@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { managementTables } from "@/lib/mock-data";
 import Link from "next/link";
@@ -12,7 +13,7 @@ export default function ManagementPage() {
           <CardTitle className="font-headline text-2xl">Table Management</CardTitle>
           <CardDescription>
             Manage various lookup tables and entities within the ProcureTrack system.
-            Full table management functionality will be available in a future version.
+            Select an entity below to view and manage its records.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -28,15 +29,24 @@ export default function ManagementPage() {
                   <p className="text-xs text-muted-foreground pt-1">{table.description}</p>
                 </CardContent>
                 <CardFooter>
-                   <Button variant="outline" size="sm" className="w-full" disabled>
-                     Manage {table.name} <ArrowRight className="ml-2 h-4 w-4" />
-                   </Button>
+                  {table.href ? (
+                     <Link href={table.href} passHref legacyBehavior={false} className="w-full">
+                       <Button variant="outline" size="sm" className="w-full">
+                         Manage {table.name} <ArrowRight className="ml-2 h-4 w-4" />
+                       </Button>
+                     </Link>
+                  ) : (
+                    <Button variant="outline" size="sm" className="w-full" disabled>
+                      Manage {table.name} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))}
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            Currently, these are display-only. CRUD operations for these tables are not implemented in the MVP.
+            Full CRUD operations for these tables will require backend integration. 
+            Currently, "Add", "Edit", and "Delete" functionalities are placeholders.
           </p>
         </CardContent>
       </Card>
