@@ -11,6 +11,7 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarMenuSkeleton,
+  sidebarMenuButtonVariants, // Import the CVA variants
 } from '@/components/ui/sidebar';
 import { navItems } from '@/config/site';
 import { cn } from '@/lib/utils';
@@ -25,7 +26,6 @@ function ClientOnlyYear() {
   }, []);
 
   if (year === null) {
-    // Render a placeholder or nothing during SSR / initial client render
     return <p className="text-xs text-sidebar-foreground/70 text-center">© ProcureTrack</p>;
   }
 
@@ -61,19 +61,28 @@ export function AppSidebar() {
           >
             {navItems.map((item, index) => (
               <SidebarMenuItem key={item.title + "-skeleton-" + index}>
-                 <SidebarMenuSkeleton showIcon />
+                 {/* Wrap skeleton in an 'a' tag styled like a button */}
+                 <a
+                  className={cn(
+                    sidebarMenuButtonVariants({ variant: 'default', size: 'default' }),
+                    "pointer-events-none" 
+                  )}
+                  tabIndex={-1}
+                  aria-disabled="true"
+                >
+                  <SidebarMenuSkeleton showIcon />
+                </a>
               </SidebarMenuItem>
             ))}
           </ul>
         ) : (
-          <SidebarMenu className="p-2"> {/* p-2 for padding consistency with skeleton */}
+          <SidebarMenu className="p-2">
             {navItems.map((item) => {
               const isActuallyActive = pathname === item.href;
               return (
                 <SidebarMenuItem key={item.title}>
-                  <Link href={item.href} passHref={!item.disabled} legacyBehavior={!item.disabled}>
+                  <Link href={item.href}>
                     <SidebarMenuButton
-                      asChild={!item.disabled}
                       isActive={isActuallyActive}
                       disabled={!!item.disabled} 
                       aria-disabled={!!item.disabled}
