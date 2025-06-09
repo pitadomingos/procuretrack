@@ -25,6 +25,7 @@ function ClientOnlyYear() {
   }, []);
 
   if (year === null) {
+    // Render a placeholder or nothing during SSR / initial client render
     return <p className="text-xs text-sidebar-foreground/70 text-center">© ProcureTrack</p>;
   }
 
@@ -54,7 +55,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {!mounted ? (
-          <ul className={cn("flex w-full min-w-0 flex-col gap-1 p-2")}> {/* Changed to ul and added p-2 */}
+          <ul 
+            data-sidebar="menu" 
+            className={cn("flex w-full min-w-0 flex-col gap-1 p-2")}
+          >
             {navItems.map((item, index) => (
               <SidebarMenuItem key={item.title + "-skeleton-" + index}>
                  <SidebarMenuSkeleton showIcon />
@@ -62,13 +66,14 @@ export function AppSidebar() {
             ))}
           </ul>
         ) : (
-          <SidebarMenu className="p-2"> {/* Added p-2 for consistency */}
+          <SidebarMenu className="p-2"> {/* p-2 for padding consistency with skeleton */}
             {navItems.map((item) => {
               const isActuallyActive = pathname === item.href;
               return (
                 <SidebarMenuItem key={item.title}>
-                  <Link href={item.href}>
+                  <Link href={item.href} passHref={!item.disabled} legacyBehavior={!item.disabled}>
                     <SidebarMenuButton
+                      asChild={!item.disabled}
                       isActive={isActuallyActive}
                       disabled={!!item.disabled} 
                       aria-disabled={!!item.disabled}
