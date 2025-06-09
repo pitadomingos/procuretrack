@@ -1,26 +1,41 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BarChart3 } from "lucide-react";
+
+'use client';
+
+import { FilterBar } from '@/components/shared/filter-bar';
+import { SpendByVendorChart } from '@/components/analytics/spend-by-vendor-chart';
+import { POCountByCategoryChart } from '@/components/analytics/po-count-by-category-chart';
+import { spendByVendorData, poCountByCategoryData } from '@/lib/mock-data';
+import { useState } from 'react';
 
 export default function AnalyticsPage() {
+  // Placeholder for future filter logic
+  const [filteredSpendData, setFilteredSpendData] = useState(spendByVendorData);
+  const [filteredCategoryData, setFilteredCategoryData] = useState(poCountByCategoryData);
+
+  const handleFilterApply = (filters: any) => {
+    console.log('Applying filters to Analytics:', filters);
+    // In a real app, you would fetch or filter data based on these filters
+    // For now, we'll just log and use the full mock dataset
+    setFilteredSpendData(spendByVendorData); // Re-set to full mock data
+    setFilteredCategoryData(poCountByCategoryData); // Re-set to full mock data
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem)] text-center">
-        <Card className="w-full max-w-md shadow-xl">
-            <CardHeader>
-                <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
-                    <BarChart3 className="h-12 w-12 text-primary" />
-                </div>
-                <CardTitle className="mt-4 font-headline text-2xl">Advanced Analytics</CardTitle>
-                <CardDescription className="mt-2">
-                    This section will provide in-depth analytics and reporting capabilities.
-                    Detailed charts, custom report generation, and data export features are planned for a future release.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">
-                    Stay tuned for powerful insights into your procurement data!
-                </p>
-            </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <FilterBar onFilterApply={handleFilterApply} />
+
+      <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+        <SpendByVendorChart data={filteredSpendData} />
+        <POCountByCategoryChart data={filteredCategoryData} />
+      </section>
+      
+      {/* Add more charts or analytics components here as needed */}
+      {/* Example:
+      <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+        <SomeOtherChart data={...} />
+        <AndAnotherOne data={...} />
+      </section>
+      */}
     </div>
   );
 }

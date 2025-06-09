@@ -1,3 +1,4 @@
+
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint } from '@/types';
 import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers } from 'lucide-react';
 
@@ -78,4 +79,22 @@ export const sites = [
   { value: 'site_b', label: 'Site B' },
   { value: 'site_c', label: 'Site C' },
   { value: 'all', label: 'All Sites' },
+];
+
+// Mock data for Analytics Page
+export const spendByVendorData: ChartDataPoint[] = [
+  { name: 'Lebreya Lda', Spend: 125000 },
+  { name: 'Global Office Solutions', Spend: 85000 },
+  { name: 'Tete Hardware Store', Spend: 62000 },
+  { name: 'Moz Safety Gear', Spend: 45000 },
+  { name: 'InfoTech Mozambique', Spend: 98000 },
+];
+
+export const poCountByCategoryData: ChartDataPoint[] = [
+  { name: 'Stationery', Count: 150 },
+  { name: 'IT Equipment', Count: 75 },
+  { name: 'Safety Gear (PPE)', Count: 120 },
+  { name: 'Tools & Hardware', Count: 95 },
+  { name: 'Consultancy Services', Count: 30 },
+  { name: 'Vehicle Maintenance', Count: 60 },
 ];

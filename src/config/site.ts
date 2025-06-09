@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 import { LayoutDashboard, FilePlus2, PackageCheck, ListChecks, Settings, BarChart3 } from 'lucide-react';
 
@@ -31,10 +32,9 @@ export const navItems: NavItem[] = [
     icon: ListChecks,
   },
    {
-    title: 'Analytics', // Added placeholder for future detailed analytics page
+    title: 'Analytics',
     href: '/analytics',
     icon: BarChart3,
-    disabled: true,
   },
   {
     title: 'Management',
