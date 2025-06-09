@@ -21,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem, Supplier } from '@/types'; // POItem will be implicitly updated by poItemSchema
+import type { POItem, Supplier } from '@/types';
 import { useState, useEffect } from 'react';
 import { mockSuppliers, mockApprovers } from '@/lib/mock-data';
 
@@ -47,7 +47,7 @@ const poFormSchema = z.object({
   billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'), 
   
   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
-  poNumberDisplay: z.string().optional(),
+  poNumberDisplay: z.string().optional(), // This will store the auto-generated PO number
 
   currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
   requestedBy: z.string().min(1, 'Requested By is required'),
@@ -62,7 +62,6 @@ const poFormSchema = z.object({
 
 type POFormValues = z.infer<typeof poFormSchema>;
 
-// Update defaultItem to include new fields
 const defaultItem: Omit<z.infer<typeof poItemSchema>, 'id' | 'total'> = { 
   partNumber: '', 
   description: '', 
@@ -90,10 +89,10 @@ export function POForm() {
       shippingAddress: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: '', 
+      poNumberDisplay: '', // Initialize as empty, will be auto-generated
       
       currency: 'MZN',
-      requestedBy: '', // New field
+      requestedBy: '',
       approver: '',
       expectedDeliveryDate: '',
       pricesIncludeVat: false,
@@ -108,6 +107,17 @@ export function POForm() {
     control: form.control,
     name: 'items',
   });
+
+  useEffect(() => {
+    // Auto-generate PO Number on component mount if not already set
+    const currentPoNumber = form.getValues('poNumberDisplay');
+    if (!currentPoNumber) {
+      const year = new Date().getFullYear().toString().slice(-2);
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit random number
+      const newPoNumber = `PO${year}${randomSuffix}`;
+      form.setValue('poNumberDisplay', newPoNumber, { shouldValidate: false });
+    }
+  }, [form]);
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -176,13 +186,13 @@ export function POForm() {
   };
 
   return (
-    <Card className="w-full max-w-6xl mx-auto shadow-xl"> {/* Increased max-width for more fields */}
+    <Card className="w-full max-w-6xl mx-auto shadow-xl">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Create New Purchase Order</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8"> {/* Increased spacing */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">Supplier & PO Information</h3>
@@ -216,8 +226,21 @@ export function POForm() {
                 <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. 258 84 784 3306" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 401034676" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. EST741" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="poNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>PO Number Suffix</FormLabel> <FormControl><Input placeholder="e.g. 3566 (suffix for POXXXX)" {...field} /></FormControl><FormDescription>This will be part of PO number in the PDF.</FormDescription> <FormMessage /> </FormItem> )} />
+                
                 <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                
+                {/* Display Auto-Generated PO Number */}
+                <div className="space-y-1"> {/* Mimic FormItem structure for alignment */}
+                  <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
+                  <Input
+                    id="poNumberDisplayGenerated"
+                    value={form.watch('poNumberDisplay') || 'Generating...'}
+                    readOnly
+                    className="font-medium bg-muted/30 border-muted cursor-default" // Style as read-only
+                  />
+                  <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> {/* Mimic FormDescription */}
+                </div>
+
               </div>
             </div>
             
@@ -266,7 +289,7 @@ export function POForm() {
                       variant="destructive"
                       size="icon"
                       onClick={() => remove(index)}
-                      className="h-7 w-7" // smaller delete button
+                      className="h-7 w-7"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -291,7 +314,7 @@ export function POForm() {
                     control={form.control}
                     name={`items.${index}.description`}
                     render={({ field: itemField }) => (
-                      <FormItem className="xl:col-span-2 md:col-span-3 sm:col-span-2 col-span-1"> {/* Takes more space */}
+                      <FormItem className="xl:col-span-2 md:col-span-3 sm:col-span-2 col-span-1">
                         <FormLabel>Item Description</FormLabel>
                         <FormControl>
                           <Input placeholder="Full description" {...itemField} />
@@ -365,8 +388,8 @@ export function POForm() {
                       </FormItem>
                     )}
                   />
-                   <div className="text-right font-medium xl:col-span-1 md:col-span-1 sm:col-span-1 self-end pb-2"> {/* Adjusted for alignment & FormMessage space */}
-                     <FormLabel className="hidden sm:invisible sm:block">Total</FormLabel> {/* Spacer for alignment with labels */}
+                   <div className="text-right font-medium xl:col-span-1 md:col-span-1 sm:col-span-1 self-end pb-2">
+                     <FormLabel className="hidden sm:invisible sm:block">Total</FormLabel>
                      <p>
                      {currencySymbol}
                      {( (Number(form.watch(`items.${index}.quantity`)) || 0) * (Number(form.watch(`items.${index}.unitPrice`)) || 0) ).toFixed(2)}
@@ -379,7 +402,7 @@ export function POForm() {
               type="button"
               variant="outline"
               onClick={() => append(defaultItem)}
-              className="mt-0" // Adjust margin if needed
+              className="mt-0"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
             </Button>
@@ -445,4 +468,3 @@ export function POForm() {
     </Card>
   );
 }
-
