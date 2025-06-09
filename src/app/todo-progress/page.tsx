@@ -1,6 +1,26 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { CheckCircle, ListChecks, Zap, DatabaseZap, Users, FileSignature, Fuel, LayoutList, Palette, Settings2, ShieldCheck, BrainCircuit } from "lucide-react";
+import { 
+  CheckCircle, 
+  ListChecks, 
+  Zap, 
+  DatabaseZap, 
+  Users, 
+  FileSignature, 
+  Fuel, 
+  LayoutList, 
+  Palette, 
+  Settings2, 
+  ShieldCheck, 
+  BrainCircuit,
+  LayoutDashboard, // Added
+  Settings,        // Added
+  BarChart3,       // Added (assuming this is the intended icon, lucide has BarChartBig, BarChartHorizontal etc.)
+  FileText,        // Added
+  BookUser,        // Added
+  FileCode,        // Added
+  ClipboardCheck   // Added (for CardHeader)
+} from "lucide-react";
 
 export default function TodoProgressPage() {
   const completedTasks = [
@@ -89,3 +109,4 @@ export default function TodoProgressPage() {
     </div>
   );
 }
+
