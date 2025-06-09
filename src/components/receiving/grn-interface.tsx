@@ -10,10 +10,11 @@ import { CheckSquare, PackageSearch } from 'lucide-react';
 import type { POItem } from '@/types';
 
 const mockPOItems: POItem[] = [
-  { id: 'item1', description: 'Heavy Duty Wrench Set', quantity: 10, unitPrice: 55.00, total: 550.00 },
-  { id: 'item2', description: 'Industrial Grade Solvent (5L)', quantity: 5, unitPrice: 25.50, total: 127.50 },
-  { id: 'item3', description: 'Safety Goggles (Pack of 10)', quantity: 2, unitPrice: 30.00, total: 60.00 },
+  { id: 'item1', description: 'Heavy Duty Wrench Set', quantity: 10, unitPrice: 55.00, category: 'Tools', allocation: 'Workshop', uom: 'Set' },
+  { id: 'item2', description: 'Industrial Grade Solvent (5L)', quantity: 5, unitPrice: 25.50, category: 'Consumables', allocation: 'Maintenance', uom: 'Can' },
+  { id: 'item3', description: 'Safety Goggles (Pack of 10)', quantity: 2, unitPrice: 30.00, category: 'Safety', allocation: 'All Sites', uom: 'Pack' },
 ];
+
 
 interface ReceivedItem extends POItem {
   quantityReceived: number;
@@ -67,7 +68,7 @@ export function GRNInterface() {
   };
 
   return (
-    <Card className="shadow-xl">
+    <Card className="shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Receive Items (GRN)</CardTitle>
         <CardDescription>Enter a PO number to retrieve items and record received quantities.</CardDescription>

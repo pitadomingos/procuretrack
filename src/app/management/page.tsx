@@ -8,7 +8,7 @@ import { ArrowRight } from "lucide-react";
 export default function ManagementPage() {
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg">
+      <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">Table Management</CardTitle>
           <CardDescription>
@@ -19,7 +19,7 @@ export default function ManagementPage() {
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {managementTables.map((table) => (
-              <Card key={table.name} className="hover:shadow-md transition-shadow">
+              <Card key={table.name} className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-lg font-medium">{table.name}</CardTitle>
                   <table.icon className="h-6 w-6 text-muted-foreground" />

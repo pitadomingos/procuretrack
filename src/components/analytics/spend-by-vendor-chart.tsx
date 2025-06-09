@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -11,7 +10,7 @@ interface SpendByVendorChartProps {
 
 export function SpendByVendorChart({ data }: SpendByVendorChartProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">Total Spend by Vendor</CardTitle>
         <CardDescription>Visual representation of total purchase order value per vendor.</CardDescription>

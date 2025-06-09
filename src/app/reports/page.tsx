@@ -7,7 +7,7 @@ import { FileText } from 'lucide-react';
 export default function ReportsPage() {
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg">
+      <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
         <CardHeader>
           <div className="flex items-center space-x-3">
             <FileText className="h-8 w-8 text-primary" />

@@ -10,7 +10,7 @@ interface MonthlyStatusChartProps {
 
 export function MonthlyStatusChart({ data }: MonthlyStatusChartProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">Monthly PO Status</CardTitle>
         <CardDescription>Completed, Open, and Partially Completed POs by month.</CardDescription>

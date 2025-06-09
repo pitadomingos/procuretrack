@@ -10,7 +10,7 @@ interface AllocationsChartProps {
 
 export function AllocationsChart({ data }: AllocationsChartProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">Allocations Status</CardTitle>
         <CardDescription>Completed, Partially Completed, and Closed allocations by site.</CardDescription>

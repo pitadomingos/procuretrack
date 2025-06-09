@@ -19,7 +19,7 @@ interface ActivityLogTableProps {
 
 export function ActivityLogTable({ title = "Activity Log", description = "Recent system and user activities.", activities, maxHeight = "400px" }: ActivityLogTableProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>

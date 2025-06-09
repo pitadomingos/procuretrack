@@ -6,7 +6,7 @@ interface StatCardProps extends StatCardItem {}
 
 export function StatCard({ title, value, icon: Icon, description, change, changeType }: StatCardProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium text-card-foreground/80">{title}</CardTitle>
         <Icon className="h-5 w-5 text-muted-foreground" />

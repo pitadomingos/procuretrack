@@ -27,7 +27,7 @@ export default function CreateDocumentPage() {
       </TabsContent>
 
       <TabsContent value="create-quote">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Create Quotation</CardTitle>
             <CardDescription>This feature is planned for a future update.</CardDescription>
@@ -42,7 +42,7 @@ export default function CreateDocumentPage() {
       </TabsContent>
 
       <TabsContent value="record-fuel">
-        <Card className="shadow-lg">
+        <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
           <CardHeader>
             <CardTitle className="font-headline text-2xl">Record Fuel Consumption</CardTitle>
             <CardDescription>This functionality will be implemented in an upcoming version.</CardDescription>
