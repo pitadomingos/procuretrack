@@ -21,8 +21,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem } from '@/types';
+import type { POItem, Supplier } from '@/types';
 import { useState, useEffect } from 'react';
+import { mockSuppliers, mockApprovers } from '@/lib/mock-data'; // Import mockSuppliers
 
 const poItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -31,7 +32,7 @@ const poItemSchema = z.object({
 });
 
 const poFormSchema = z.object({
-  vendorName: z.string().min(1, 'Supplier name is required'),
+  vendorName: z.string().min(1, 'Supplier name is required'), // This will store the selected supplier's name
   vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   salesPerson: z.string().optional(),
   supplierContactNumber: z.string().optional(),
@@ -57,13 +58,6 @@ type POFormValues = z.infer<typeof poFormSchema>;
 
 const defaultItem: Omit<POItem, 'id' | 'total'> = { description: '', quantity: 1, unitPrice: 0 };
 
-const mockApprovers = [
-  { id: 'approver1', name: 'Alice Wonderland' },
-  { id: 'approver2', name: 'Bob The Builder' },
-  { id: 'approver3', name: 'Charlie Brown' },
-];
-
-
 export function POForm() {
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
@@ -72,7 +66,7 @@ export function POForm() {
   const form = useForm<POFormValues>({
     resolver: zodResolver(poFormSchema),
     defaultValues: {
-      vendorName: '',
+      vendorName: '', // Will be set by the Select component's logic
       vendorEmail: '',
       salesPerson: '',
       supplierContactNumber: '',
@@ -100,6 +94,7 @@ export function POForm() {
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
   const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
+  // const watchedVendorName = form.watch('vendorName'); // Not strictly needed for this effect
 
   useEffect(() => {
     const items = watchedItems || [];
@@ -145,6 +140,26 @@ export function POForm() {
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
   }
 
+  const handleSupplierChange = (selectedSupplierName: string) => {
+    form.setValue('vendorName', selectedSupplierName, { shouldValidate: true });
+    const supplier = mockSuppliers.find(s => s.name === selectedSupplierName);
+    if (supplier) {
+      form.setValue('vendorEmail', supplier.email, { shouldValidate: true });
+      form.setValue('salesPerson', supplier.salesPerson, { shouldValidate: true });
+      form.setValue('supplierContactNumber', supplier.contactNumber, { shouldValidate: true });
+      form.setValue('nuit', supplier.nuit, { shouldValidate: true });
+      form.setValue('billingAddress', supplier.address, { shouldValidate: true });
+    } else {
+      // Optionally clear fields if supplier is not found (e.g., if selectedSupplierName is cleared)
+      form.setValue('vendorEmail', '', { shouldValidate: true });
+      form.setValue('salesPerson', '', { shouldValidate: true });
+      form.setValue('supplierContactNumber', '', { shouldValidate: true });
+      form.setValue('nuit', '', { shouldValidate: true });
+      form.setValue('billingAddress', '', { shouldValidate: true });
+    }
+  };
+
+
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-xl">
       <CardHeader>
@@ -156,7 +171,36 @@ export function POForm() {
             
             <h3 className="text-lg font-medium font-headline">Supplier & PO Information</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              <FormField control={form.control} name="vendorName" render={({ field }) => ( <FormItem> <FormLabel>Supplier Name</FormLabel> <FormControl><Input placeholder="e.g. Lebreya Limitada" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField
+                control={form.control}
+                name="vendorName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supplier Name</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        // field.onChange will be called by handleSupplierChange indirectly by setting vendorName
+                        handleSupplierChange(value);
+                      }}
+                      value={field.value} // Controlled by RHF
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a supplier" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {mockSuppliers.map((supplier) => (
+                          <SelectItem key={supplier.id} value={supplier.name}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. lebreya@fulaho.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr Eugenio" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. 258 84 784 3306" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
@@ -328,5 +372,3 @@ export function POForm() {
     </Card>
   );
 }
-
-    

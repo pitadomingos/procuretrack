@@ -1,5 +1,5 @@
 
-import type { StatCardItem, ActivityLogEntry, ChartDataPoint } from '@/types';
+import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier } from '@/types';
 import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
@@ -97,4 +97,12 @@ export const poCountByCategoryData: ChartDataPoint[] = [
   { name: 'Tools & Hardware', Count: 95 },
   { name: 'Consultancy Services', Count: 30 },
   { name: 'Vehicle Maintenance', Count: 60 },
+];
+
+export const mockSuppliers: Supplier[] = [
+  { id: 'supplier1', name: 'Lebreya Limitada', email: 'lebreya@fulaho.com', salesPerson: 'Mr Eugenio', contactNumber: '258 84 784 3306', nuit: '401034676', address: 'En7, Matema Loja 3, Tete' },
+  { id: 'supplier2', name: 'Global Office Solutions', email: 'sales@globaloffice.co.mz', salesPerson: 'Ana Pereira', contactNumber: '258 82 123 4567', nuit: '400123456', address: 'Av. 25 de Setembro, Maputo' },
+  { id: 'supplier3', name: 'Tete Hardware Store', email: 'info@tetehardware.com', salesPerson: 'John Banda', contactNumber: '258 87 987 6543', nuit: '400654321', address: 'Bairro Josina Machel, Tete' },
+  { id: 'supplier4', name: 'Moz Safety Gear', email: 'contact@mozsafety.co.mz', salesPerson: 'Sofia Charle', contactNumber: '258 86 111 2222', nuit: '400987654', address: 'Rua da Segurança, Beira' },
+  { id: 'supplier5', name: 'InfoTech Mozambique', email: 'support@infotech.co.mz', salesPerson: 'David Junior', contactNumber: '258 84 555 0000', nuit: '400112233', address: 'Av. Eduardo Mondlane, Maputo' },
 ];

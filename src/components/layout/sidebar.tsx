@@ -54,53 +54,42 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        {!mounted ? (
-          <ul 
-            data-sidebar="menu" 
-            className={cn("flex w-full min-w-0 flex-col gap-1 p-2")}
-          >
-            {navItems.map((item, index) => (
-              <SidebarMenuItem key={item.title + "-skeleton-" + index}>
-                 {/* Wrap skeleton in an 'a' tag styled like a button */}
-                 <a
+        <SidebarMenu className="p-2">
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              {!mounted ? (
+                // Render skeleton wrapped in an 'a' tag with appropriate styling
+                <a
                   className={cn(
                     sidebarMenuButtonVariants({ variant: 'default', size: 'default' }),
-                    "pointer-events-none" 
+                    "pointer-events-none"
                   )}
                   tabIndex={-1}
                   aria-disabled="true"
                 >
                   <SidebarMenuSkeleton showIcon />
                 </a>
-              </SidebarMenuItem>
-            ))}
-          </ul>
-        ) : (
-          <SidebarMenu className="p-2">
-            {navItems.map((item) => {
-              const isActuallyActive = pathname === item.href;
-              return (
-                <SidebarMenuItem key={item.title}>
-                  <Link href={item.href}>
-                    <SidebarMenuButton
-                      isActive={isActuallyActive}
-                      disabled={!!item.disabled} 
-                      aria-disabled={!!item.disabled}
-                      tabIndex={item.disabled ? -1 : 0}
-                      tooltip={item.title}
-                      className={cn(item.disabled && "cursor-not-allowed opacity-50")}
-                    >
-                      <React.Fragment>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </React.Fragment>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              );
-            })}
-          </SidebarMenu>
-        )}
+              ) : (
+                // Render actual menu button
+                <Link href={item.href} passHref>
+                  <SidebarMenuButton
+                    isActive={pathname === item.href}
+                    disabled={!!item.disabled}
+                    aria-disabled={!!item.disabled}
+                    tabIndex={item.disabled ? -1 : 0}
+                    tooltip={item.title}
+                    className={cn(item.disabled && "cursor-not-allowed opacity-50")}
+                  >
+                    <React.Fragment>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </React.Fragment>
+                  </SidebarMenuButton>
+                </Link>
+              )}
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-4">
         <ClientOnlyYear />

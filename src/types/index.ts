@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface StatCardItem {
@@ -28,4 +29,14 @@ export interface POItem {
   quantity: number;
   unitPrice: number;
   total: number;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  email: string;
+  salesPerson: string;
+  contactNumber: string;
+  nuit: string;
+  address: string;
 }
