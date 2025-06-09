@@ -15,14 +15,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label'; // Added import
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea'; // Keep for now, may remove if not used
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem, Supplier } from '@/types';
+import type { POItem as POItemType, Supplier } from '@/types'; // Renamed to avoid conflict
 import { useState, useEffect } from 'react';
 import { mockSuppliers, mockApprovers } from '@/lib/mock-data';
 
@@ -48,7 +48,7 @@ const poFormSchema = z.object({
   billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'), 
   
   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
-  poNumberDisplay: z.string().optional(), // This will store the auto-generated PO number
+  poNumberDisplay: z.string().optional(),
 
   currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
   requestedBy: z.string().min(1, 'Requested By is required'),
@@ -56,8 +56,6 @@ const poFormSchema = z.object({
   expectedDeliveryDate: z.string().optional(),
   pricesIncludeVat: z.boolean().default(false),
 
-  paymentTerms: z.string().optional(),
-  notes: z.string().optional(),
   items: z.array(poItemSchema).min(1, 'At least one item is required'),
 });
 
@@ -97,9 +95,6 @@ export function POForm() {
       approver: '',
       expectedDeliveryDate: '',
       pricesIncludeVat: false,
-
-      paymentTerms: 'Net 30',
-      notes: '',
       items: [defaultItem],
     },
   });
@@ -229,7 +224,6 @@ export function POForm() {
                 
                 <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 
-                
                 <div className="space-y-1"> 
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
@@ -240,7 +234,6 @@ export function POForm() {
                   />
                   <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> 
                 </div>
-
               </div>
             </div>
             
@@ -411,32 +404,24 @@ export function POForm() {
 
             <div className="grid md:grid-cols-2 gap-6 items-start">
               <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="paymentTerms"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Payment Terms (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Net 30" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Any additional notes for this PO" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-1">
+                  <Label>Creator Name</Label>
+                  <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
+                    System User (Placeholder)
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Will be automatically populated by logged-in user.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label>Approver Signature</Label>
+                  <div className="w-full h-32 border-2 border-dashed border-muted-foreground rounded-md flex items-center justify-center bg-muted/20">
+                    <p className="text-sm text-muted-foreground">Signature area (Image placeholder)</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Signature will appear here once approved.
+                  </p>
+                </div>
               </div>
               
               <div className="space-y-2 text-right border p-4 rounded-md bg-muted/20">
