@@ -1,5 +1,7 @@
+
 'use client';
 
+import Link from 'next/link';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,19 +13,53 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, UserCircle, LogOut, Settings } from 'lucide-react';
+import { Bell, UserCircle, LogOut, Settings, ChevronLeft } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { navItems } from '@/config/site';
 
 export function AppHeader() {
   const pathname = usePathname();
-  const currentNavItem = navItems.find(item => item.href === pathname);
-  const pageTitle = currentNavItem ? currentNavItem.title : "ProcureTrack";
+  const currentNavItem = navItems.find(item => {
+    if (item.href === '/') return pathname === '/'; // Exact match for home
+    return pathname.startsWith(item.href); // StartsWith for other main sections
+  });
+
+  let pageTitle = currentNavItem ? currentNavItem.title : "ProcureTrack";
+  let breadcrumbBase = null;
+
+  if (pathname.startsWith('/management/') && pathname !== '/management') {
+    const subPageTitle = pageTitle; // Original title might be 'Management' from navItems
+                                    // Or, if we want more specific titles for subpages, that needs different logic
+    
+    // Attempt to find a more specific title for management subpages
+    const managementSubPath = pathname.split('/').pop();
+    if (managementSubPath) {
+      const subPageName = managementSubPath.charAt(0).toUpperCase() + managementSubPath.slice(1);
+      pageTitle = `Manage ${subPageName}`;
+    } else {
+      pageTitle = "Manage Entity"; // Fallback
+    }
+    
+    breadcrumbBase = {
+      title: 'Management',
+      href: '/management',
+    };
+  }
+
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
       <SidebarTrigger className="md:hidden" />
-      <div className="flex-1">
+      <div className="flex-1 flex items-center gap-2">
+        {breadcrumbBase && (
+          <>
+            <Link href={breadcrumbBase.href} className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              {breadcrumbBase.title}
+            </Link>
+            <span className="text-sm text-muted-foreground">/</span>
+          </>
+        )}
         <h1 className="text-lg font-semibold font-headline md:text-xl">{pageTitle}</h1>
       </div>
       <div className="flex items-center gap-4">
