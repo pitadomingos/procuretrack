@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FileCode, Users, Server, Database, Brain, ArrowDown } from "lucide-react";
+import { FileCode, Users, Server, Database, Brain, ArrowDown, FolderKanban, FileJson, Settings2, Palette, Router, Component, Library, Type, BrainCircuit, ServerCog } from "lucide-react";
 
 export default function SystemDocumentationPage() {
   return (
@@ -157,7 +157,99 @@ export default function SystemDocumentationPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-2">7. Future Enhancements & Roadmap</h2>
+            <h2 className="text-xl font-semibold mb-2">7. Key Project Files & Folders</h2>
+            <p className="text-muted-foreground mb-2">
+              An overview of the most important files and directories in the ProcureTrack application:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground ml-4 space-y-2">
+              <li>
+                <FolderKanban className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>/</code> (Root Directory)</strong>
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>next.config.ts</code>: Configuration for the Next.js framework, including image optimization and build settings.</li>
+                  <li><code>tailwind.config.ts</code>: Configuration for Tailwind CSS, defining theme customizations, plugins, and content paths.</li>
+                  <li><code>package.json</code>: Lists project dependencies, scripts (dev, build, start), and project metadata.</li>
+                  <li><code>apphosting.yaml</code>: Configuration for deploying the application to Firebase App Hosting.</li>
+                  <li><code>tsconfig.json</code>: TypeScript compiler options for the project.</li>
+                  <li><code>components.json</code>: Configuration for ShadCN UI, defining component paths and styling.</li>
+                </ul>
+              </li>
+              <li>
+                <Router className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>src/app/</code></strong>: Core directory for Next.js App Router.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>globals.css</code>: Global stylesheets, including Tailwind base styles and CSS variables for ShadCN UI themes (light and dark mode).</li>
+                  <li><code>layout.tsx</code>: The root layout component for the entire application, wrapping all pages.</li>
+                  <li><code>page.tsx</code>: The main entry point for the dashboard page (root route `/`).</li>
+                  <li><code>(group)/route/page.tsx</code>: Pattern for defining pages. Each folder represents a route segment, and `page.tsx` within it is the UI for that route.</li>
+                </ul>
+              </li>
+              <li>
+                <Component className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>src/components/</code></strong>: Contains reusable React components.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>ui/</code>: Houses the ShadCN UI components (Button, Card, Table, etc.). These are generally styled building blocks.</li>
+                  <li><code>shared/</code>: Custom reusable components shared across multiple features (e.g., `FilterBar`, `ActivityLogTable`, `DataTable`).</li>
+                  <li><code>layout/</code>: Components specific to the application's overall structure (e.g., `AppLayout`, `AppHeader`, `AppSidebar`).</li>
+                  <li><code>dashboard/</code>, <code>analytics/</code>, <code>purchase-orders/</code>, <code>receiving/</code>: Feature-specific components.</li>
+                </ul>
+              </li>
+              <li>
+                <Library className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>src/lib/</code></strong>: Utility functions and libraries.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>utils.ts</code>: General utility functions (e.g., `cn` for merging Tailwind classes).</li>
+                  <li><code>mock-data.ts</code>: Contains mock data used for development and UI demonstration before backend integration.</li>
+                </ul>
+              </li>
+              <li>
+                <Settings2 className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>src/config/</code></strong>: Application-level configurations.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>site.ts</code>: Defines navigation items for the sidebar.</li>
+                </ul>
+              </li>
+              <li>
+                <Type className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>src/types/</code></strong>: TypeScript type definitions and interfaces used throughout the application.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>index.ts</code>: Exports all defined types.</li>
+                </ul>
+              </li>
+              <li>
+                <BrainCircuit className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>src/ai/</code></strong>: Dedicated to AI-related functionality using Genkit.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>genkit.ts</code>: Initializes and configures the Genkit instance with plugins (e.g., Google AI).</li>
+                  <li><code>dev.ts</code>: Used for local Genkit development server.</li>
+                  <li><code>flows/</code>: (Future) Will contain Genkit flow definitions (e.g., `diagnose-plant-flow.ts` style files).</li>
+                </ul>
+              </li>
+              <li>
+                <ServerCog className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>backend/</code></strong>: Contains the Node.js/Express.js backend API.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>apiRoutes.js</code>: Defines Express routes for data operations (e.g., `/api/suppliers`, `/api/purchase-orders`).</li>
+                  <li><code>db.js</code>: Handles the MySQL database connection pool and configuration.</li>
+                  <li><code>uploadRoutes.js</code>: Placeholder routes for file uploads.</li>
+                  <li><code>.env</code>: (Important, but typically not committed) Stores environment variables like database credentials.</li>
+                  <li><code>ca.pem</code>: SSL certificate for database connection.</li>
+                </ul>
+              </li>
+               <li>
+                <Database className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
+                <strong><code>scripts/</code></strong>: Contains Node.js scripts for database operations.
+                <ul className="list-circle list-inside ml-6">
+                  <li><code>create_*.js</code>: Scripts to create database tables (e.g., `create_users_table.js`).</li>
+                  <li><code>insert_*.js</code>: Scripts to insert sample data into tables (e.g., `insert_users_data.js`).</li>
+                  <li><code>drop_*.js</code>: Scripts to drop database tables.</li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-2">8. Future Enhancements & Roadmap</h2>
             <p className="text-muted-foreground">
               (Outline of planned features, potential architectural changes, and long-term goals for the system.)
             </p>
