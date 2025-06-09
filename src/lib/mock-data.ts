@@ -1,6 +1,6 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category } from '@/types';
-import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag } from 'lucide-react';
+import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag, ClipboardList, Fuel, Truck } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -26,6 +26,24 @@ export const dashboardStats: StatCardItem[] = [
     value: '97',
     icon: FolderOpen,
     description: 'POs awaiting approval or items.',
+  },
+  {
+    title: 'Total Quotes',
+    value: 'N/A',
+    icon: ClipboardList,
+    description: 'Coming Soon: Track quotations.',
+  },
+  {
+    title: 'Fuel Entries',
+    value: 'N/A',
+    icon: Fuel,
+    description: 'Coming Soon: Logged fuel records.',
+  },
+  {
+    title: 'Recent GRNs',
+    value: 'N/A',
+    icon: Truck,
+    description: 'Coming Soon: Goods Received Notes.',
   },
 ];
 
@@ -170,3 +188,4 @@ export const mockCategoriesData: Category[] = [
   { id: 'CAT011', name: 'Software Licenses', parentCategory: 'CAT002' },
   { id: 'CAT012', name: 'Travel & Accommodation' },
 ];
+
