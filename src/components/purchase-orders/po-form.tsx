@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label'; // Added import
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox"
@@ -89,7 +90,7 @@ export function POForm() {
       shippingAddress: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: '', // Initialize as empty, will be auto-generated
+      poNumberDisplay: '', 
       
       currency: 'MZN',
       requestedBy: '',
@@ -109,11 +110,10 @@ export function POForm() {
   });
 
   useEffect(() => {
-    // Auto-generate PO Number on component mount if not already set
     const currentPoNumber = form.getValues('poNumberDisplay');
     if (!currentPoNumber) {
       const year = new Date().getFullYear().toString().slice(-2);
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit random number
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString(); 
       const newPoNumber = `PO${year}${randomSuffix}`;
       form.setValue('poNumberDisplay', newPoNumber, { shouldValidate: false });
     }
@@ -229,16 +229,16 @@ export function POForm() {
                 
                 <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 
-                {/* Display Auto-Generated PO Number */}
-                <div className="space-y-1"> {/* Mimic FormItem structure for alignment */}
+                
+                <div className="space-y-1"> 
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
                     value={form.watch('poNumberDisplay') || 'Generating...'}
                     readOnly
-                    className="font-medium bg-muted/30 border-muted cursor-default" // Style as read-only
+                    className="font-medium bg-muted/30 border-muted cursor-default" 
                   />
-                  <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> {/* Mimic FormDescription */}
+                  <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> 
                 </div>
 
               </div>
