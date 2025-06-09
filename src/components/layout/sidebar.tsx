@@ -25,7 +25,6 @@ function ClientOnlyYear() {
   }, []);
 
   if (year === null) {
-    // Render a placeholder or nothing during SSR / initial client render for the year part
     return <p className="text-xs text-sidebar-foreground/70 text-center">© ProcureTrack</p>;
   }
 
@@ -55,16 +54,15 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {!mounted ? (
-          <div className="p-2 space-y-1"> {/* Matches SidebarMenu structure for consistent padding */}
+          <ul className={cn("flex w-full min-w-0 flex-col gap-1 p-2")}> {/* Changed to ul and added p-2 */}
             {navItems.map((item, index) => (
-              // Using SidebarMenuItem to wrap skeleton for consistent structure if it adds specific styling/layout
               <SidebarMenuItem key={item.title + "-skeleton-" + index}>
                  <SidebarMenuSkeleton showIcon />
               </SidebarMenuItem>
             ))}
-          </div>
+          </ul>
         ) : (
-          <SidebarMenu>
+          <SidebarMenu className="p-2"> {/* Added p-2 for consistency */}
             {navItems.map((item) => {
               const isActuallyActive = pathname === item.href;
               return (
@@ -72,14 +70,16 @@ export function AppSidebar() {
                   <Link href={item.href}>
                     <SidebarMenuButton
                       isActive={isActuallyActive}
-                      disabled={!!item.disabled}
-                      aria-disabled={!!item.disabled} // Ensure this is explicitly boolean
+                      disabled={!!item.disabled} 
+                      aria-disabled={!!item.disabled}
                       tabIndex={item.disabled ? -1 : 0}
                       tooltip={item.title}
                       className={cn(item.disabled && "cursor-not-allowed opacity-50")}
                     >
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <React.Fragment>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </React.Fragment>
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>
