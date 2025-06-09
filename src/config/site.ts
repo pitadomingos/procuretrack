@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode } from 'lucide-react';
 
 export interface NavItem {
   title: string;
@@ -41,4 +41,15 @@ export const navItems: NavItem[] = [
     href: '/management',
     icon: Settings,
   },
+  {
+    title: 'User Manual',
+    href: '/user-manual',
+    icon: BookUser,
+  },
+  {
+    title: 'System Documentation',
+    href: '/system-documentation',
+    icon: FileCode,
+  },
 ];
+
