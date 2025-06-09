@@ -106,3 +106,10 @@ export const mockSuppliers: Supplier[] = [
   { id: 'supplier4', name: 'Moz Safety Gear', email: 'contact@mozsafety.co.mz', salesPerson: 'Sofia Charle', contactNumber: '258 86 111 2222', nuit: '400987654', address: 'Rua da Segurança, Beira' },
   { id: 'supplier5', name: 'InfoTech Mozambique', email: 'support@infotech.co.mz', salesPerson: 'David Junior', contactNumber: '258 84 555 0000', nuit: '400112233', address: 'Av. Eduardo Mondlane, Maputo' },
 ];
+
+export const mockApprovers: { id: string; name: string }[] = [
+  { id: 'approver1', name: 'Alice Manager' },
+  { id: 'approver2', name: 'Bob Director' },
+  { id: 'approver3', name: 'Carol CFO' },
+  { id: 'approver4', name: 'David Operations Head' },
+];
