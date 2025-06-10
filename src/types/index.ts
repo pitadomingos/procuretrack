@@ -27,8 +27,8 @@ export interface POItem {
   id: string;
   partNumber?: string;
   description: string;
-  category: string;
-  allocation: string;
+  category: string; // Stores Category ID as string
+  allocation: string; // Stores Site ID as string
   uom: string;
   quantity: number;
   unitPrice: number;
@@ -36,13 +36,13 @@ export interface POItem {
 }
 
 export interface Supplier {
-  id: string;
-  name: string;
-  email: string;
-  salesPerson: string;
-  contactNumber: string;
-  nuit: string;
-  address: string;
+  supplierCode: string;
+  supplierName: string;
+  salesPerson?: string | null;
+  cellNumber?: string | null;
+  physicalAddress?: string | null;
+  nuitNumber?: string | null;
+  emailAddress?: string | null;
 }
 
 // Management Entity Types
@@ -64,7 +64,7 @@ export interface User {
 }
 
 export interface Site {
-  id: string;
+  id: number; // Changed from string to number
   name: string;
   location: string;
   siteCode?: string;
@@ -78,8 +78,11 @@ export interface Allocation {
 }
 
 export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  parentCategory?: string; // ID of parent category for hierarchy
+  id: number; // Changed from string to number
+  category: string; // Field name in DB is 'category', not 'name'
+  // Description and parentCategory are not in the simple Category table based on scripts.
+  // If they were, they would be defined here.
+  // For example:
+  // description?: string;
+  // parentCategory?: number; // Assuming parent ID is also a number
 }

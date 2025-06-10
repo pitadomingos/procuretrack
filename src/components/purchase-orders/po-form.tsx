@@ -22,37 +22,36 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem as POItemType, Supplier, Approver as ApproverType, Site as SiteType, Category as CategoryType } from '@/types';
-import { useState, useEffect, useCallback } from 'react'; // Added useCallback
-import { mockApprovers } from '@/lib/mock-data';
+import type { POItem as POItemType, Supplier as SupplierType, Site as SiteType, Category as CategoryType, Approver as ApproverType, User as UserType } from '@/types';
+import { useState, useEffect, useCallback } from 'react';
 
 const poItemSchema = z.object({
   partNumber: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
-  category: z.string().min(1, 'Category is required'),
-  allocation: z.string().min(1, 'Allocation is required'),
+  category: z.string().min(1, 'Category is required'), // Will store Category ID
+  allocation: z.string().min(1, 'Allocation is required'), // Will store Site ID
   uom: z.string().min(1, 'UOM is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
   unitPrice: z.coerce.number().min(0.01, 'Unit price must be positive'),
 });
 
 const poFormSchema = z.object({
-  vendorName: z.string().min(1, 'Supplier name is required'),
+  vendorName: z.string().min(1, 'Supplier name is required'), // Will store Supplier Code
   vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   salesPerson: z.string().optional(),
   supplierContactNumber: z.string().optional(),
   nuit: z.string().optional(),
   quoteNo: z.string().optional(),
 
-  shippingAddress: z.string().min(1, 'Shipping address is required'),
+  shippingAddress: z.string().min(1, 'Shipping address is required'), // Will store Site ID
   billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'),
 
   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
   poNumberDisplay: z.string().optional(),
 
   currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
-  requestedBy: z.string().min(1, 'Requested By is required'),
-  approver: z.string().min(1, 'Approver is required'),
+  requestedBy: z.string().min(1, 'Requested By is required'), // Will store User ID
+  approver: z.string().min(1, 'Approver is required'), // Will store Approver ID
   expectedDeliveryDate: z.string().optional(),
   pricesIncludeVat: z.boolean().default(false),
 
@@ -61,7 +60,7 @@ const poFormSchema = z.object({
 
 type POFormValues = z.infer<typeof poFormSchema>;
 
-const defaultItem: z.infer<typeof poItemSchema> = { // Simplified type
+const defaultItem: z.infer<typeof poItemSchema> = {
   partNumber: '',
   description: '',
   category: '',
@@ -75,12 +74,12 @@ export function POForm() {
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
-  
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+
+  const [suppliers, setSuppliers] = useState<SupplierType[]>([]);
   const [sites, setSites] = useState<SiteType[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [approvers, setApprovers] = useState<ApproverType[]>([]);
-
+  const [users, setUsers] = useState<UserType[]>([]);
 
   const form = useForm<POFormValues>({
     resolver: zodResolver(poFormSchema),
@@ -95,7 +94,6 @@ export function POForm() {
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
       poNumberDisplay: '',
-
       currency: 'MZN',
       requestedBy: '',
       approver: '',
@@ -110,58 +108,57 @@ export function POForm() {
     name: 'items',
   });
 
-  useEffect(() => {
-    const currentPoNumber = form.getValues('poNumberDisplay');
-    if (!currentPoNumber) {
-      const year = new Date().getFullYear().toString().slice(-2);
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString();
-      const newPoNumber = `PO${year}${randomSuffix}`;
-      form.setValue('poNumberDisplay', newPoNumber, { shouldValidate: false });
-    }
-  }, [form]);
+  // Temporarily commented out for debugging parsing error
+  // useEffect(() => {
+  //   const currentPoNumber = form.getValues('poNumberDisplay');
+  //   if (!currentPoNumber) {
+  //     const year = new Date().getFullYear().toString().slice(-2);
+  //     const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString();
+  //     const newPoNumber = `PO${year}${randomSuffix}`;
+  //     form.setValue('poNumberDisplay', newPoNumber, { shouldValidate: false });
+  //   }
+  // }, [form]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch('/api/suppliers');
-        if (!response.ok) {
-          throw new Error(`Error fetching suppliers: ${response.statusText}`);
-        }
-        const data: Supplier[] = await response.json();
-        setSuppliers(data);
-      } catch (error) {
-        console.error('Failed to fetch suppliers:', error);
-      }
-    };
-    fetchData();
-  }, []);
+  // Temporarily commented out for debugging parsing error - STEP 2
+  // useEffect(() => {
+  //   const fetchAllData = async () => {
+  //     try {
+  //       const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
+  //         fetch('/api/suppliers'),
+  //         fetch('/api/sites'),
+  //         fetch('/api/categories'),
+  //         fetch('/api/approvers'),
+  //         fetch('/api/users'),
+  //       ]);
 
-  useEffect(() => {
-    const fetchOtherData = async () => {
-      try {
-        const sitesResponse = await fetch('/api/sites');
-        if (!sitesResponse.ok) throw new Error(`Error fetching sites: ${sitesResponse.statusText}`);
-        const sitesData: SiteType[] = await sitesResponse.json();
-        setSites(sitesData);
+  //       if (!suppliersRes.ok) throw new Error(`Error fetching suppliers: ${suppliersRes.statusText}`);
+  //       const suppliersData: SupplierType[] = await suppliersRes.json();
+  //       setSuppliers(suppliersData);
 
-        const categoriesResponse = await fetch('/api/categories');
-        if (!categoriesResponse.ok) throw new Error(`Error fetching categories: ${categoriesResponse.statusText}`);
-        const categoriesData: CategoryType[] = await categoriesResponse.json();
-        setCategories(categoriesData);
+  //       if (!sitesRes.ok) throw new Error(`Error fetching sites: ${sitesRes.statusText}`);
+  //       const sitesData: SiteType[] = await sitesRes.json();
+  //       setSites(sitesData);
 
-        // Fetch Approvers from API instead of mock
-        const approversResponse = await fetch('/api/approvers');
-        if (!approversResponse.ok) throw new Error(`Error fetching approvers: ${approversResponse.statusText}`);
-        const approversData: ApproverType[] = await approversResponse.json();
-        setApprovers(approversData);
+  //       if (!categoriesRes.ok) throw new Error(`Error fetching categories: ${categoriesRes.statusText}`);
+  //       const categoriesData: CategoryType[] = await categoriesRes.json();
+  //       setCategories(categoriesData);
 
+  //       if (!approversRes.ok) throw new Error(`Error fetching approvers: ${approversRes.statusText}`);
+  //       const approversData: ApproverType[] = await approversRes.json(); // Ensure ApproverType[]
+  //       setApprovers(approversData);
 
-      } catch (error) {
-        console.error('Failed to fetch other select data:', error);
-      }
-    };
-    fetchOtherData();
-  }, []);
+  //       if (!usersRes.ok) throw new Error(`Error fetching users: ${usersRes.statusText}`);
+  //       const usersData: UserType[] = await usersRes.json();
+  //       setUsers(usersData);
+
+  //     } catch (error) {
+  //       console.error('Failed to fetch initial data:', error);
+  //       // Optionally, set an error state here to display to the user
+  //     }
+  //   };
+  //   fetchAllData();
+  // }, []);
+
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -192,9 +189,9 @@ export function POForm() {
         calculatedVatAmount = calculatedSubTotalExVat * 0.16;
         calculatedGrandTotal = calculatedSubTotalExVat + calculatedVatAmount;
       }
-    } else { 
+    } else {
       calculatedSubTotalExVat = rawItemSum;
-      calculatedVatAmount = 0; 
+      calculatedVatAmount = 0;
       calculatedGrandTotal = rawItemSum;
     }
 
@@ -202,24 +199,24 @@ export function POForm() {
     setVatAmount(calculatedVatAmount);
     setGrandTotal(calculatedGrandTotal);
 
-  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]); 
+  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]);
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
   const onSubmit = useCallback((data: POFormValues) => {
     console.log('PO Submitted:', { ...data, subTotal, vatAmount, grandTotal });
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
-  }, [subTotal, vatAmount, grandTotal, form]); // Added form to dependencies
+  }, [subTotal, vatAmount, grandTotal, form]);
 
-  const handleSupplierChange = useCallback((selectedSupplierName: string) => {
-    form.setValue('vendorName', selectedSupplierName, { shouldValidate: true });
-    const supplier = suppliers.find(s => s.name === selectedSupplierName);
+  const handleSupplierChange = useCallback((selectedSupplierCode: string) => {
+    form.setValue('vendorName', selectedSupplierCode, { shouldValidate: true });
+    const supplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (supplier) {
-      form.setValue('vendorEmail', supplier.email || '', { shouldValidate: true });
+      form.setValue('vendorEmail', supplier.emailAddress || '', { shouldValidate: true });
       form.setValue('salesPerson', supplier.salesPerson || '', { shouldValidate: true });
-      form.setValue('supplierContactNumber', supplier.contactNumber || '', { shouldValidate: true });
-      form.setValue('nuit', supplier.nuit || '', { shouldValidate: true });
-      form.setValue('billingAddress', supplier.address || '', { shouldValidate: true });
+      form.setValue('supplierContactNumber', supplier.cellNumber || '', { shouldValidate: true });
+      form.setValue('nuit', supplier.nuitNumber || '', { shouldValidate: true });
+      form.setValue('billingAddress', supplier.physicalAddress || '', { shouldValidate: true });
     } else {
       form.setValue('vendorEmail', '', { shouldValidate: true });
       form.setValue('salesPerson', '', { shouldValidate: true });
@@ -228,6 +225,26 @@ export function POForm() {
       form.setValue('billingAddress', '', { shouldValidate: true });
     }
   }, [form, suppliers]);
+
+  const handleRequestedByChange = (selectedUserId: string) => {
+      form.setValue('requestedBy', selectedUserId, { shouldValidate: true });
+  };
+
+  const handleApproverChange = (selectedApproverId: string) => {
+      form.setValue('approver', selectedApproverId, { shouldValidate: true });
+  };
+
+  const handleShippingAddressChange = (selectedSiteId: string) => {
+      form.setValue('shippingAddress', selectedSiteId, { shouldValidate: true });
+  };
+
+  const handleItemCategoryChange = (index: number, selectedCategoryId: string) => {
+       form.setValue(`items.${index}.category`, selectedCategoryId, { shouldValidate: true });
+  };
+
+  const handleItemAllocationChange = (index: number, selectedSiteId: string) => {
+    form.setValue(`items.${index}.allocation`, selectedSiteId, { shouldValidate: true });
+  };
 
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
@@ -254,9 +271,9 @@ export function POForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {suppliers.map((supplierItm) => (
-                            <SelectItem key={supplierItm.id} value={supplierItm.name}>
-                              {supplierItm.name}
+                          {suppliers.map((supplier) => (
+                            <SelectItem key={supplier.supplierCode} value={supplier.supplierCode}>
+                              {supplier.supplierName}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -286,25 +303,89 @@ export function POForm() {
               </div>
             </div>
 
-            <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's address e.g. En7, Matema Loja 3, Tete" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-            <FormField control={form.control} name="shippingAddress" render={({ field }) => ( <FormItem> <FormLabel>Shipping Address (Delivery)</FormLabel> <FormControl><Textarea placeholder="Enter shipping address for delivery" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+             <FormField control={form.control} name="billingAddress" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Supplier Address (for PDF)</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Enter supplier's address e.g. En7, Matema Loja 3, Tete" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField
+              control={form.control}
+              name="shippingAddress"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Shipping Address (Delivery)</FormLabel>
+                  <Select onValueChange={handleShippingAddressChange} value={field.value || ''}>
+                     <FormControl>
+                       <SelectTrigger>
+                         <SelectValue placeholder="Select a shipping site" />
+                       </SelectTrigger>
+                     </FormControl>
+                     <SelectContent>
+                       {sites.map((site) => (
+                         <SelectItem key={site.id} value={site.id.toString()}>
+                           {site.name}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
 
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">PO Configuration</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="requestedBy" render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+
+                 <FormField
+                   control={form.control}
+                   name="requestedBy"
+                   render={({ field }) => (
+                     <FormItem>
+                       <FormLabel>Requested By</FormLabel>
+                       <Select onValueChange={handleRequestedByChange} value={field.value || ''}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select requester" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {users.map((user) => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
+
                 <FormField
                   control={form.control}
                   name="approver"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Approver</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl>
+                      <Select onValueChange={handleApproverChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an approver" />
+                          </SelectTrigger>
+                        </FormControl>
                         <SelectContent>
-                          {approvers.map(approverItm => (
-                            <SelectItem key={approverItm.id} value={approverItm.id}>{approverItm.name}</SelectItem>
+                          {approvers.map((apprvr) => (
+                            <SelectItem key={apprvr.id} value={apprvr.id}>
+                              {apprvr.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -382,43 +463,54 @@ export function POForm() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.category`}
-                    render={({ field: itemField }) => (
-                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
-                        <FormLabel>Category</FormLabel>
-                         <Select onValueChange={itemField.onChange} value={itemField.value || ''}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select category" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.name}>
-                                        {cat.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.allocation`}
-                    render={({ field: itemField }) => (
-                      <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
-                        <FormLabel>Allocation</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Admin" {...itemField} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                 <FormField
+                   control={form.control}
+                   name={`items.${index}.category`}
+                   render={({ field: itemField }) => (
+                     <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                       <FormLabel>Category</FormLabel>
+                       <Select onValueChange={(value) => handleItemCategoryChange(index, value)} value={itemField.value || ''}>
+                         <FormControl>
+                           <SelectTrigger>
+                             <SelectValue placeholder="Select category" />
+                           </SelectTrigger>
+                         </FormControl>
+                         <SelectContent>
+                           {categories.map((category) => (
+                             <SelectItem key={category.id} value={category.id.toString()}>
+                               {category.category}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
+                 <FormField
+                   control={form.control}
+                   name={`items.${index}.allocation`}
+                   render={({ field: itemField }) => (
+                     <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
+                       <FormLabel>Allocation</FormLabel>
+                       <Select onValueChange={(value) => handleItemAllocationChange(index, value)} value={itemField.value || ''}>
+                         <FormControl>
+                           <SelectTrigger>
+                             <SelectValue placeholder="Select allocation site" />
+                           </SelectTrigger>
+                         </FormControl>
+                         <SelectContent>
+                           {sites.map((site) => (
+                             <SelectItem key={site.id} value={site.id.toString()}>
+                               {site.name}
+                             </SelectItem>
+                           ))}
+                         </SelectContent>
+                       </Select>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
                   <FormField
                     control={form.control}
                     name={`items.${index}.uom`}
@@ -456,7 +548,7 @@ export function POForm() {
                         </FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
+                    )
                   />
                    <div className="text-right font-medium xl:col-span-1 md:col-span-1 sm:col-span-1 self-end pb-2">
                      <FormLabel className="hidden sm:invisible sm:block">Total</FormLabel>
@@ -484,19 +576,10 @@ export function POForm() {
                 <div className="space-y-1">
                   <Label>Creator Name</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
-                    System User (Placeholder)
+                     System User (Placeholder)
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Will be automatically populated by logged-in user.
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <Label>Approver Signature</Label>
-                  <div className="w-full h-32 border-2 border-dashed border-muted-foreground rounded-md flex items-center justify-center bg-muted/20">
-                    <p className="text-sm text-muted-foreground">Signature area (Image placeholder)</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Signature will appear here once approved.
                   </p>
                 </div>
               </div>

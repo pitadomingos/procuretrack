@@ -571,24 +571,49 @@ const SidebarMenuButton = React.forwardRef<
 
     const { isMobile, state } = useSidebar()
 
-    const Comp = hrefProp ? "a" : "button";
-    const isLink = Comp === "a";
+    const Comp = asChild ? React.Fragment : (hrefProp ? "a" : "button");
+    const isLink = Comp === "a" || Comp === React.Fragment && hrefProp;
 
-    const buttonProps = {
-      ref: ref,
-      "data-sidebar": "menu-button",
-      "data-active": isActive,
-      className: cn(sidebarMenuButtonVariants({ variant, size, className })),
-      disabled: !isLink && disabled ? true : undefined,
-      "aria-disabled": disabled,
-      tabIndex: disabled ? -1 : 0,
-      type: !isLink ? typeProp || "button" : undefined, // Ensure button type if not a link
-      href: isLink ? hrefProp : undefined,
-      ...rest, // Spread other props like onClick from Link
-    };
+    // Remove asChild from rest before spreading
+    const { asChild: _, ...filteredRest } = rest;
 
-
-    let buttonElement = React.createElement(Comp, buttonProps as any, children);
+    let buttonElement;
+    if (asChild) {
+      // When asChild is true, Link expects its child to receive the ref and its own props
+      const buttonProps: any = {
+        ref: ref,
+        "data-sidebar": "menu-button",
+        "data-active": isActive,
+        className: cn(sidebarMenuButtonVariants({ variant, size, className })),
+      };
+      // Add other props from filteredRest explicitly
+      for (const prop in filteredRest) {
+          if (Object.hasOwnProperty.call(filteredRest, prop)) {
+              buttonProps[prop] = filteredRest[prop];
+          }
+      }
+      buttonElement = React.createElement(Comp, buttonProps as any, children);
+    } else {
+      // When asChild is false, build the buttonProps object as before
+      const buttonProps: any = {
+        ref: ref,
+        "data-sidebar": "menu-button",
+        "data-active": isActive,
+        className: cn(sidebarMenuButtonVariants({ variant, size, className })),
+        disabled: !isLink && disabled ? true : undefined,
+        "aria-disabled": disabled,
+        tabIndex: disabled ? -1 : 0,
+        type: !isLink ? typeProp || "button" : undefined, // Ensure button type if not a link
+        href: isLink ? hrefProp : undefined,
+      };
+      // Add other props from filteredRest explicitly
+      for (const prop in filteredRest) {
+          if (Object.hasOwnProperty.call(filteredRest, prop)) {
+              buttonProps[prop] = filteredRest[prop];
+          }
+      }
+      buttonElement = React.createElement(Comp, buttonProps as any, children);
+    }
 
     let tooltipContentProps: Omit<
       React.ComponentProps<typeof TooltipContent>,

@@ -53,12 +53,10 @@ export function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href} asChild>
+              <Link href={item.href}>
                 <SidebarMenuButton
-                  // href is now passed by Link asChild
                   isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
                   disabled={!!item.disabled}
-                  tooltip={item.title}
                   className={cn(item.disabled && "cursor-not-allowed opacity-50")}
                 >
                   <item.icon />
