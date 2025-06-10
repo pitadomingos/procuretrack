@@ -16,15 +16,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; 
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem as POItemType, Supplier } from '@/types'; // Renamed to avoid conflict
-import { useState, useEffect } from 'react';
-import { mockSuppliers, mockApprovers } from '@/lib/mock-data';
+import type { POItem as POItemType, Supplier, Approver as ApproverType, Site as SiteType, Category as CategoryType } from '@/types';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import { mockApprovers } from '@/lib/mock-data';
 
 const poItemSchema = z.object({
   partNumber: z.string().optional(),
@@ -43,10 +43,10 @@ const poFormSchema = z.object({
   supplierContactNumber: z.string().optional(),
   nuit: z.string().optional(),
   quoteNo: z.string().optional(),
-  
+
   shippingAddress: z.string().min(1, 'Shipping address is required'),
-  billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'), 
-  
+  billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'),
+
   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
   poNumberDisplay: z.string().optional(),
 
@@ -61,20 +61,26 @@ const poFormSchema = z.object({
 
 type POFormValues = z.infer<typeof poFormSchema>;
 
-const defaultItem: Omit<z.infer<typeof poItemSchema>, 'id' | 'total'> = { 
-  partNumber: '', 
-  description: '', 
-  category: '', 
-  allocation: '', 
-  uom: '', 
-  quantity: 1, 
-  unitPrice: 0 
+const defaultItem: z.infer<typeof poItemSchema> = { // Simplified type
+  partNumber: '',
+  description: '',
+  category: '',
+  allocation: '',
+  uom: '',
+  quantity: 1,
+  unitPrice: 0
 };
 
 export function POForm() {
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
+  
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [sites, setSites] = useState<SiteType[]>([]);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [approvers, setApprovers] = useState<ApproverType[]>([]);
+
 
   const form = useForm<POFormValues>({
     resolver: zodResolver(poFormSchema),
@@ -88,8 +94,8 @@ export function POForm() {
       shippingAddress: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: '', 
-      
+      poNumberDisplay: '',
+
       currency: 'MZN',
       requestedBy: '',
       approver: '',
@@ -108,11 +114,54 @@ export function POForm() {
     const currentPoNumber = form.getValues('poNumberDisplay');
     if (!currentPoNumber) {
       const year = new Date().getFullYear().toString().slice(-2);
-      const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString(); 
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString();
       const newPoNumber = `PO${year}${randomSuffix}`;
       form.setValue('poNumberDisplay', newPoNumber, { shouldValidate: false });
     }
   }, [form]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/suppliers');
+        if (!response.ok) {
+          throw new Error(`Error fetching suppliers: ${response.statusText}`);
+        }
+        const data: Supplier[] = await response.json();
+        setSuppliers(data);
+      } catch (error) {
+        console.error('Failed to fetch suppliers:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchOtherData = async () => {
+      try {
+        const sitesResponse = await fetch('/api/sites');
+        if (!sitesResponse.ok) throw new Error(`Error fetching sites: ${sitesResponse.statusText}`);
+        const sitesData: SiteType[] = await sitesResponse.json();
+        setSites(sitesData);
+
+        const categoriesResponse = await fetch('/api/categories');
+        if (!categoriesResponse.ok) throw new Error(`Error fetching categories: ${categoriesResponse.statusText}`);
+        const categoriesData: CategoryType[] = await categoriesResponse.json();
+        setCategories(categoriesData);
+
+        // Fetch Approvers from API instead of mock
+        const approversResponse = await fetch('/api/approvers');
+        if (!approversResponse.ok) throw new Error(`Error fetching approvers: ${approversResponse.statusText}`);
+        const approversData: ApproverType[] = await approversResponse.json();
+        setApprovers(approversData);
+
+
+      } catch (error) {
+        console.error('Failed to fetch other select data:', error);
+      }
+    };
+    fetchOtherData();
+  }, []);
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -145,7 +194,7 @@ export function POForm() {
       }
     } else { 
       calculatedSubTotalExVat = rawItemSum;
-      calculatedVatAmount = 0;
+      calculatedVatAmount = 0; 
       calculatedGrandTotal = rawItemSum;
     }
 
@@ -153,24 +202,24 @@ export function POForm() {
     setVatAmount(calculatedVatAmount);
     setGrandTotal(calculatedGrandTotal);
 
-  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]);
+  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]); 
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
-  function onSubmit(data: POFormValues) {
+  const onSubmit = useCallback((data: POFormValues) => {
     console.log('PO Submitted:', { ...data, subTotal, vatAmount, grandTotal });
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
-  }
+  }, [subTotal, vatAmount, grandTotal, form]); // Added form to dependencies
 
-  const handleSupplierChange = (selectedSupplierName: string) => {
+  const handleSupplierChange = useCallback((selectedSupplierName: string) => {
     form.setValue('vendorName', selectedSupplierName, { shouldValidate: true });
-    const supplier = mockSuppliers.find(s => s.name === selectedSupplierName);
+    const supplier = suppliers.find(s => s.name === selectedSupplierName);
     if (supplier) {
-      form.setValue('vendorEmail', supplier.email, { shouldValidate: true });
-      form.setValue('salesPerson', supplier.salesPerson, { shouldValidate: true });
-      form.setValue('supplierContactNumber', supplier.contactNumber, { shouldValidate: true });
-      form.setValue('nuit', supplier.nuit, { shouldValidate: true });
-      form.setValue('billingAddress', supplier.address, { shouldValidate: true });
+      form.setValue('vendorEmail', supplier.email || '', { shouldValidate: true });
+      form.setValue('salesPerson', supplier.salesPerson || '', { shouldValidate: true });
+      form.setValue('supplierContactNumber', supplier.contactNumber || '', { shouldValidate: true });
+      form.setValue('nuit', supplier.nuit || '', { shouldValidate: true });
+      form.setValue('billingAddress', supplier.address || '', { shouldValidate: true });
     } else {
       form.setValue('vendorEmail', '', { shouldValidate: true });
       form.setValue('salesPerson', '', { shouldValidate: true });
@@ -178,7 +227,7 @@ export function POForm() {
       form.setValue('nuit', '', { shouldValidate: true });
       form.setValue('billingAddress', '', { shouldValidate: true });
     }
-  };
+  }, [form, suppliers]);
 
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
@@ -188,7 +237,7 @@ export function POForm() {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
+
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">Supplier & PO Information</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -205,9 +254,9 @@ export function POForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockSuppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.name}>
-                              {supplier.name}
+                          {suppliers.map((supplierItm) => (
+                            <SelectItem key={supplierItm.id} value={supplierItm.name}>
+                              {supplierItm.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -221,22 +270,22 @@ export function POForm() {
                 <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. 258 84 784 3306" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 401034676" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. EST741" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                
+
                 <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                
-                <div className="space-y-1"> 
+
+                <div className="space-y-1">
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
                     value={form.watch('poNumberDisplay') || 'Generating...'}
                     readOnly
-                    className="font-medium bg-muted/30 border-muted cursor-default" 
+                    className="font-medium bg-muted/30 border-muted cursor-default"
                   />
-                  <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> 
+                  <p className="text-sm text-muted-foreground">Auto-generated PO number.</p>
                 </div>
               </div>
             </div>
-            
+
             <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's address e.g. En7, Matema Loja 3, Tete" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             <FormField control={form.control} name="shippingAddress" render={({ field }) => ( <FormItem> <FormLabel>Shipping Address (Delivery)</FormLabel> <FormControl><Textarea placeholder="Enter shipping address for delivery" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
 
@@ -245,9 +294,26 @@ export function POForm() {
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="requestedBy" render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="approver" render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{mockApprovers.map(approver => (<SelectItem key={approver.id} value={approver.id}>{approver.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                <FormField
+                  control={form.control}
+                  name="approver"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Approver</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          {approvers.map(approverItm => (
+                            <SelectItem key={approverItm.id} value={approverItm.id}>{approverItm.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField control={form.control} name="expectedDeliveryDate" render={({ field }) => ( <FormItem> <FormLabel>Expected Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              </div>
+             </div>
               <FormField
                 control={form.control}
                 name="pricesIncludeVat"
@@ -269,7 +335,7 @@ export function POForm() {
                 )}
               />
             </div>
-            
+
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
             {fields.map((field, index) => (
@@ -322,9 +388,20 @@ export function POForm() {
                     render={({ field: itemField }) => (
                       <FormItem className="xl:col-span-1 md:col-span-1 sm:col-span-1">
                         <FormLabel>Category</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. Stationery" {...itemField} />
-                        </FormControl>
+                         <Select onValueChange={itemField.onChange} value={itemField.value || ''}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.name}>
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -423,7 +500,7 @@ export function POForm() {
                   </p>
                 </div>
               </div>
-              
+
               <div className="space-y-2 text-right border p-4 rounded-md bg-muted/20">
                 <div className="text-md">
                   Subtotal ({currencySymbol}): <span className="font-semibold">{subTotal.toFixed(2)}</span>
@@ -438,7 +515,7 @@ export function POForm() {
                 </div>
               </div>
             </div>
-            
+
             <Button type="submit" className="w-full sm:w-auto" size="lg">
               <Send className="mr-2 h-4 w-4" /> Submit PO
             </Button>
@@ -453,3 +530,5 @@ export function POForm() {
     </Card>
   );
 }
+
+    
