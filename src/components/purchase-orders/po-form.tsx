@@ -22,67 +22,73 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem as POItemType, Supplier as SupplierType, Site as SiteType, Category as CategoryType, Approver as ApproverType, User as UserType } from '@/types';
+import type { POItem as POItemType, Supplier, Site, Category, Approver, User } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 
-const poItemSchema = z.object({
-  partNumber: z.string().optional(),
-  description: z.string().min(1, 'Description is required'),
-  category: z.string().min(1, 'Category is required'), // Will store Category ID
-  allocation: z.string().min(1, 'Allocation is required'), // Will store Site ID
-  uom: z.string().min(1, 'UOM is required'),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  unitPrice: z.coerce.number().min(0.01, 'Unit price must be positive'),
-});
+// const poItemSchema = z.object({
+//   partNumber: z.string().optional(),
+//   description: z.string().min(1, 'Description is required'),
+//   category: z.string().min(1, 'Category is required'),
+//   allocation: z.string().min(1, 'Allocation is required'),
+//   uom: z.string().min(1, 'UOM is required'),
+//   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+//   unitPrice: z.coerce.number().min(0.01, 'Unit price must be positive'),
+// });
+// export type POItemSchemaType = z.infer<typeof poItemSchema>;
 
-const poFormSchema = z.object({
-  vendorName: z.string().min(1, 'Supplier name is required'), // Will store Supplier Code
-  vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
-  salesPerson: z.string().optional(),
-  supplierContactNumber: z.string().optional(),
-  nuit: z.string().optional(),
-  quoteNo: z.string().optional(),
 
-  shippingAddress: z.string().min(1, 'Shipping address is required'), // Will store Site ID
-  billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'),
+// const poFormSchema = z.object({
+//   vendorName: z.string().min(1, 'Supplier name is required'),
+//   vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
+//   salesPerson: z.string().optional(),
+//   supplierContactNumber: z.string().optional(),
+//   nuit: z.string().optional(),
+//   quoteNo: z.string().optional(),
 
-  poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
-  poNumberDisplay: z.string().optional(),
+//   shippingAddress: z.string().min(1, 'Shipping address is required'),
+//   billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'),
 
-  currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
-  requestedBy: z.string().min(1, 'Requested By is required'), // Will store User ID
-  approver: z.string().min(1, 'Approver is required'), // Will store Approver ID
-  expectedDeliveryDate: z.string().optional(),
-  pricesIncludeVat: z.boolean().default(false),
+//   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
+//   poNumberDisplay: z.string().optional(),
 
-  items: z.array(poItemSchema).min(1, 'At least one item is required'),
-});
+//   currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
+//   requestedBy: z.string().min(1, 'Requested By is required'),
+//   approver: z.string().min(1, 'Approver is required'),
+//   expectedDeliveryDate: z.string().optional(),
+//   pricesIncludeVat: z.boolean().default(false),
 
-type POFormValues = z.infer<typeof poFormSchema>;
+//   items: z.array(poItemSchema).min(1, 'At least one item is required'),
+// });
 
-const defaultItem: z.infer<typeof poItemSchema> = {
-  partNumber: '',
-  description: '',
-  category: '',
-  allocation: '',
-  uom: '',
-  quantity: 1,
-  unitPrice: 0
-};
+// type POFormValues = z.infer<typeof poFormSchema>;
+type POFormValues = any;
+
+
+// const defaultItem: POItemSchemaType = {
+//   partNumber: '',
+//   description: '',
+//   category: '',
+//   allocation: '',
+//   uom: '',
+//   quantity: 1,
+//   unitPrice: 0
+// };
+const defaultItem: any = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 };
+
 
 export function POForm() {
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
-  const [suppliers, setSuppliers] = useState<SupplierType[]>([]);
-  const [sites, setSites] = useState<SiteType[]>([]);
-  const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [approvers, setApprovers] = useState<ApproverType[]>([]);
-  const [users, setUsers] = useState<UserType[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const form = useForm<POFormValues>({
-    resolver: zodResolver(poFormSchema),
+    // resolver: zodResolver(poFormSchema),
     defaultValues: {
       vendorName: '',
       vendorEmail: '',
@@ -103,12 +109,11 @@ export function POForm() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'items',
-  });
+  // const { fields, append, remove } = useFieldArray({
+  //   control: form.control,
+  //   name: 'items',
+  // });
 
-  // Temporarily commented out for debugging parsing error
   // useEffect(() => {
   //   const currentPoNumber = form.getValues('poNumberDisplay');
   //   if (!currentPoNumber) {
@@ -119,7 +124,6 @@ export function POForm() {
   //   }
   // }, [form]);
 
-  // Temporarily commented out for debugging parsing error - STEP 2
   // useEffect(() => {
   //   const fetchAllData = async () => {
   //     try {
@@ -130,30 +134,29 @@ export function POForm() {
   //         fetch('/api/approvers'),
   //         fetch('/api/users'),
   //       ]);
-
+  
   //       if (!suppliersRes.ok) throw new Error(`Error fetching suppliers: ${suppliersRes.statusText}`);
-  //       const suppliersData: SupplierType[] = await suppliersRes.json();
+  //       const suppliersData: Supplier[] = await suppliersRes.json();
   //       setSuppliers(suppliersData);
-
+  
   //       if (!sitesRes.ok) throw new Error(`Error fetching sites: ${sitesRes.statusText}`);
-  //       const sitesData: SiteType[] = await sitesRes.json();
+  //       const sitesData: Site[] = await sitesRes.json();
   //       setSites(sitesData);
-
+  
   //       if (!categoriesRes.ok) throw new Error(`Error fetching categories: ${categoriesRes.statusText}`);
-  //       const categoriesData: CategoryType[] = await categoriesRes.json();
+  //       const categoriesData: Category[] = await categoriesRes.json();
   //       setCategories(categoriesData);
-
+  
   //       if (!approversRes.ok) throw new Error(`Error fetching approvers: ${approversRes.statusText}`);
-  //       const approversData: ApproverType[] = await approversRes.json(); // Ensure ApproverType[]
+  //       const approversData: Approver[] = await approversRes.json();
   //       setApprovers(approversData);
-
+  
   //       if (!usersRes.ok) throw new Error(`Error fetching users: ${usersRes.statusText}`);
-  //       const usersData: UserType[] = await usersRes.json();
+  //       const usersData: User[] = await usersRes.json();
   //       setUsers(usersData);
-
+  
   //     } catch (error) {
   //       console.error('Failed to fetch initial data:', error);
-  //       // Optionally, set an error state here to display to the user
   //     }
   //   };
   //   fetchAllData();
@@ -164,51 +167,53 @@ export function POForm() {
   const watchedCurrency = form.watch('currency');
   const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
 
-  useEffect(() => {
-    const items = watchedItems || [];
-    const currentCurrency = watchedCurrency;
-    const pricesAreVatInclusive = watchedPricesIncludeVat;
+  // useEffect(() => {
+  //   const items = watchedItems || [];
+  //   const currentCurrency = watchedCurrency;
+  //   const pricesAreVatInclusive = watchedPricesIncludeVat;
 
-    let calculatedSubTotalExVat = 0;
-    let calculatedVatAmount = 0;
-    let calculatedGrandTotal = 0;
+  //   let calculatedSubTotalExVat = 0;
+  //   let calculatedVatAmount = 0;
+  //   let calculatedGrandTotal = 0;
 
-    const rawItemSum = items.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      return sum + quantity * unitPrice;
-    }, 0);
+  //   const rawItemSum = items.reduce((sum, item) => {
+  //     const quantity = Number(item.quantity) || 0;
+  //     const unitPrice = Number(item.unitPrice) || 0;
+  //     return sum + quantity * unitPrice;
+  //   }, 0);
 
-    if (currentCurrency === 'MZN') {
-      if (pricesAreVatInclusive) {
-        calculatedSubTotalExVat = rawItemSum / 1.16;
-        calculatedVatAmount = rawItemSum - calculatedSubTotalExVat;
-        calculatedGrandTotal = rawItemSum;
-      } else {
-        calculatedSubTotalExVat = rawItemSum;
-        calculatedVatAmount = calculatedSubTotalExVat * 0.16;
-        calculatedGrandTotal = calculatedSubTotalExVat + calculatedVatAmount;
-      }
-    } else {
-      calculatedSubTotalExVat = rawItemSum;
-      calculatedVatAmount = 0;
-      calculatedGrandTotal = rawItemSum;
-    }
+  //   if (currentCurrency === 'MZN') {
+  //     if (pricesAreVatInclusive) {
+  //       calculatedSubTotalExVat = rawItemSum / 1.16;
+  //       calculatedVatAmount = rawItemSum - calculatedSubTotalExVat;
+  //       calculatedGrandTotal = rawItemSum;
+  //     } else {
+  //       calculatedSubTotalExVat = rawItemSum;
+  //       calculatedVatAmount = calculatedSubTotalExVat * 0.16;
+  //       calculatedGrandTotal = calculatedSubTotalExVat + calculatedVatAmount;
+  //     }
+  //   } else {
+  //     calculatedSubTotalExVat = rawItemSum;
+  //     calculatedVatAmount = 0;
+  //     calculatedGrandTotal = rawItemSum;
+  //   }
 
-    setSubTotal(calculatedSubTotalExVat);
-    setVatAmount(calculatedVatAmount);
-    setGrandTotal(calculatedGrandTotal);
+  //   setSubTotal(calculatedSubTotalExVat);
+  //   setVatAmount(calculatedVatAmount);
+  //   setGrandTotal(calculatedGrandTotal);
 
-  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]);
+  // }, [watchedItems, watchedCurrency, watchedPricesIncludeVat, form]);
+
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
-  const onSubmit = useCallback((data: POFormValues) => {
+  const onSubmit = (data: POFormValues) => {
     console.log('PO Submitted:', { ...data, subTotal, vatAmount, grandTotal });
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
-  }, [subTotal, vatAmount, grandTotal, form]);
+  };
+  // }, [form, subTotal, vatAmount, grandTotal]);
 
-  const handleSupplierChange = useCallback((selectedSupplierCode: string) => {
+  const handleSupplierChange = (selectedSupplierCode: string) => {
     form.setValue('vendorName', selectedSupplierCode, { shouldValidate: true });
     const supplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (supplier) {
@@ -224,7 +229,8 @@ export function POForm() {
       form.setValue('nuit', '', { shouldValidate: true });
       form.setValue('billingAddress', '', { shouldValidate: true });
     }
-  }, [form, suppliers]);
+  };
+  // }, [form, suppliers]);
 
   const handleRequestedByChange = (selectedUserId: string) => {
       form.setValue('requestedBy', selectedUserId, { shouldValidate: true });
@@ -419,7 +425,7 @@ export function POForm() {
 
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
-            {fields.map((field, index) => (
+            {/* {fields.map((field, index) => (
               <div key={field.id} className="space-y-3 p-4 border rounded-md relative">
                 <div className="flex justify-between items-center mb-2">
                   <FormLabel className="text-md font-semibold">Item #{index + 1}</FormLabel>
@@ -559,11 +565,12 @@ export function POForm() {
                    </div>
                 </div>
               </div>
-            ))}
+            ))} */}
             <Button
               type="button"
               variant="outline"
-              onClick={() => append(defaultItem)}
+              // onClick={() => append(defaultItem)} // append would be undefined
+              onClick={() => console.log("Add item clicked - append is disabled")}
               className="mt-0"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
@@ -614,4 +621,3 @@ export function POForm() {
   );
 }
 
-    
