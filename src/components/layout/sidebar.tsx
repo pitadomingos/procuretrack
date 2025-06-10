@@ -11,7 +11,7 @@ import {
   SidebarHeader,
   SidebarFooter,
   // SidebarMenuSkeleton, // No longer needed here
-  sidebarMenuButtonVariants,
+  // sidebarMenuButtonVariants, // Not used directly, part of SidebarMenuButton
 } from '@/components/ui/sidebar';
 import { navItems } from '@/config/site';
 import { cn } from '@/lib/utils';
@@ -21,11 +21,14 @@ import React, { useState, useEffect } from 'react'; // useEffect for ClientOnlyY
 // Helper component for client-side year
 function ClientOnlyYear() {
   const [year, setYear] = useState<number | null>(null);
+
   useEffect(() => {
+    // This ensures getFullYear is called only on the client after hydration
     setYear(new Date().getFullYear());
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount
 
   if (year === null) {
+    // Render a placeholder or nothing on the server and during initial client render
     return <p className="text-xs text-sidebar-foreground/70 text-center">© ProcureTrack</p>;
   }
 
@@ -39,11 +42,6 @@ function ClientOnlyYear() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  // const [mounted, setMounted] = useState(false); // Removed
-
-  // useEffect(() => { // Removed
-  //   setMounted(true);
-  // }, []);
 
   return (
     <>
@@ -57,11 +55,9 @@ export function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              {/* Always render the Link and SidebarMenuButton directly */}
               <Link href={item.href} passHref legacyBehavior={false}>
                 <SidebarMenuButton
-                  as="a" // Ensure it behaves like an anchor for Link
-                  href={item.href} // Pass href for direct anchor usage
+                  asChild // Important: Tells SidebarMenuButton to render its child (the <a> from Link)
                   isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
                   disabled={!!item.disabled}
                   aria-disabled={!!item.disabled}
@@ -69,10 +65,11 @@ export function AppSidebar() {
                   tooltip={item.title}
                   className={cn(item.disabled && "cursor-not-allowed opacity-50")}
                 >
-                  <React.Fragment>
+                  {/* Link will now provide the <a> tag, SidebarMenuButton styles it */}
+                  <a> 
                     <item.icon />
                     <span>{item.title}</span>
-                  </React.Fragment>
+                  </a>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

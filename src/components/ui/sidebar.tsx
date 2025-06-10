@@ -528,15 +528,21 @@ export const sidebarMenuButtonVariants = cva(
   }
 )
 
+type SidebarMenuButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  React.AnchorHTMLAttributes<HTMLAnchorElement> & { // Allow anchor props
+    asChild?: boolean;
+    isActive?: boolean;
+    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+  } & VariantProps<typeof sidebarMenuButtonVariants>;
+
+
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
-  } & VariantProps<typeof sidebarMenuButtonVariants>
+  HTMLButtonElement | HTMLAnchorElement, // Can be button or anchor
+  SidebarMenuButtonProps
 >(
   (
     {
+      asChild = false,
       isActive = false,
       variant = "default",
       size = "default",
@@ -554,19 +560,21 @@ const SidebarMenuButton = React.forwardRef<
       setMounted(true)
     }, [])
 
+    const Comp = asChild ? Slot : "button"
+
     const buttonElement = (
-      <button
-        ref={ref}
+      <Comp
+        ref={ref as any} // Cast to any because Comp can be Slot or "button"
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-        {...props}
+        {...props} // Spread all props, including potential href
       >
         {children}
-      </button>
+      </Comp>
     )
-
+    
     if (!tooltip || !mounted) {
       return buttonElement
     }
@@ -760,3 +768,4 @@ export {
 }
 
     
+
