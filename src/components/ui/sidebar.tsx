@@ -1,7 +1,7 @@
 
 "use client"
 
-import * as React from "react"
+import *as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
@@ -528,17 +528,15 @@ export const sidebarMenuButtonVariants = cva(
   }
 )
 
-export type SidebarMenuButtonProps = Omit<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
-  "type" // Omit 'type' from button attributes if we manually set it for buttons.
-> &
-  React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+export type SidebarMenuButtonProps = React.AnchorHTMLAttributes<HTMLAnchorElement> &
+  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type"> & {
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    asChild?: boolean; // Add asChild here
   } & VariantProps<typeof sidebarMenuButtonVariants>
 
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement | HTMLAnchorElement,
+  HTMLAnchorElement | HTMLButtonElement,
   SidebarMenuButtonProps
 >(
   (
@@ -549,7 +547,8 @@ const SidebarMenuButton = React.forwardRef<
       children,
       tooltip,
       isActive,
-      href, // Destructure href to determine if it's a link
+      href,
+      asChild: _asChildFromProps, // Destructure asChild
       ...props
     },
     ref
@@ -564,27 +563,27 @@ const SidebarMenuButton = React.forwardRef<
     const isLink = typeof href === "string"
     const Element = isLink ? "a" : "button"
 
-    const elementContent = (
+    // Props are already destructured, asChild is in _asChildFromProps (and not spread via ...props)
+    const buttonElement = (
       <Element
-        ref={ref as any}
+        ref={ref as any} // Use 'as any' because Element can be 'a' or 'button'
         data-sidebar="menu-button"
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size, className }))}
+        href={href}
         type={
           !isLink
-            ? (props as React.ButtonHTMLAttributes<HTMLButtonElement>).type ||
-              "button"
+            ? (props as React.ButtonHTMLAttributes<HTMLButtonElement>).type || "button"
             : undefined
         }
-        href={href} // Pass href if it's a link
-        {...props}
+        {...props} // Spread the rest of the props (which no longer includes asChild)
       >
         {children}
       </Element>
     )
 
     if (!tooltip || !mounted) {
-      return elementContent
+      return buttonElement
     }
 
     let tooltipContentProps: Omit<
@@ -599,7 +598,7 @@ const SidebarMenuButton = React.forwardRef<
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{elementContent}</TooltipTrigger>
+        <TooltipTrigger asChild>{buttonElement}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
@@ -777,4 +776,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
