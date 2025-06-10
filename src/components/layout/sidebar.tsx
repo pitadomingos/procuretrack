@@ -10,13 +10,11 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-  // SidebarMenuSkeleton, // No longer needed here
-  // sidebarMenuButtonVariants, // Not used directly, part of SidebarMenuButton
 } from '@/components/ui/sidebar';
 import { navItems } from '@/config/site';
 import { cn } from '@/lib/utils';
 import { Flame } from 'lucide-react';
-import React, { useState, useEffect } from 'react'; // useEffect for ClientOnlyYear
+import React, { useState, useEffect } from 'react';
 
 // Helper component for client-side year
 function ClientOnlyYear() {
@@ -65,11 +63,11 @@ export function AppSidebar() {
                   tooltip={item.title}
                   className={cn(item.disabled && "cursor-not-allowed opacity-50")}
                 >
-                  {/* Link will now provide the <a> tag, SidebarMenuButton styles it */}
-                  <a> 
+                  {/* Link provides the <a>, SidebarMenuButton styles it. Icon and span are direct children. */}
+                  <>
                     <item.icon />
                     <span>{item.title}</span>
-                  </a>
+                  </>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -82,4 +80,3 @@ export function AppSidebar() {
     </>
   );
 }
-
