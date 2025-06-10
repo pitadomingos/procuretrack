@@ -1,8 +1,9 @@
 
 "use client"
 
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
+import *as React from "react"
+// Slot is not used directly by SidebarMenuButton anymore if Link asChild is the primary mechanism
+// import { Slot } from "@radix-ui/react-slot" 
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
@@ -428,7 +429,7 @@ const SidebarGroupLabel = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "div"
+  const Comp = asChild ? React.Fragment : "div" // Use React.Fragment if asChild is true for a simple div like component
 
   return (
     <Comp
@@ -449,7 +450,7 @@ const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? React.Fragment : "button"  // Use React.Fragment if asChild is true
 
   return (
     <Comp
@@ -529,15 +530,16 @@ export const sidebarMenuButtonVariants = cva(
 )
 
 export interface SidebarMenuButtonProps
-  extends Omit<React.HTMLAttributes<HTMLElement>, 'disabled' | 'href' | 'onClick' | 'type' >,
+  extends Omit< // Combines Button and Anchor attributes
+      React.ButtonHTMLAttributes<HTMLButtonElement> &
+        React.AnchorHTMLAttributes<HTMLAnchorElement>,
+      "type" // Omit type to handle it explicitly for button case
+    >,
     VariantProps<typeof sidebarMenuButtonVariants> {
-  asChild?: boolean; // Will be passed by Link if Link uses asChild
   isActive?: boolean;
   tooltip?: string | React.ComponentProps<typeof TooltipContent>;
-  href?: string; // Can be passed directly or by Link
-  disabled?: boolean;
-  onClick?: React.MouseEventHandler<HTMLElement>; // For both button and anchor
-  type?: "button" | "submit" | "reset"; // For button element
+  // `asChild` is not part of its public API; it's an internal concern if Link passes it.
+  // `href` and other link props are expected to be passed by Link when `asChild` is used on Link.
 }
 
 
@@ -546,7 +548,27 @@ const SidebarMenuButton = React.forwardRef<
   SidebarMenuButtonProps
 >(
   (
-    {
+    allPassedProps, // Capture all props in a single object
+    ref
+  ) => {
+    const [mounted, setMounted] = React.useState(false)
+    React.useEffect(() => {
+      setMounted(true)
+    }, [])
+
+    const { isMobile, state } = useSidebar()
+
+    // Make a mutable copy of all props to safely delete `asChild` if it exists
+    const mutableProps = { ...allPassedProps };
+
+    // The `asChild` prop would be passed by `<Link asChild>`.
+    // We must ensure it's not spread onto the DOM element.
+    if ('asChild' in mutableProps) {
+      delete (mutableProps as any).asChild;
+    }
+    
+    // Now destructure the known/expected props from the cleaned mutableProps
+    const {
       className,
       variant,
       size,
@@ -554,75 +576,63 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       isActive,
       disabled,
-      asChild, // This prop is key for integration with Next.js Link asChild
-      href: hrefProp, // Renamed to avoid conflict with href from ...props
-      type,    // Explicitly get type for button
-      ...props // Will contain href, onClick from Link if Link uses asChild
-    },
-    ref
-  ) => {
-    const { isMobile, state } = useSidebar()
-    const [mounted, setMounted] = React.useState(false)
-    React.useEffect(() => {
-      setMounted(true)
-    }, [])
+      href: hrefProp, // This could be from direct pass or from Link (via mutableProps)
+      type,
+      ...linkOrButtonSpecificProps // Remaining props (e.g., onClick from Link)
+    } = mutableProps;
 
-    // Determine the component type:
-    // 1. If Link uses asChild, `asChild` will be true, so use Slot. Link provides the <a>.
-    // 2. Else if hrefProp or props.href (from standalone Link) exists, it's an 'a'.
-    // 3. Else, it's a 'button'.
-    const finalHref = hrefProp ?? props.href;
-    const Comp = asChild ? Slot : (finalHref ? "a" : "button");
 
-    const elementProps = {
-      ref: ref,
+    const finalHref = hrefProp ?? (linkOrButtonSpecificProps as any).href;
+    const Comp = finalHref ? "a" : "button";
+
+    const propsForElement: React.ComponentProps<typeof Comp> & {ref: React.Ref<any>} = {
+      ref: ref, // Apply the ref (from Link asChild or direct usage)
       "data-sidebar": "menu-button",
       "data-active": isActive,
       className: cn(sidebarMenuButtonVariants({ variant, size, className })),
-      disabled: Comp === "button" && disabled ? true : undefined, // HTML disabled for button
-      "aria-disabled": disabled, // ARIA disabled for both
-      tabIndex: disabled ? -1 : 0,
-      type: Comp === "button" ? type : undefined, // Set type only for button
-      ...props, // Spread remaining props (includes href, onClick from Link if asChild)
-      href: finalHref, // Ensure href is explicitly passed if it's an 'a' or Slot for 'a'
+      disabled: Comp === "button" && disabled ? true : undefined,
+      "aria-disabled": Comp === "a" && disabled ? true : undefined,
+      tabIndex: Comp === "a" && disabled ? -1 : undefined, // Corrected: should be a number or undefined
+      type: Comp === "button" ? type : undefined,
+      ...linkOrButtonSpecificProps, // Spread other props like onClick
+      href: finalHref, // Ensure href is explicitly set if it's an anchor
     };
-
-    const buttonContent = (
-      <Comp {...elementProps}>
-        {children}
-      </Comp>
-    );
-
-    if (!tooltip || !mounted) {
-      return buttonContent;
-    }
+    
+    let buttonElement = React.createElement(Comp, propsForElement as any, children);
 
     let tooltipContentProps: Omit<
       React.ComponentProps<typeof TooltipContent>,
       "children"
-    > & { children: React.ReactNode }
+    > & { children: React.ReactNode } = { children: null };
+
     if (typeof tooltip === "string") {
       tooltipContentProps = { children: tooltip }
-    } else {
+    } else if (tooltip) {
       tooltipContentProps = tooltip
     }
 
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {buttonContent}
-        </TooltipTrigger>
-        <TooltipContent
-          side="right"
-          align="center"
-          hidden={!mounted || state !== "collapsed" || isMobile}
-          {...tooltipContentProps}
-        />
-      </Tooltip>
-    )
+
+    if (tooltipContentProps.children && mounted) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {buttonElement}
+          </TooltipTrigger>
+          <TooltipContent
+            side="right"
+            align="center"
+            hidden={!mounted || state !== "collapsed" || isMobile}
+            {...tooltipContentProps}
+          />
+        </Tooltip>
+      )
+    }
+
+    return buttonElement
   }
 )
 SidebarMenuButton.displayName = "SidebarMenuButton"
+
 
 const SidebarMenuAction = React.forwardRef<
   HTMLButtonElement,
@@ -631,7 +641,7 @@ const SidebarMenuAction = React.forwardRef<
     showOnHover?: boolean
   }
 >(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button"
+  const Comp = asChild ? React.Fragment : "button" // Use React.Fragment if asChild is true
 
   return (
     <Comp
@@ -741,7 +751,7 @@ const SidebarMenuSubButton = React.forwardRef<
     isActive?: boolean
   }
 >(({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : "a"
+  const Comp = asChild ? React.Fragment : "a"; // Use React.Fragment if asChild is true
 
   return (
     <Comp
