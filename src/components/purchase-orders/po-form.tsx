@@ -4,6 +4,7 @@
 // import { zodResolver } from '@hookform/resolvers/zod'; // Keep commented for now
 import { useForm, useFieldArray } from 'react-hook-form';
 // import type * as z from 'zod'; // Keep z import for potential future use
+import type { ChangeEvent } from 'react'; // Import ChangeEvent for explicit typing if needed later
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -22,8 +23,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types';
-import { useState, /* useEffect, useCallback */ } from 'react';
+import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types'; // Ensure correct type imports
+import { useState, useEffect, useCallback } from 'react';
 
 
 /* // Zod Schemas remain commented out
@@ -89,7 +90,7 @@ export function POForm() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [approversData, setApproversData] = useState<Approver[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   const form = useForm<POFormValues>({
@@ -104,7 +105,7 @@ export function POForm() {
       shippingAddress: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: '',
+      poNumberDisplay: '', // This will be handled by the (currently commented out) useEffect
       currency: 'MZN',
       requestedBy: '',
       approver: '',
@@ -114,12 +115,14 @@ export function POForm() {
     },
   });
 
-  /* // useFieldArray remains commented out
+  
+  /* // useFieldArray remains commented out for now
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'items',
   });
   */
+  
 
   /* // useEffect for PO Number Generation - REMAINS COMMENTED OUT
   useEffect(() => {
@@ -133,45 +136,44 @@ export function POForm() {
   }, [form]);
   */
 
-  /* // Data fetching useEffect - REMAINS COMMENTED OUT
+  
+  // Data fetching useEffect - RE-ENABLED & MODIFIED FOR SEQUENTIAL FETCH
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
-          fetch('/api/suppliers'),
-          fetch('/api/sites'),
-          fetch('/api/categories'),
-          fetch('/api/approvers'),
-          fetch('/api/users'),
-        ]);
-
+        const suppliersRes = await fetch('/api/suppliers');
         if (!suppliersRes.ok) throw new Error(`Error fetching suppliers: ${suppliersRes.statusText}`);
         const suppliersData: Supplier[] = await suppliersRes.json();
         setSuppliers(suppliersData);
 
+        const sitesRes = await fetch('/api/sites');
         if (!sitesRes.ok) throw new Error(`Error fetching sites: ${sitesRes.statusText}`);
         const sitesData: Site[] = await sitesRes.json();
         setSites(sitesData);
 
+        const categoriesRes = await fetch('/api/categories');
         if (!categoriesRes.ok) throw new Error(`Error fetching categories: ${categoriesRes.statusText}`);
         const categoriesData: CategoryType[] = await categoriesRes.json();
         setCategories(categoriesData);
 
+        const approversRes = await fetch('/api/approvers');
         if (!approversRes.ok) throw new Error(`Error fetching approvers: ${approversRes.statusText}`);
-        const approversData: Approver[] = await approversRes.json();
-        setApprovers(approversData);
+        const fetchedApproversData: Approver[] = await approversRes.json();
+        setApproversData(fetchedApproversData);
 
+        const usersRes = await fetch('/api/users');
         if (!usersRes.ok) throw new Error(`Error fetching users: ${usersRes.statusText}`);
         const usersData: User[] = await usersRes.json();
         setUsers(usersData);
 
       } catch (error) {
         console.error('Failed to fetch initial data:', error);
+        // Optionally, set an error state here to display to the user
       }
     };
     fetchAllData();
   }, []);
-  */
+  
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -203,9 +205,9 @@ export function POForm() {
         calculatedVatAmount = calculatedSubTotalExVat * 0.16;
         calculatedGrandTotal = calculatedSubTotalExVat + calculatedVatAmount;
       }
-    } else {
+    } else { // For USD or other currencies, VAT is not applied by this logic
       calculatedSubTotalExVat = rawItemSum;
-      calculatedVatAmount = 0;
+      calculatedVatAmount = 0; // No VAT for non-MZN by default
       calculatedGrandTotal = rawItemSum;
     }
 
@@ -218,15 +220,16 @@ export function POForm() {
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
-  // onSubmit remains a plain function
+  // onSubmit remains a plain function (useCallback commented out)
   const onSubmit = (data: POFormValues) => {
     console.log('PO Submitted:', { ...data, subTotal, vatAmount, grandTotal });
+    // Implement actual submission logic: API call, PDF generation, email, etc.
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
   };
 
-  // handleSupplierChange remains a plain function
+  // handleSupplierChange remains a plain function (useCallback commented out)
   const handleSupplierChange = (selectedSupplierCode: string) => {
-    form.setValue('vendorName', selectedSupplierCode, { shouldValidate: true });
+    form.setValue('vendorName', selectedSupplierCode, { shouldValidate: true }); // Keep this to set the form value
     const supplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (supplier) {
       form.setValue('vendorEmail', supplier.emailAddress || '', { shouldValidate: true });
@@ -311,11 +314,10 @@ export function POForm() {
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
-                    value={form.watch('poNumberDisplay') || 'Generating...'}
+                    value={form.watch('poNumberDisplay') || 'Generating...'} // Or 'Not Generated' if effect is off
                     readOnly
                     className="font-medium bg-muted/30 border-muted cursor-default"
                   />
-                  {/* <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> */}
                 </div>
               </div>
             </div>
@@ -399,7 +401,7 @@ export function POForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {approvers.map((apprvr) => (
+                          {approversData.map((apprvr) => (
                             <SelectItem key={apprvr.id} value={apprvr.id}>
                               {apprvr.name}
                             </SelectItem>
@@ -425,9 +427,6 @@ export function POForm() {
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel>Prices are VAT inclusive</FormLabel>
-                      {/* <FormDescription>
-                        Check this if item prices already include 16% VAT (for MZN currency).
-                      </FormDescription> */}
                     </div>
                   </FormItem>
                 )}
@@ -436,7 +435,8 @@ export function POForm() {
 
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
-            { /* Item rendering loop remains commented out
+            
+            {/*
             {fields.map((field, index) => (
               <div key={field.id} className="space-y-3 p-4 border rounded-md relative">
                 <div className="flex justify-between items-center mb-2">
@@ -578,13 +578,14 @@ export function POForm() {
                 </div>
               </div>
             ))}
-            */ }
+            */}
+            
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                console.log("Add Item clicked (append disabled)");
-                // append(defaultItem); // append is undefined as useFieldArray is commented out
+                // append(defaultItem); // append is undefined if useFieldArray is commented out
+                console.log('Add Item clicked (append disabled)');
               }}
               className="mt-0"
             >
@@ -600,9 +601,6 @@ export function POForm() {
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
                      System User (Placeholder)
                   </div>
-                  {/* <p className="text-sm text-muted-foreground">
-                    Will be automatically populated by logged-in user.
-                  </p> */}
                 </div>
               </div>
 
@@ -635,3 +633,4 @@ export function POForm() {
     </Card>
   );
 }
+
