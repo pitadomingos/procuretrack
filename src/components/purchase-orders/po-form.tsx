@@ -3,12 +3,12 @@
 
 // import { zodResolver } from '@hookform/resolvers/zod'; // Keep commented for now
 import { useForm, useFieldArray } from 'react-hook-form';
-import type * as z from 'zod'; // Keep z import for potential future use
+// import type * as z from 'zod'; // Keep z import for potential future use
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
+  // FormDescription, // Not used with current commented state
   FormField,
   FormItem,
   FormLabel,
@@ -22,40 +22,42 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types'; // Ensure correct type import for Category
-import { useState, useEffect, useCallback } from 'react';
+import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types';
+import { useState, /* useEffect, useCallback */ } from 'react';
 
-/*
+
+/* // Zod Schemas remain commented out
 const poItemSchema = z.object({
   partNumber: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
-  category: z.string().min(1, 'Category is required'), // Assuming category ID is a string
-  allocation: z.string().min(1, 'Allocation is required'), // Assuming allocation (site) ID is a string
+  category: z.string().min(1, 'Category is required'),
+  allocation: z.string().min(1, 'Allocation is required'),
   uom: z.string().min(1, 'UOM is required'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
   unitPrice: z.coerce.number().min(0.01, 'Unit price must be positive'),
 });
 */
-// export type POItemSchemaType = z.infer<typeof poItemSchema>;
+// export type POItemSchemaType = z.infer<typeof poItemSchema>; // Remains commented
 
-/*
+
+/* // Zod Schemas remain commented out
 const poFormSchema = z.object({
-  vendorName: z.string().min(1, 'Supplier name is required'), // This will be the supplierCode
+  vendorName: z.string().min(1, 'Supplier name is required'),
   vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   salesPerson: z.string().optional(),
   supplierContactNumber: z.string().optional(),
   nuit: z.string().optional(),
   quoteNo: z.string().optional(),
 
-  shippingAddress: z.string().min(1, 'Shipping address is required'), // Site ID as string
-  billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'), // Physical address from supplier
+  shippingAddress: z.string().min(1, 'Shipping address is required'),
+  billingAddress: z.string().min(1, 'Supplier address is required (for PO PDF header)'),
 
   poDate: z.string().min(1, "PO Date is required (for PO PDF header)"),
-  poNumberDisplay: z.string().optional(), // Auto-generated, display only
+  poNumberDisplay: z.string().optional(),
 
   currency: z.enum(['MZN', 'USD'], { required_error: "Currency is required" }),
-  requestedBy: z.string().min(1, 'Requested By is required'), // User ID
-  approver: z.string().min(1, 'Approver is required'), // Approver ID
+  requestedBy: z.string().min(1, 'Requested By is required'),
+  approver: z.string().min(1, 'Approver is required'),
   expectedDeliveryDate: z.string().optional(),
   pricesIncludeVat: z.boolean().default(false),
 
@@ -63,11 +65,11 @@ const poFormSchema = z.object({
 });
 */
 
-// type POFormValues = z.infer<typeof poFormSchema>;
-type POFormValues = any;
+// type POFormValues = z.infer<typeof poFormSchema>; // Remains commented
+type POFormValues = any; // Use any for now
 
 
-// const defaultItem: z.infer<typeof poItemSchema> = { // Zod inferred type
+// const defaultItem: z.infer<typeof poItemSchema> = { // Zod inferred type - remains commented
 //   partNumber: '',
 //   description: '',
 //   category: '',
@@ -76,7 +78,7 @@ type POFormValues = any;
 //   quantity: 1,
 //   unitPrice: 0
 // };
-const defaultItem: any = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 };
+const defaultItem: any = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 }; // Use any for now
 
 
 export function POForm() {
@@ -91,7 +93,7 @@ export function POForm() {
   const [users, setUsers] = useState<User[]>([]);
 
   const form = useForm<POFormValues>({
-    // resolver: zodResolver(poFormSchema), // Keep Zod resolver commented
+    // resolver: zodResolver(poFormSchema), // Zod resolver remains commented
     defaultValues: {
       vendorName: '',
       vendorEmail: '',
@@ -112,13 +114,15 @@ export function POForm() {
     },
   });
 
+  /* // useFieldArray remains commented out
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'items',
   });
+  */
 
-  /*
-  useEffect(() => { // For PO Number Generation - REMAINS COMMENTED OUT
+  /* // useEffect for PO Number Generation - REMAINS COMMENTED OUT
+  useEffect(() => {
     const currentPoNumber = form.getValues('poNumberDisplay');
     if (!currentPoNumber) {
       const year = new Date().getFullYear().toString().slice(-2);
@@ -129,8 +133,8 @@ export function POForm() {
   }, [form]);
   */
 
-  /* // Temporarily commenting out data fetching useEffect to isolate parsing error
-  useEffect(() => { // For fetching all other data - ACTIVE
+  /* // Data fetching useEffect - REMAINS COMMENTED OUT
+  useEffect(() => {
     const fetchAllData = async () => {
       try {
         const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
@@ -169,13 +173,12 @@ export function POForm() {
   }, []);
   */
 
-
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
   const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
 
-  /*
-  useEffect(() => { // For Totals Calculation - REMAINS COMMENTED OUT
+  /* // useEffect for Totals Calculation - REMAINS COMMENTED OUT
+  useEffect(() => {
     const items = watchedItems || [];
     const currentCurrency = watchedCurrency;
     const pricesAreVatInclusive = watchedPricesIncludeVat;
@@ -213,17 +216,15 @@ export function POForm() {
   }, [watchedItems, watchedCurrency, watchedPricesIncludeVat, form]);
   */
 
-
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
-  // const onSubmit = useCallback((data: POFormValues) => { // REMAINS PLAIN FUNCTION
+  // onSubmit remains a plain function
   const onSubmit = (data: POFormValues) => {
     console.log('PO Submitted:', { ...data, subTotal, vatAmount, grandTotal });
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
   };
-  // }, [form, subTotal, vatAmount, grandTotal]);
 
-  // const handleSupplierChange = useCallback((selectedSupplierCode: string) => { // REMAINS PLAIN FUNCTION
+  // handleSupplierChange remains a plain function
   const handleSupplierChange = (selectedSupplierCode: string) => {
     form.setValue('vendorName', selectedSupplierCode, { shouldValidate: true });
     const supplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
@@ -241,7 +242,6 @@ export function POForm() {
       form.setValue('billingAddress', '', { shouldValidate: true });
     }
   };
-  // }, [form, suppliers]);
 
   const handleRequestedByChange = (selectedUserId: string) => {
       form.setValue('requestedBy', selectedUserId, { shouldValidate: true });
@@ -315,7 +315,7 @@ export function POForm() {
                     readOnly
                     className="font-medium bg-muted/30 border-muted cursor-default"
                   />
-                  <p className="text-sm text-muted-foreground">Auto-generated PO number.</p>
+                  {/* <p className="text-sm text-muted-foreground">Auto-generated PO number.</p> */}
                 </div>
               </div>
             </div>
@@ -425,9 +425,9 @@ export function POForm() {
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel>Prices are VAT inclusive</FormLabel>
-                      <FormDescription>
+                      {/* <FormDescription>
                         Check this if item prices already include 16% VAT (for MZN currency).
-                      </FormDescription>
+                      </FormDescription> */}
                     </div>
                   </FormItem>
                 )}
@@ -436,6 +436,7 @@ export function POForm() {
 
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
+            { /* Item rendering loop remains commented out
             {fields.map((field, index) => (
               <div key={field.id} className="space-y-3 p-4 border rounded-md relative">
                 <div className="flex justify-between items-center mb-2">
@@ -577,12 +578,13 @@ export function POForm() {
                 </div>
               </div>
             ))}
+            */ }
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                append(defaultItem);
-                console.log("Add Item clicked");
+                console.log("Add Item clicked (append disabled)");
+                // append(defaultItem); // append is undefined as useFieldArray is commented out
               }}
               className="mt-0"
             >
@@ -598,9 +600,9 @@ export function POForm() {
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
                      System User (Placeholder)
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  {/* <p className="text-sm text-muted-foreground">
                     Will be automatically populated by logged-in user.
-                  </p>
+                  </p> */}
                 </div>
               </div>
 
