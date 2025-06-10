@@ -1,15 +1,15 @@
 
 'use client';
 
-// import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm, useFieldArray } from 'react-hook-form'; // useFieldArray will be effectively unused
-// import type * as z from 'zod';
-// import type { ChangeEvent } from 'react';
+// import { zodResolver } from '@hookform/resolvers/zod'; // Zod still commented
+import { useForm, useFieldArray } from 'react-hook-form'; // useFieldArray will be effectively unused for now
+// import type * as z from 'zod'; // Zod still commented
+// import type { ChangeEvent } from 'react'; // Not used
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  // FormDescription,
+  // FormDescription, // Not used
   FormField,
   FormItem,
   FormLabel,
@@ -23,11 +23,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-// import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types';
-import { useState, useEffect, useCallback } from 'react'; // useEffect & useCallback will be unused
+import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types'; // Re-import types
+import { useState, useEffect, useCallback } from 'react'; // Re-import useEffect, useState
 
-
-/* // Zod Schemas remain commented out
+// Zod Schemas remain commented out
+/*
 const poItemSchema = z.object({
   partNumber: z.string().optional(),
   description: z.string().min(1, 'Description is required'),
@@ -41,7 +41,7 @@ const poItemSchema = z.object({
 // export type POItemSchemaType = z.infer<typeof poItemSchema>;
 
 
-/* // Zod Schemas remain commented out
+/*
 const poFormSchema = z.object({
   vendorName: z.string().min(1, 'Supplier name is required'),
   vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
@@ -50,10 +50,10 @@ const poFormSchema = z.object({
 });
 */
 
-type POFormValues = any; // Simplified to any
+type POFormValues = any; // Simplified to any for now
 
-
-// const defaultItem: any = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 };
+// const defaultItem: POItemSchemaType = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 }; // Zod-inferred defaultItem commented
+const defaultItem: any = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 };
 
 
 export function POForm() {
@@ -61,15 +61,15 @@ export function POForm() {
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
-  // Data states are commented out as fetching is disabled
-  // const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  // const [sites, setSites] = useState<Site[]>([]);
-  // const [categories, setCategories] = useState<CategoryType[]>([]);
-  // const [approversData, setApproversData] = useState<Approver[]>([]);
-  // const [users, setUsers] = useState<User[]>([]);
+  // Re-enable state for fetched data
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [approvers, setApproversData] = useState<Approver[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   const form = useForm<POFormValues>({
-    // resolver: zodResolver(poFormSchema),
+    // resolver: zodResolver(poFormSchema), // Still commented
     defaultValues: {
       vendorName: '',
       vendorEmail: '',
@@ -80,82 +80,152 @@ export function POForm() {
       shippingAddress: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: 'PO_INIT_001', // Static placeholder
+      poNumberDisplay: 'PO_FROM_FORM_001', // Static placeholder
       currency: 'MZN',
       requestedBy: '',
       approver: '',
       expectedDeliveryDate: '',
       pricesIncludeVat: false,
-      items: [], // Items array is empty, useFieldArray commented
+      items: [], // items array empty as useFieldArray is effectively disabled for now
     },
   });
 
-  // useFieldArray is commented out
-  // const { fields, append, remove } = useFieldArray({
-  //   control: form.control,
-  //   name: 'items',
-  // });
-
-
-  // All useEffect hooks are commented out
+  // useFieldArray is still commented out
   /*
-  useEffect(() => { // PO Number Generation
-    // ...
-  }, [form]);
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'items',
+  });
   */
 
+  // useEffect for PO Number Generation remains commented out
   /*
-  useEffect(() => { // Data Fetching
-    // const fetchAllData = async () => { // ... };
-    // fetchAllData();
+  useEffect(() => {
+    // ...
   }, []);
   */
 
-  // Watch calls are commented out
+  // Re-enable useEffect for data fetching (sequential version)
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await fetch('/api/suppliers');
+        if (!response.ok) throw new Error('Failed to fetch suppliers');
+        const data: Supplier[] = await response.json();
+        setSuppliers(data);
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+      }
+    };
+    const fetchSites = async () => {
+      try {
+        const response = await fetch('/api/sites');
+        if (!response.ok) throw new Error('Failed to fetch sites');
+        const data: Site[] = await response.json();
+        setSites(data);
+      } catch (error) {
+        console.error("Error fetching sites:", error);
+      }
+    };
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) throw new Error('Failed to fetch categories');
+        const data: CategoryType[] = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    const fetchApprovers = async () => {
+      try {
+        const response = await fetch('/api/approvers');
+        if (!response.ok) throw new Error('Failed to fetch approvers');
+        const data: Approver[] = await response.json();
+        setApproversData(data);
+      } catch (error) {
+        console.error("Error fetching approvers:", error);
+      }
+    };
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (!response.ok) throw new Error('Failed to fetch users');
+        const data: User[] = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    fetchSuppliers();
+    fetchSites();
+    fetchCategories();
+    fetchApprovers();
+    fetchUsers();
+  }, []);
+
+
+  // Watch calls remain commented out for now
   // const watchedItems = form.watch('items');
   // const watchedCurrency = form.watch('currency');
   // const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
 
+  // useEffect for Totals Calculation remains commented out
   /*
-  useEffect(() => { // Totals Calculation
+  useEffect(() => {
     // ...
-  }, [form]); // Simplified dependency
+  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat, form]);
   */
 
+  // onSubmit remains simplified
   const onSubmit = (data: POFormValues) => {
     console.log('PO Submitted (simplified):', { ...data, subTotal, vatAmount, grandTotal });
-    alert('PO Submitted! Functionality limited for diagnostics.');
+    alert('PO Submitted! Functionality limited.');
   };
 
-  // Handler functions are simplified or commented out
-  // const handleSupplierChange = (selectedSupplierCode: string) => {
-  //   form.setValue('vendorName', selectedSupplierCode); // Minimal
-  // };
+  // Restore handlers for dropdowns
+  const handleSupplierChange = (selectedSupplierCode: string) => {
+    const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
+    if (selectedSupplier) {
+      form.setValue('vendorName', selectedSupplier.supplierCode);
+      form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
+      form.setValue('salesPerson', selectedSupplier.salesPerson || '');
+      form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
+      form.setValue('nuit', selectedSupplier.nuitNumber || '');
+      form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
+    }
+  };
 
-  // const handleRequestedByChange = (selectedUserId: string) => {
-  //   form.setValue('requestedBy', selectedUserId); // Minimal
-  // };
+  const handleRequestedByChange = (selectedUserId: string) => {
+    form.setValue('requestedBy', selectedUserId);
+  };
 
-  // const handleApproverChange = (selectedApproverId: string) => {
-  //   form.setValue('approver', selectedApproverId); // Minimal
-  // };
+  const handleApproverChange = (selectedApproverId: string) => {
+    form.setValue('approver', selectedApproverId);
+  };
 
-  // const handleShippingAddressChange = (selectedSiteId: string) => {
-  //   form.setValue('shippingAddress', selectedSiteId); // Minimal
-  // };
+  const handleShippingAddressChange = (selectedSiteId: string) => {
+    const selectedSite = sites.find(s => s.id.toString() === selectedSiteId);
+    if (selectedSite) {
+        form.setValue('shippingAddress', selectedSite.name);
+    }
+  };
 
-  // const handleItemCategoryChange = (index: number, selectedCategoryId: string) => {
-  //   // form.setValue(`items.${index}.category`, selectedCategoryId); // Minimal
-  // };
+  // Item-specific handlers (will be used when items are re-enabled)
+  const handleItemCategoryChange = (index: number, selectedCategoryId: string) => {
+    // form.setValue(`items.${index}.category`, selectedCategoryId, { shouldValidate: true });
+    console.log(`Item ${index} category changed to ${selectedCategoryId} (handler active, items commented)`);
+  };
 
-  // const handleItemAllocationChange = (index: number, selectedSiteId: string) => {
-  //   // form.setValue(`items.${index}.allocation`, selectedSiteId); // Minimal
-  // };
+  const handleItemAllocationChange = (index: number, selectedSiteId: string) => {
+    // form.setValue(`items.${index}.allocation`, selectedSiteId, { shouldValidate: true });
+    console.log(`Item ${index} allocation changed to ${selectedSiteId} (handler active, items commented)`);
+  };
 
+  // Using getValues as watch is commented
   const currencySymbol = form.getValues('currency') === 'MZN' ? 'MZN' : '$';
 
-
-  // ========= THE ERROR OCCURS BEFORE THIS LINE ACCORDING TO NEXT.JS =========
 
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
@@ -175,14 +245,18 @@ export function POForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supplier Name</FormLabel>
-                      <Select onValueChange={field.onChange /* simplified */} value={field.value || ''}>
+                      <Select onValueChange={(value) => { field.onChange(value); handleSupplierChange(value); }} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a supplier (disabled)" />
+                            <SelectValue placeholder="Select a supplier" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* Suppliers array is empty */}
+                          {suppliers.map(supplier => (
+                            <SelectItem key={supplier.supplierCode} value={supplier.supplierCode}>
+                              {supplier.supplierName}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -201,7 +275,7 @@ export function POForm() {
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
-                    value={form.watch('poNumberDisplay') || 'PO_STATIC_001'}
+                    value={form.watch('poNumberDisplay') || 'PO_STATIC_001'} // form.watch is fine here for display
                     readOnly
                     className="font-medium bg-muted/30 border-muted cursor-default"
                   />
@@ -225,14 +299,18 @@ export function POForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Shipping Address (Delivery)</FormLabel>
-                  <Select onValueChange={field.onChange /* simplified */} value={field.value || ''}>
+                  <Select onValueChange={(value) => { field.onChange(value); handleShippingAddressChange(value); }} value={field.value || ''}>
                      <FormControl>
                        <SelectTrigger>
-                         <SelectValue placeholder="Select a shipping site (disabled)" />
+                         <SelectValue placeholder="Select a shipping site" />
                        </SelectTrigger>
                      </FormControl>
                      <SelectContent>
-                       {/* Sites array is empty */}
+                       {sites.map(site => (
+                         <SelectItem key={site.id} value={site.id.toString()}>
+                           {site.name} ({site.siteCode})
+                         </SelectItem>
+                       ))}
                      </SelectContent>
                    </Select>
                   <FormMessage />
@@ -252,14 +330,18 @@ export function POForm() {
                    render={({ field }) => (
                      <FormItem>
                        <FormLabel>Requested By</FormLabel>
-                       <Select onValueChange={field.onChange /* simplified */} value={field.value || ''}>
+                       <Select onValueChange={(value) => { field.onChange(value); handleRequestedByChange(value); }} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select requester (disabled)" />
+                              <SelectValue placeholder="Select requester" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {/* Users array is empty */}
+                            {users.map(user => (
+                              <SelectItem key={user.id} value={user.id}>
+                                {user.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                        <FormMessage />
@@ -273,14 +355,18 @@ export function POForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Approver</FormLabel>
-                      <Select onValueChange={field.onChange /* simplified */} value={field.value || ''}>
+                      <Select onValueChange={(value) => { field.onChange(value); handleApproverChange(value); }} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select an approver (disabled)" />
+                            <SelectValue placeholder="Select an approver" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* ApproversData array is empty */}
+                          {approvers.map(appr => (
+                            <SelectItem key={appr.id} value={appr.id}>
+                              {appr.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -311,10 +397,69 @@ export function POForm() {
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
 
-            {/* fields.map block is commented out as useFieldArray is disabled */}
+            {/* fields.map block is still commented out as useFieldArray is disabled */}
             {/*
             {fields.map((field, index) => (
-              // ... item rendering logic ...
+              <Card key={field.id} className="p-4 space-y-4 relative mb-4 shadow-md">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field: itemField }) => ( <FormItem> <FormLabel>Part Number</FormLabel> <FormControl><Input placeholder="Optional part no." {...itemField} /></FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField control={form.control} name={`items.${index}.description`} render={({ field: itemField }) => ( <FormItem className="md:col-span-2 lg:col-span-3"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...itemField} /></FormControl> <FormMessage /> </FormItem> )} />
+
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.category`}
+                    render={({ field: itemField }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={(value) => { itemField.onChange(value); handleItemCategoryChange(index, value); }} value={itemField.value || ''}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {categories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.id.toString()}>
+                                {cat.category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.allocation`}
+                    render={({ field: itemField }) => (
+                      <FormItem>
+                        <FormLabel>Allocation (Site)</FormLabel>
+                         <Select onValueChange={(value) => { itemField.onChange(value); handleItemAllocationChange(index, value); }} value={itemField.value || ''}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select allocation" /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {sites.map(site => (
+                              <SelectItem key={site.id} value={site.id.toString()}>
+                                {site.name} ({site.siteCode})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField control={form.control} name={`items.${index}.uom`} render={({ field: itemField }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., EA, KG, M" {...itemField} /></FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField control={form.control} name={`items.${index}.quantity`} render={({ field: itemField }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input type="number" placeholder="0" {...itemField} onChange={e => itemField.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage /> </FormItem> )} />
+                  <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field: itemField }) => ( <FormItem> <FormLabel>Unit Price ({currencySymbol})</FormLabel> <FormControl><Input type="number" step="0.01" placeholder="0.00" {...itemField} onChange={e => itemField.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage /> </FormItem> )} />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => console.log("Remove item clicked (remove fn disabled)")}
+                  className="absolute top-2 right-2"
+                  title="Remove Item"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </Card>
             ))}
             */}
 
@@ -324,7 +469,7 @@ export function POForm() {
               onClick={() => console.log("Add Item clicked (append disabled)")}
               className="mt-0"
             >
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Item (Disabled)
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Item (PO Items Disabled)
             </Button>
 
             <Separator />
@@ -362,10 +507,9 @@ export function POForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Upon submission, an email will be sent to the approver. Once approved, a PDF copy will be sent to the creator and approver. (Simulated for MVP)
+          Upon submission, an email will be sent to the approver. Once approved, a PDF copy will be sent to the creator and approver. (Functionality limited)
         </p>
       </CardFooter>
     </Card>
   );
 }
-    
