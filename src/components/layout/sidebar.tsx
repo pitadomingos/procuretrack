@@ -10,13 +10,13 @@ import {
   SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-  SidebarMenuSkeleton,
-  sidebarMenuButtonVariants, // Import the CVA variants
+  // SidebarMenuSkeleton, // No longer needed here
+  sidebarMenuButtonVariants,
 } from '@/components/ui/sidebar';
 import { navItems } from '@/config/site';
 import { cn } from '@/lib/utils';
 import { Flame } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // useEffect for ClientOnlyYear
 
 // Helper component for client-side year
 function ClientOnlyYear() {
@@ -39,11 +39,11 @@ function ClientOnlyYear() {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
+  // const [mounted, setMounted] = useState(false); // Removed
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // useEffect(() => { // Removed
+  //   setMounted(true);
+  // }, []);
 
   return (
     <>
@@ -57,36 +57,24 @@ export function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              {!mounted ? (
-                // Render skeleton wrapped in an 'a' tag with appropriate styling
-                <a
-                  className={cn(
-                    sidebarMenuButtonVariants({ variant: 'default', size: 'default' }),
-                    "pointer-events-none"
-                  )}
-                  tabIndex={-1}
-                  aria-disabled="true"
+              {/* Always render the Link and SidebarMenuButton directly */}
+              <Link href={item.href} passHref legacyBehavior={false}>
+                <SidebarMenuButton
+                  as="a" // Ensure it behaves like an anchor for Link
+                  href={item.href} // Pass href for direct anchor usage
+                  isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
+                  disabled={!!item.disabled}
+                  aria-disabled={!!item.disabled}
+                  tabIndex={item.disabled ? -1 : 0}
+                  tooltip={item.title}
+                  className={cn(item.disabled && "cursor-not-allowed opacity-50")}
                 >
-                  <SidebarMenuSkeleton showIcon />
-                </a>
-              ) : (
-                // Render actual menu button
-                <Link href={item.href} passHref>
-                  <SidebarMenuButton
-                    isActive={pathname === item.href}
-                    disabled={!!item.disabled}
-                    aria-disabled={!!item.disabled}
-                    tabIndex={item.disabled ? -1 : 0}
-                    tooltip={item.title}
-                    className={cn(item.disabled && "cursor-not-allowed opacity-50")}
-                  >
-                    <React.Fragment>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </React.Fragment>
-                  </SidebarMenuButton>
-                </Link>
-              )}
+                  <React.Fragment>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </React.Fragment>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
@@ -97,3 +85,4 @@ export function AppSidebar() {
     </>
   );
 }
+
