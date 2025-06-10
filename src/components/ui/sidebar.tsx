@@ -528,27 +528,28 @@ export const sidebarMenuButtonVariants = cva(
   }
 )
 
-type SidebarMenuButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
-  React.AnchorHTMLAttributes<HTMLAnchorElement> & { // Allow anchor props
-    asChild?: boolean;
-    isActive?: boolean;
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>;
-  } & VariantProps<typeof sidebarMenuButtonVariants>;
-
+export type SidebarMenuButtonProps = Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "type" // Omit 'type' from button attributes if we manually set it for buttons.
+> &
+  React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    isActive?: boolean
+    tooltip?: string | React.ComponentProps<typeof TooltipContent>
+  } & VariantProps<typeof sidebarMenuButtonVariants>
 
 const SidebarMenuButton = React.forwardRef<
-  HTMLButtonElement | HTMLAnchorElement, // Can be button or anchor
+  HTMLButtonElement | HTMLAnchorElement,
   SidebarMenuButtonProps
 >(
   (
     {
-      asChild = false,
-      isActive = false,
-      variant = "default",
-      size = "default",
-      tooltip,
       className,
+      variant,
+      size,
       children,
+      tooltip,
+      isActive,
+      href, // Destructure href to determine if it's a link
       ...props
     },
     ref
@@ -560,39 +561,49 @@ const SidebarMenuButton = React.forwardRef<
       setMounted(true)
     }, [])
 
-    const Comp = asChild ? Slot : "button"
+    const isLink = typeof href === "string"
+    const Element = isLink ? "a" : "button"
 
-    const buttonElement = (
-      <Comp
-        ref={ref as any} // Cast to any because Comp can be Slot or "button"
+    const elementContent = (
+      <Element
+        ref={ref as any}
         data-sidebar="menu-button"
-        data-size={size}
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-        {...props} // Spread all props, including potential href
+        className={cn(sidebarMenuButtonVariants({ variant, size, className }))}
+        type={
+          !isLink
+            ? (props as React.ButtonHTMLAttributes<HTMLButtonElement>).type ||
+              "button"
+            : undefined
+        }
+        href={href} // Pass href if it's a link
+        {...props}
       >
         {children}
-      </Comp>
+      </Element>
     )
-    
+
     if (!tooltip || !mounted) {
-      return buttonElement
+      return elementContent
     }
-    
-    let tooltipContentProps: React.ComponentProps<typeof TooltipContent>;
-    if (typeof tooltip === 'string') {
-      tooltipContentProps = { children: tooltip };
+
+    let tooltipContentProps: Omit<
+      React.ComponentProps<typeof TooltipContent>,
+      "children"
+    > & { children: React.ReactNode }
+    if (typeof tooltip === "string") {
+      tooltipContentProps = { children: tooltip }
     } else {
-      tooltipContentProps = tooltip;
+      tooltipContentProps = tooltip
     }
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{buttonElement}</TooltipTrigger>
+        <TooltipTrigger asChild>{elementContent}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={!mounted || state !== "collapsed" || isMobile}
           {...tooltipContentProps}
         />
       </Tooltip>
@@ -766,6 +777,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
-    
 
