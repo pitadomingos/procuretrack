@@ -1,7 +1,7 @@
 
 "use client"
 
-import *as React from "react"
+import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
@@ -528,15 +528,15 @@ export const sidebarMenuButtonVariants = cva(
   }
 )
 
-export type SidebarMenuButtonProps = React.AnchorHTMLAttributes<HTMLAnchorElement> &
-  Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type"> & {
+export type SidebarMenuButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type"> &
+  Partial<React.AnchorHTMLAttributes<HTMLAnchorElement>> & { // Use Partial for Anchor attributes as href is optional
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
-    asChild?: boolean; // Add asChild here
+    // Removed asChild from here
   } & VariantProps<typeof sidebarMenuButtonVariants>
 
 const SidebarMenuButton = React.forwardRef<
-  HTMLAnchorElement | HTMLButtonElement,
+  HTMLButtonElement | HTMLAnchorElement,
   SidebarMenuButtonProps
 >(
   (
@@ -548,7 +548,7 @@ const SidebarMenuButton = React.forwardRef<
       tooltip,
       isActive,
       href,
-      asChild: _asChildFromProps, // Destructure asChild
+      disabled, // Ensure disabled is destructured
       ...props
     },
     ref
@@ -560,26 +560,23 @@ const SidebarMenuButton = React.forwardRef<
       setMounted(true)
     }, [])
 
-    const isLink = typeof href === "string"
-    const Element = isLink ? "a" : "button"
+    const Comp = href ? "a" : "button";
 
-    // Props are already destructured, asChild is in _asChildFromProps (and not spread via ...props)
     const buttonElement = (
-      <Element
-        ref={ref as any} // Use 'as any' because Element can be 'a' or 'button'
+      <Comp
+        ref={ref as any}
         data-sidebar="menu-button"
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size, className }))}
         href={href}
-        type={
-          !isLink
-            ? (props as React.ButtonHTMLAttributes<HTMLButtonElement>).type || "button"
-            : undefined
-        }
-        {...props} // Spread the rest of the props (which no longer includes asChild)
+        type={!href ? (props as React.ButtonHTMLAttributes<HTMLButtonElement>).type || "button" : undefined}
+        disabled={!href && disabled ? true : undefined} // Apply HTML disabled for button
+        aria-disabled={disabled} // Apply aria-disabled for both
+        tabIndex={disabled ? -1 : 0} // Manage focus for disabled items
+        {...props}
       >
         {children}
-      </Element>
+      </Comp>
     )
 
     if (!tooltip || !mounted) {
@@ -776,3 +773,4 @@ export {
   SidebarTrigger,
   useSidebar,
 }
+

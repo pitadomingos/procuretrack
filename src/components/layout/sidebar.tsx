@@ -53,17 +53,13 @@ export function AppSidebar() {
         <SidebarMenu className="p-2">
           {navItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <Link href={item.href} passHref asChild>
+              <Link href={item.href} passHref legacyBehavior>
                 <SidebarMenuButton
+                  href={item.href} // Explicitly pass href to ensure it renders as an 'a'
                   isActive={pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))}
                   disabled={!!item.disabled}
-                  aria-disabled={!!item.disabled}
-                  tabIndex={item.disabled ? -1 : 0}
                   tooltip={item.title}
                   className={cn(item.disabled && "cursor-not-allowed opacity-50")}
-                  // href is passed by Link asChild
-                  // onClick is passed by Link asChild
-                  // ref is passed by Link asChild
                 >
                   <item.icon />
                   <span>{item.title}</span>
@@ -79,3 +75,4 @@ export function AppSidebar() {
     </>
   );
 }
+
