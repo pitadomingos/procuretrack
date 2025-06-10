@@ -528,12 +528,18 @@ export const sidebarMenuButtonVariants = cva(
   }
 )
 
-export type SidebarMenuButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "type"> &
-  Partial<React.AnchorHTMLAttributes<HTMLAnchorElement>> & { // Use Partial for Anchor attributes as href is optional
-    isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
-    // Removed asChild from here
-  } & VariantProps<typeof sidebarMenuButtonVariants>
+export interface SidebarMenuButtonProps
+  extends Omit<React.HTMLAttributes<HTMLElement>, 'disabled' | 'href' | 'onClick' | 'type' >,
+    VariantProps<typeof sidebarMenuButtonVariants> {
+  asChild?: boolean; // Will be passed by Link if Link uses asChild
+  isActive?: boolean;
+  tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+  href?: string; // Can be passed directly or by Link
+  disabled?: boolean;
+  onClick?: React.MouseEventHandler<HTMLElement>; // For both button and anchor
+  type?: "button" | "submit" | "reset"; // For button element
+}
+
 
 const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement | HTMLAnchorElement,
@@ -547,40 +553,48 @@ const SidebarMenuButton = React.forwardRef<
       children,
       tooltip,
       isActive,
-      href,
-      disabled, // Ensure disabled is destructured
-      ...props
+      disabled,
+      asChild, // This prop is key for integration with Next.js Link asChild
+      href: hrefProp, // Renamed to avoid conflict with href from ...props
+      type,    // Explicitly get type for button
+      ...props // Will contain href, onClick from Link if Link uses asChild
     },
     ref
   ) => {
     const { isMobile, state } = useSidebar()
     const [mounted, setMounted] = React.useState(false)
-
     React.useEffect(() => {
       setMounted(true)
     }, [])
 
-    const Comp = href ? "a" : "button";
+    // Determine the component type:
+    // 1. If Link uses asChild, `asChild` will be true, so use Slot. Link provides the <a>.
+    // 2. Else if hrefProp or props.href (from standalone Link) exists, it's an 'a'.
+    // 3. Else, it's a 'button'.
+    const finalHref = hrefProp ?? props.href;
+    const Comp = asChild ? Slot : (finalHref ? "a" : "button");
 
-    const buttonElement = (
-      <Comp
-        ref={ref as any}
-        data-sidebar="menu-button"
-        data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size, className }))}
-        href={href}
-        type={!href ? (props as React.ButtonHTMLAttributes<HTMLButtonElement>).type || "button" : undefined}
-        disabled={!href && disabled ? true : undefined} // Apply HTML disabled for button
-        aria-disabled={disabled} // Apply aria-disabled for both
-        tabIndex={disabled ? -1 : 0} // Manage focus for disabled items
-        {...props}
-      >
+    const elementProps = {
+      ref: ref,
+      "data-sidebar": "menu-button",
+      "data-active": isActive,
+      className: cn(sidebarMenuButtonVariants({ variant, size, className })),
+      disabled: Comp === "button" && disabled ? true : undefined, // HTML disabled for button
+      "aria-disabled": disabled, // ARIA disabled for both
+      tabIndex: disabled ? -1 : 0,
+      type: Comp === "button" ? type : undefined, // Set type only for button
+      ...props, // Spread remaining props (includes href, onClick from Link if asChild)
+      href: finalHref, // Ensure href is explicitly passed if it's an 'a' or Slot for 'a'
+    };
+
+    const buttonContent = (
+      <Comp {...elementProps}>
         {children}
       </Comp>
-    )
+    );
 
     if (!tooltip || !mounted) {
-      return buttonElement
+      return buttonContent;
     }
 
     let tooltipContentProps: Omit<
@@ -595,7 +609,9 @@ const SidebarMenuButton = React.forwardRef<
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{buttonElement}</TooltipTrigger>
+        <TooltipTrigger asChild>
+          {buttonContent}
+        </TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
@@ -773,4 +789,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
