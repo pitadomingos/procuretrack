@@ -137,7 +137,7 @@ export function POForm() {
   */
 
   
-  // Data fetching useEffect - RE-ENABLED & MODIFIED FOR SEQUENTIAL FETCH
+  // Data fetching useEffect - REMAINS ACTIVE (sequential fetches)
   useEffect(() => {
     const fetchAllData = async () => {
       try {
@@ -436,7 +436,7 @@ export function POForm() {
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
             
-            {/*
+            {/* // Item rendering loop remains commented out
             {fields.map((field, index) => (
               <div key={field.id} className="space-y-3 p-4 border rounded-md relative">
                 <div className="flex justify-between items-center mb-2">
@@ -584,7 +584,6 @@ export function POForm() {
               type="button"
               variant="outline"
               onClick={() => {
-                // append(defaultItem); // append is undefined if useFieldArray is commented out
                 console.log('Add Item clicked (append disabled)');
               }}
               className="mt-0"
