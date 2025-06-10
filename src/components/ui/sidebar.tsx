@@ -1,7 +1,7 @@
 
 "use client"
 
-import *as React from "react"
+import * as React from "react"
 // Slot is not used directly by SidebarMenuButton anymore if Link asChild is the primary mechanism
 // import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
@@ -429,7 +429,7 @@ const SidebarGroupLabel = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? React.Fragment : "div" // Use React.Fragment if asChild is true for a simple div like component
+  const Comp = asChild ? React.Fragment : "div"
 
   return (
     <Comp
@@ -450,7 +450,7 @@ const SidebarGroupAction = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
-  const Comp = asChild ? React.Fragment : "button"  // Use React.Fragment if asChild is true
+  const Comp = asChild ? React.Fragment : "button"
 
   return (
     <Comp
@@ -533,12 +533,14 @@ export interface SidebarMenuButtonProps
   extends Omit<
       React.ButtonHTMLAttributes<HTMLButtonElement> &
         React.AnchorHTMLAttributes<HTMLAnchorElement>,
-      "type"
+      "type" // Omit type to allow explicit handling based on href
     >,
     VariantProps<typeof sidebarMenuButtonVariants> {
   isActive?: boolean;
   tooltip?: string | React.ComponentProps<typeof TooltipContent>;
-  // No asChild in the original props for this version
+  href?: string; // Explicitly include href
+  type?: string; // Allow explicit type for button
+  asChild?: boolean; // To consume the prop from Link
 }
 
 
@@ -547,7 +549,19 @@ const SidebarMenuButton = React.forwardRef<
   SidebarMenuButtonProps
 >(
   (
-    allPassedProps,
+    {
+      className,
+      variant,
+      size,
+      children,
+      tooltip,
+      isActive,
+      disabled,
+      href: hrefProp,
+      type: typeProp,
+      asChild, // Destructure asChild to consume it
+      ...rest
+    },
     ref
   ) => {
     const [mounted, setMounted] = React.useState(false)
@@ -557,38 +571,24 @@ const SidebarMenuButton = React.forwardRef<
 
     const { isMobile, state } = useSidebar()
 
-    const {
-        className,
-        variant,
-        size,
-        children,
-        tooltip,
-        isActive,
-        disabled,
-        href: hrefProp, // Expect href to be passed by Link asChild or directly
-        type: typeProp,
-        ...rest // these are props from Link asChild (like onClick, ref) or other button/anchor attributes
-    } = allPassedProps;
-
     const Comp = hrefProp ? "a" : "button";
+    const isLink = Comp === "a";
 
-    const elementProps: React.HTMLAttributes<HTMLElement> & React.RefAttributes<HTMLElement> = {
-      ref: ref as any, // NextLink's ref for 'a', or button's ref
+    const buttonProps = {
+      ref: ref,
       "data-sidebar": "menu-button",
       "data-active": isActive,
       className: cn(sidebarMenuButtonVariants({ variant, size, className })),
-      disabled: Comp === "button" && disabled ? true : undefined,
-      "aria-disabled": disabled, // Apply aria-disabled for both button and anchor for consistency
+      disabled: !isLink && disabled ? true : undefined,
+      "aria-disabled": disabled,
       tabIndex: disabled ? -1 : 0,
-      type: Comp === "button" ? typeProp : undefined,
-      ...rest, // Spread the remaining props (like onClick from Link)
+      type: !isLink ? typeProp || "button" : undefined, // Ensure button type if not a link
+      href: isLink ? hrefProp : undefined,
+      ...rest, // Spread other props like onClick from Link
     };
-    if (Comp === "a" && hrefProp) {
-      (elementProps as React.AnchorHTMLAttributes<HTMLAnchorElement>).href = hrefProp;
-    }
 
 
-    let buttonElement = React.createElement(Comp, elementProps as any, children);
+    let buttonElement = React.createElement(Comp, buttonProps as any, children);
 
     let tooltipContentProps: Omit<
       React.ComponentProps<typeof TooltipContent>,
@@ -788,5 +788,3 @@ export {
   SidebarTrigger,
   useSidebar,
 }
-
-    
