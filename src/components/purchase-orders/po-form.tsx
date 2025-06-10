@@ -22,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { POItem as POItemType, Supplier, Site, Category as CategoryType, Approver as ApproverType, User } from '@/types'; // Renamed Category to CategoryType
+import type { POItem as POItemType, Supplier, Site, Category as CategoryType, Approver as ApproverType, User } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 
 // const poItemSchema = z.object({
@@ -83,7 +83,7 @@ export function POForm() {
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
-  const [categories, setCategories] = useState<CategoryType[]>([]); // Using CategoryType
+  const [categories, setCategories] = useState<CategoryType[]>([]);
   const [approvers, setApprovers] = useState<ApproverType[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
@@ -114,7 +114,7 @@ export function POForm() {
   //   name: 'items',
   // });
 
-  // useEffect(() => { // Commented out for diagnosis
+  // useEffect(() => { // For PO Number Generation - REMAINS COMMENTED OUT
   //   const currentPoNumber = form.getValues('poNumberDisplay');
   //   if (!currentPoNumber) {
   //     const year = new Date().getFullYear().toString().slice(-2);
@@ -124,50 +124,51 @@ export function POForm() {
   //   }
   // }, [form]);
 
-  // useEffect(() => { // Commented out for diagnosis
-  //   const fetchAllData = async () => {
-  //     try {
-  //       const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
-  //         fetch('/api/suppliers'),
-  //         fetch('/api/sites'),
-  //         fetch('/api/categories'),
-  //         fetch('/api/approvers'),
-  //         fetch('/api/users'),
-  //       ]);
+  useEffect(() => { // For fetching all other data - RE-ENABLING THIS
+    const fetchAllData = async () => {
+      try {
+        const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
+          fetch('/api/suppliers'),
+          fetch('/api/sites'),
+          fetch('/api/categories'),
+          fetch('/api/approvers'),
+          fetch('/api/users'),
+        ]);
   
-  //       if (!suppliersRes.ok) throw new Error(`Error fetching suppliers: ${suppliersRes.statusText}`);
-  //       const suppliersData: Supplier[] = await suppliersRes.json();
-  //       setSuppliers(suppliersData);
+        if (!suppliersRes.ok) throw new Error(`Error fetching suppliers: ${suppliersRes.statusText}`);
+        const suppliersData: Supplier[] = await suppliersRes.json();
+        setSuppliers(suppliersData);
   
-  //       if (!sitesRes.ok) throw new Error(`Error fetching sites: ${sitesRes.statusText}`);
-  //       const sitesData: Site[] = await sitesRes.json();
-  //       setSites(sitesData);
+        if (!sitesRes.ok) throw new Error(`Error fetching sites: ${sitesRes.statusText}`);
+        const sitesData: Site[] = await sitesRes.json();
+        setSites(sitesData);
   
-  //       if (!categoriesRes.ok) throw new Error(`Error fetching categories: ${categoriesRes.statusText}`);
-  //       const categoriesData: CategoryType[] = await categoriesRes.json();
-  //       setCategories(categoriesData);
+        if (!categoriesRes.ok) throw new Error(`Error fetching categories: ${categoriesRes.statusText}`);
+        const categoriesData: CategoryType[] = await categoriesRes.json();
+        setCategories(categoriesData);
   
-  //       if (!approversRes.ok) throw new Error(`Error fetching approvers: ${approversRes.statusText}`);
-  //       const approversData: ApproverType[] = await approversRes.json();
-  //       setApprovers(approversData);
+        if (!approversRes.ok) throw new Error(`Error fetching approvers: ${approversRes.statusText}`);
+        const approversData: ApproverType[] = await approversRes.json();
+        setApprovers(approversData);
   
-  //       if (!usersRes.ok) throw new Error(`Error fetching users: ${usersRes.statusText}`);
-  //       const usersData: User[] = await usersRes.json();
-  //       setUsers(usersData);
+        if (!usersRes.ok) throw new Error(`Error fetching users: ${usersRes.statusText}`);
+        const usersData: User[] = await usersRes.json();
+        setUsers(usersData);
   
-  //     } catch (error) {
-  //       console.error('Failed to fetch initial data:', error);
-  //     }
-  //   };
-  //   fetchAllData();
-  // }, []);
+      } catch (error) {
+        console.error('Failed to fetch initial data:', error);
+        // Optionally, set an error state here to display to the user
+      }
+    };
+    fetchAllData();
+  }, []);
 
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
   const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
 
-  // useEffect(() => { // Commented out for diagnosis
+  // useEffect(() => { // For Totals Calculation - REMAINS COMMENTED OUT
   //   const items = watchedItems || [];
   //   const currentCurrency = watchedCurrency;
   //   const pricesAreVatInclusive = watchedPricesIncludeVat;
@@ -207,12 +208,15 @@ export function POForm() {
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
-  const onSubmit = (data: POFormValues) => { // Not using useCallback for diagnosis
+  // const onSubmit = useCallback((data: POFormValues) => { // REMAINS PLAIN FUNCTION
+  const onSubmit = (data: POFormValues) => {
     console.log('PO Submitted:', { ...data, subTotal, vatAmount, grandTotal });
     alert('PO Submitted! Check console for data. PDF generation/emailing not implemented in MVP.');
   };
+  // }, [form, subTotal, vatAmount, grandTotal]);
 
-  const handleSupplierChange = (selectedSupplierCode: string) => { // Not using useCallback for diagnosis
+  // const handleSupplierChange = useCallback((selectedSupplierCode: string) => { // REMAINS PLAIN FUNCTION
+  const handleSupplierChange = (selectedSupplierCode: string) => {
     form.setValue('vendorName', selectedSupplierCode, { shouldValidate: true });
     const supplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (supplier) {
@@ -229,6 +233,7 @@ export function POForm() {
       form.setValue('billingAddress', '', { shouldValidate: true });
     }
   };
+  // }, [form, suppliers]);
 
   const handleRequestedByChange = (selectedUserId: string) => {
       form.setValue('requestedBy', selectedUserId, { shouldValidate: true });
@@ -423,7 +428,7 @@ export function POForm() {
 
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
-            {/* {fields.map((field, index) => ( // Commented out for diagnosis
+            {/* {fields.map((field, index) => ( // REMAINS COMMENTED OUT
               <div key={field.id} className="space-y-3 p-4 border rounded-md relative">
                 <div className="flex justify-between items-center mb-2">
                   <FormLabel className="text-md font-semibold">Item #{index + 1}</FormLabel>
@@ -567,8 +572,8 @@ export function POForm() {
             <Button
               type="button"
               variant="outline"
-              // onClick={() => append(defaultItem)} // append would be undefined if useFieldArray is commented out
-              onClick={() => console.log("Add item clicked - useFieldArray is currently commented out for diagnosis")}
+              // onClick={() => append(defaultItem)} // REMAINS COMMENTED OUT
+              onClick={() => console.log("Add item clicked - useFieldArray is currently commented out")}
               className="mt-0"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
@@ -618,3 +623,4 @@ export function POForm() {
     </Card>
   );
 }
+
