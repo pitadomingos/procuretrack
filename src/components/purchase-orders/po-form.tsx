@@ -123,26 +123,23 @@ export function POForm() {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
-          fetch('/api/suppliers'),
-          fetch('/api/sites'),
-          fetch('/api/categories'),
-          fetch('/api/approvers'),
-          fetch('/api/users'),
-        ]);
-
+        const suppliersRes = await fetch('/api/suppliers');
         if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
         setSuppliers(await suppliersRes.json());
 
+        const sitesRes = await fetch('/api/sites');
         if (!sitesRes.ok) throw new Error('Failed to fetch sites');
         setSites(await sitesRes.json());
 
+        const categoriesRes = await fetch('/api/categories');
         if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
         setCategories(await categoriesRes.json());
 
+        const approversRes = await fetch('/api/approvers');
         if (!approversRes.ok) throw new Error('Failed to fetch approvers');
         setApproversData(await approversRes.json());
 
+        const usersRes = await fetch('/api/users');
         if (!usersRes.ok) throw new Error('Failed to fetch users');
         setUsers(await usersRes.json());
 
@@ -165,38 +162,37 @@ export function POForm() {
 
   // useEffect for Totals Calculation
   useEffect(() => {
-    let currentSubTotal = 0;
     const items = watchedItems || [];
     const pricesIncludeVat = watchedPricesIncludeVat;
     const currency = watchedCurrency;
 
+    let calculatedInputSum = 0;
     items.forEach((item: any) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
-        currentSubTotal += quantity * unitPrice;
+        calculatedInputSum += quantity * unitPrice;
     });
 
-    let currentVatAmount = 0;
+    let newDisplaySubTotal = calculatedInputSum;
+    let newDisplayVatAmount = 0;
 
     if (currency === 'MZN') {
-        if (pricesIncludeVat) {
-            // If prices include VAT, we need to calculate the base subtotal and the VAT amount from the total.
-            // Assuming VAT is 16%, GrossPrice = NetPrice * 1.16
-            // So, NetPrice = GrossPrice / 1.16
-            const subTotalExcludingVat = currentSubTotal / 1.16;
-            currentVatAmount = currentSubTotal - subTotalExcludingVat;
-            currentSubTotal = subTotalExcludingVat; // This is the net subtotal
-        } else {
-            // If prices do NOT include VAT, calculate VAT on the currentSubTotal.
-            currentVatAmount = currentSubTotal * 0.16;
+        if (pricesIncludeVat) { // User entered GROSS prices
+            newDisplaySubTotal = calculatedInputSum / 1.16; // Calculate NET subtotal
+            newDisplayVatAmount = calculatedInputSum - newDisplaySubTotal; // Calculate VAT amount
+        } else { // User entered NET prices
+            // newDisplaySubTotal remains calculatedInputSum (which is NET)
+            newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate VAT on NET
         }
+    } else {
+        // For non-MZN currencies, VAT is 0. newDisplaySubTotal remains calculatedInputSum.
+        newDisplayVatAmount = 0;
     }
-    // For USD or other currencies, VAT is assumed to be 0 or handled differently (not specified yet)
-    // For now, if not MZN, VAT is 0.
 
-    setSubTotal(currentSubTotal);
-    setVatAmount(currentVatAmount);
-    setGrandTotal(currentSubTotal + currentVatAmount);
+    // Round to 2 decimal places to avoid floating point issues in display and further calculations
+    setSubTotal(parseFloat(newDisplaySubTotal.toFixed(2)));
+    setVatAmount(parseFloat(newDisplayVatAmount.toFixed(2)));
+    setGrandTotal(parseFloat((newDisplaySubTotal + newDisplayVatAmount).toFixed(2)));
 
   }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]);
 
@@ -207,12 +203,11 @@ export function POForm() {
 
     const purchaseOrderPayload = {
       poNumber: poNumber,
-      creationDate: poDate, // Or new Date().toISOString() if you want submission time
+      creationDate: poDate, 
       creatorUserId: formData.requestedBy,
-      supplierId: formData.vendorName, // This holds supplierCode
+      supplierId: formData.vendorName, 
       approverUserId: formData.approver,
-      // siteId: null, // Not collected at PO header level in current form
-      status: 'Pending Approval', // Default status
+      status: 'Pending Approval', 
       subTotal: subTotal,
       vatAmount: vatAmount,
       grandTotal: grandTotal,
@@ -222,14 +217,12 @@ export function POForm() {
       items: formData.items.map((item: any) => ({
         partNumber: item.partNumber,
         description: item.description,
-        categoryId: item.category, // This is categoryId
+        categoryId: item.category, 
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
-        // allocation (item.allocation which is siteId) is not directly in POItem table schema,
-        // but might be used for other logic or linked tables not yet defined.
+        // allocation (item.allocation which is siteId) will be handled during actual DB insertion
       })),
-      // For API backend, include other relevant fields from formData directly if needed
       vendorEmail: formData.vendorEmail,
       salesPerson: formData.salesPerson,
       supplierContactNumber: formData.supplierContactNumber,
@@ -251,7 +244,7 @@ export function POForm() {
   const handleSupplierChange = (selectedSupplierCode: string) => {
     const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (selectedSupplier) {
-      form.setValue('vendorName', selectedSupplier.supplierCode); // Store code in vendorName
+      form.setValue('vendorName', selectedSupplier.supplierCode); 
       form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
       form.setValue('salesPerson', selectedSupplier.salesPerson || '');
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
@@ -293,7 +286,7 @@ export function POForm() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="vendorName" // This field now effectively stores supplierCode
+                  name="vendorName" 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supplier Name</FormLabel>
@@ -571,3 +564,4 @@ export function POForm() {
     </Card>
   );
 }
+
