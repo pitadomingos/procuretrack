@@ -35,7 +35,7 @@ export default function CreateDocumentPage() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              This section will allow you to create, send, and track quotations for services or products your company offers to its clients. 
+              This section will allow you to create, send, and track quotations for services or products Jachris Mining Services offers to its clients. 
               This is separate from managing quotations received from your suppliers. This feature is planned for a future update.
             </p>
           </CardContent>
