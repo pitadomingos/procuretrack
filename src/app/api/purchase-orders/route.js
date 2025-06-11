@@ -1,14 +1,12 @@
 
-import { pool } from '../../../../backend/db.js'; // Adjust path as needed
+import { pool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 import multer from 'multer';
 import csv from 'csv-parser';
-import { Readable } from 'stream'; // Import Readable stream
+import { Readable } from 'stream';
 
-// Configure multer for file uploads
-const upload = multer({ dest: '/tmp/uploads/' }); // Store uploads temporarily
+const upload = multer({ dest: '/tmp/uploads/' });
 
-// Helper function to run multer middleware
 const runMiddleware = (req, res, fn) => {
  return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
@@ -29,21 +27,21 @@ export async function GET() {
   }
 }
 
-// POST handler for uploading purchase orders OR creating a new PO via JSON
 export async function POST(request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('application/json')) {
-    // Handle JSON PO creation
     let connection;
     try {
       const poData = await request.json();
       const {
         poNumber,
         creationDate,
-        creatorUserId,
-        supplierId, // This is supplierCode
-        approverUserId,
+        creatorUserId, // Expecting null for now, or Firebase User ID later
+        requestedByName, // New field for the requester's name
+        supplierId,    // This is supplierCode
+        approverId,    // This is Approver.id
+        // siteId,     // Overall PO siteId, not currently in form header
         status,
         subTotal,
         vatAmount,
@@ -57,25 +55,27 @@ export async function POST(request) {
       connection = await pool.getConnection();
       await connection.beginTransaction();
 
+      // Ensure creatorUserId is explicitly null if not provided or empty
+      const finalCreatorUserId = creatorUserId || null;
+
       const [poResult] = await connection.execute(
-        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, supplierId, approverUserId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [poNumber, new Date(creationDate), creatorUserId, supplierId, approverUserId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
+        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
       );
 
       const newPoId = poResult.insertId;
 
       if (items && items.length > 0) {
         for (const item of items) {
-          let categoryIdToInsert = Number(item.categoryId);
-          if (isNaN(categoryIdToInsert) || categoryIdToInsert === 0) {
-            categoryIdToInsert = null; // Handle empty/invalid category selection
-          }
-
+          // item.allocation is Site.id, item.categoryId is Category.id (number | null)
+          // The POItem table itself doesn't have an 'allocation' or 'siteId' column in the current schema.
+          // If it needs to be linked to a site per item, the POItem table needs a siteId column.
+          // For now, item.allocation is not saved to POItem table.
           await connection.execute(
             `INSERT INTO POItem (poId, partNumber, description, categoryId, uom, quantity, unitPrice)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [newPoId, item.partNumber, item.description, categoryIdToInsert, item.uom, Number(item.quantity), Number(item.unitPrice)]
+            [newPoId, item.partNumber, item.description, item.categoryId, item.uom, Number(item.quantity), Number(item.unitPrice)]
           );
         }
       }
@@ -88,8 +88,6 @@ export async function POST(request) {
         await connection.rollback();
       }
       console.error('Error creating purchase order from JSON:', dbError);
-      // It's good to send a more generic error message to the client for security.
-      // Specific details are logged on the server.
       return NextResponse.json({ error: 'Failed to create purchase order due to a server error.', details: dbError.message }, { status: 500 });
     } finally {
       if (connection) {
@@ -98,35 +96,26 @@ export async function POST(request) {
     }
   } else {
     // Handle existing CSV file upload logic
-    const res = new NextResponse(); // Create a NextResponse instance for multer
-
+    const res = new NextResponse();
     try {
-      // Run the multer middleware
       await runMiddleware(request, res, upload.single('file'));
-
-      const file = request.file; // Access the uploaded file
-
+      const file = request.file;
       if (!file) {
         return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
       }
-
       const results = [];
-      const stream = Readable.from(file.buffer); // Create a readable stream from the buffer
-
+      const stream = Readable.from(file.buffer);
       await new Promise((resolve, reject) => {
         stream
           .pipe(csv())
           .on('data', (data) => results.push(data))
           .on('end', () => {
             console.log('Parsed CSV data for purchase orders:', results);
-            // TODO: Add logic for validating and inserting purchase order data from CSV
             resolve();
           })
           .on('error', reject);
       });
-
       return NextResponse.json({ message: 'Purchase order file uploaded and parsed successfully. Processing not yet implemented.', data: results });
-
     } catch (error) {
       console.error('Error handling purchase order file upload:', error);
       return NextResponse.json({ error: 'Failed to handle purchase order file upload' }, { status: 500 });

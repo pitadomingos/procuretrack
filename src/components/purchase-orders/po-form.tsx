@@ -1,15 +1,11 @@
 
 'use client';
 
-// import { zodResolver } from '@hookform/resolvers/zod'; // Zod still commented
 import { useForm, useFieldArray } from 'react-hook-form';
-// import type * as z from 'zod'; // Zod still commented
-// import type { ChangeEvent } from 'react'; // Not used
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  // FormDescription, // Not used
   FormField,
   FormItem,
   FormLabel,
@@ -23,39 +19,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { Supplier, Site, Category as CategoryType, Approver } from '@/types'; // User type removed
+import type { Supplier, Site, Category as CategoryType, Approver, POItem as POItemType, PurchaseOrderPayload, POItemPayload } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
-// Zod Schemas remain commented out
-/*
-const poItemSchema = z.object({
-  partNumber: z.string().optional(),
-  description: z.string().min(1, 'Description is required'),
-  category: z.string().min(1, 'Category is required'),
-  allocation: z.string().min(1, 'Allocation is required'),
-  uom: z.string().min(1, 'UOM is required'),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  unitPrice: z.coerce.number().min(0.01, 'Unit price must be positive'),
-});
-*/
-// export type POItemSchemaType = z.infer<typeof poItemSchema>;
+// Using 'any' for form values temporarily to simplify until Zod is fully integrated.
+type POFormValues = any;
 
-
-/*
-const poFormSchema = z.object({
-  vendorName: z.string().min(1, 'Supplier name is required'),
-  vendorEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
-  // ... other fields ...
-  items: z.array(poItemSchema).min(1, 'At least one item is required'),
-});
-*/
-
-// type POFormValues = z.infer<typeof poFormSchema>; // Zod-inferred type commented
-type POFormValues = any; // Simplified to any for now
-
-// const defaultItem: POItemSchemaType = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0 }; // Zod-inferred defaultItem commented
-const defaultItem: any = { partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0.00 };
+const defaultItem: POItemType = { id: crypto.randomUUID(), partNumber: '', description: '', category: '', allocation: '', uom: '', quantity: 1, unitPrice: 0.00 };
 
 
 export function POForm() {
@@ -68,10 +39,8 @@ export function POForm() {
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [approvers, setApproversData] = useState<Approver[]>([]);
-  // const [users, setUsers] = useState<User[]>([]); // Removed users state
 
   const form = useForm<POFormValues>({
-    // resolver: zodResolver(poFormSchema), // Still commented
     defaultValues: {
       vendorName: '', // This will hold supplierCode
       vendorEmail: '',
@@ -83,13 +52,13 @@ export function POForm() {
       poDate: new Date().toISOString().split('T')[0],
       poNumberDisplay: 'Loading PO...',
       currency: 'MZN',
-      requestedBy: '', // Now a text input
+      requestedBy: '', // Text input for who requested the PO
       approver: '', // This will hold Approver.id
       pricesIncludeVat: false,
       notes: '',
       items: [defaultItem],
     },
-    mode: 'onBlur', // Validate on blur to show errors after user interacts
+    mode: 'onBlur',
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -133,7 +102,6 @@ export function POForm() {
           fetch('/api/sites'),
           fetch('/api/categories'),
           fetch('/api/approvers'),
-          // fetch('/api/users') // Removed user fetch
         ]);
 
         if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
@@ -147,9 +115,6 @@ export function POForm() {
 
         if (!approversRes.ok) throw new Error('Failed to fetch approvers');
         setApproversData(await approversRes.json());
-
-        // if (!usersRes.ok) throw new Error('Failed to fetch users'); // Removed user fetch
-        // setUsers(await usersRes.json()); // Removed user fetch
 
       } catch (error) {
         console.error("Error fetching dropdown data:", error);
@@ -184,15 +149,14 @@ export function POForm() {
     let newDisplayVatAmount = 0;
 
     if (currency === 'MZN') {
-      if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive" - custom logic
-          newDisplaySubTotal = calculatedInputSum;
+      if (pricesIncludeVat) {
+          newDisplaySubTotal = calculatedInputSum; // Total sum from inputs
           newDisplayVatAmount = 0; // VAT is 0 as per user request
-      } else { // User UNCHECKED "Prices are VAT inclusive"
-          newDisplaySubTotal = calculatedInputSum;
+      } else {
+          newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is net
           newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate 16% VAT on net subtotal
       }
     } else {
-        // For non-MZN currencies, VAT is 0
         newDisplaySubTotal = calculatedInputSum;
         newDisplayVatAmount = 0;
     }
@@ -205,25 +169,25 @@ export function POForm() {
 
 
   const onSubmit = async (formData: POFormValues) => {
-    // Check for at least one item
     if (!formData.items || formData.items.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please add at least one item to the purchase order.",
         variant: "destructive",
       });
-      return; // Stop submission
+      return;
     }
 
     const poNumber = form.getValues('poNumberDisplay');
     const poDate = form.getValues('poDate');
 
-    const purchaseOrderPayload = {
+    const purchaseOrderPayload: PurchaseOrderPayload = {
       poNumber: poNumber,
-      creationDate: poDate,
-      creatorUserId: formData.requestedBy, // This is now a text string
-      supplierId: formData.vendorName,
-      approverUserId: formData.approver, // This is now Approver.id
+      creationDate: new Date(poDate).toISOString(),
+      creatorUserId: null, // To be replaced with Firebase Auth User ID later
+      requestedByName: formData.requestedBy, // Text input for the requester
+      supplierId: formData.vendorName, // This is supplierCode
+      approverId: formData.approver, // This is Approver.id
       status: 'Pending Approval',
       subTotal: subTotal,
       vatAmount: vatAmount,
@@ -231,18 +195,18 @@ export function POForm() {
       currency: formData.currency,
       pricesIncludeVat: formData.pricesIncludeVat,
       notes: formData.notes,
-      items: formData.items.map((item: any) => ({
+      items: formData.items.map((item: POItemType): POItemPayload => ({
         partNumber: item.partNumber,
         description: item.description,
-        categoryId: item.category, 
+        categoryId: item.category ? Number(item.category) : null, 
+        allocation: item.allocation, // Site.id as string
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
-        allocation: item.allocation, 
       })),
     };
 
-    console.log('Submitting PO Payload:', purchaseOrderPayload); // Keep this log for now
+    console.log('Submitting PO Payload:', purchaseOrderPayload);
 
     try {
       const response = await fetch('/api/purchase-orders', {
@@ -255,7 +219,7 @@ export function POForm() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to submit PO. Server returned an unreadable error.' }));
-        console.error('Server error details:', errorData.details); // Log server-side details
+        console.error('Server error details:', errorData.details);
         throw new Error(errorData.error || `Server error: ${response.status} - ${errorData.details || response.statusText}`);
       }
 
@@ -291,9 +255,7 @@ export function POForm() {
     }
   };
 
-  // Removed handleRequestedByChange as it's now a text input
-
-  const handleApproverChange = (selectedApproverId: string) => { // Parameter is Approver.id
+  const handleApproverChange = (selectedApproverId: string) => {
     form.setValue('approver', selectedApproverId);
     form.clearErrors('approver'); 
   };
@@ -305,9 +267,10 @@ export function POForm() {
 
   const handleItemAllocationChange = (index: number, selectedSiteId: string) => {
     form.setValue(`items.${index}.allocation`, selectedSiteId, { shouldValidate: true });
+    form.clearErrors(`items.${index}.allocation`);
   };
   
-  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
+  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; // Or other symbols as needed
 
 
   return (
@@ -347,11 +310,11 @@ export function POForm() {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. lebreya@fulaho.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr Eugenio" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. 258 84 784 3306" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 401034676" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. EST741" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. supplier@example.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr. Sales" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. QT-001" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
 
                 <FormField 
                   control={form.control} 
@@ -382,7 +345,7 @@ export function POForm() {
               <FormItem>
                 <FormLabel>Supplier Address (for PDF)</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Enter supplier's address e.g. En7, Matema Loja 3, Tete" {...field} />
+                  <Textarea placeholder="Enter supplier's billing address..." {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -401,7 +364,7 @@ export function POForm() {
                     <FormItem>
                       <FormLabel>Requested By</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter requester's name" {...field} />
+                        <Input placeholder="Enter requester's name (e.g. Driver, Technician)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -410,7 +373,7 @@ export function POForm() {
 
                 <FormField
                   control={form.control}
-                  name="approver"
+                  name="approver" // This field now stores Approver.id
                   rules={{ required: 'Approver is required' }}
                   render={({ field }) => (
                     <FormItem>
@@ -423,8 +386,8 @@ export function POForm() {
                         </FormControl>
                         <SelectContent>
                           {approvers.map(appr => (
-                            <SelectItem key={appr.id} value={appr.id}> {/* Use appr.id as value */}
-                              {appr.name} {/* Display appr.name */}
+                            <SelectItem key={appr.id} value={appr.id}> 
+                              {appr.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -460,7 +423,6 @@ export function POForm() {
               const itemQuantity = form.watch(`items.${index}.quantity`) || 0;
               const itemUnitPrice = form.watch(`items.${index}.unitPrice`) || 0;
               const itemTotal = (Number(itemQuantity) * Number(itemUnitPrice)).toFixed(2);
-
 
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
@@ -502,13 +464,13 @@ export function POForm() {
                     />
                     <FormField
                       control={form.control}
-                      name={`items.${index}.allocation`}
+                      name={`items.${index}.allocation`} // This is the Site ID for the item
                       rules={{ required: 'Allocation (Site) is required for each item' }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Allocation (Site)</FormLabel>
                            <Select onValueChange={(value) => { field.onChange(value); handleItemAllocationChange(index, value); }} value={field.value || ''}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select allocation" /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select allocation site" /></SelectTrigger></FormControl>
                             <SelectContent>
                               {sites.map(site => (
                                 <SelectItem key={site.id} value={site.id.toString()}>
@@ -593,7 +555,7 @@ export function POForm() {
               type="button"
               variant="outline"
               onClick={() => {
-                append(defaultItem);
+                append({...defaultItem, id: crypto.randomUUID() }); // Ensure new items get unique IDs
                 form.trigger(); 
               }}
               className="mt-0"
@@ -623,10 +585,16 @@ export function POForm() {
 
             <div className="grid md:grid-cols-2 gap-6 items-start">
               <div className="space-y-6">
-                <div className="space-y-1">
-                  <Label>Creator Name</Label>
+                 <div className="space-y-1">
+                  <Label>Requester Name</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     {form.watch('requestedBy') || 'Enter requester name'}
+                     {form.watch('requestedBy') || 'Enter requester name above'}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label>Creator Name (Logged-in User)</Label>
+                  <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
+                     System User (To be implemented with Firebase Auth)
                   </div>
                 </div>
               </div>
@@ -654,7 +622,7 @@ export function POForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Upon submission, this purchase order will be saved to the database.
+          Upon submission, this purchase order will be saved to the database. Ensure all database schema changes have been applied.
         </p>
       </CardFooter>
     </Card>

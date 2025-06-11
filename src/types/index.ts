@@ -23,16 +23,16 @@ export interface ChartDataPoint {
   [key: string]: number | string; // values for different series
 }
 
+// For PO Form state and item structure within the form
 export interface POItem {
-  id: string;
+  id: string; // Client-side ID for react-hook-form field array
   partNumber?: string;
   description: string;
-  category: string; // Stores Category ID as string
-  allocation: string; // Stores Site ID as string
+  category: string; // Stores Category ID as string (from form select value)
+  allocation: string; // Stores Site ID as string (from form select value)
   uom: string;
   quantity: number;
   unitPrice: number;
-  // total is calculated dynamically, so not stored in the item itself in the form state
 }
 
 export interface Supplier {
@@ -45,30 +45,28 @@ export interface Supplier {
   emailAddress?: string | null;
 }
 
-// Management Entity Types
 export interface Approver {
   id: string; // This is Approver.id from the Approver table
   name: string;
   email?: string | null;
   department?: string | null;
   isActive?: boolean | null;
-  // approvalLimit?: number | null; // Available in DB but not currently used in UI
 }
 
 export interface User {
   id: string;
   name: string;
-  email?: string | null; // Changed to optional and nullable to match DB schema better
-  role: 'Admin' | 'Manager' | 'User' | 'Viewer' | string; // Allow string for flexibility if other roles exist
-  siteAccess?: string[]; // Made optional as it might not always be present
+  email?: string | null;
+  role: 'Admin' | 'Manager' | 'User' | 'Viewer' | string;
+  siteAccess?: string[];
   isActive: boolean;
 }
 
 export interface Site {
-  id: number; // Changed from string to number
+  id: number;
   name: string;
-  location?: string | null; // Made optional and nullable
-  siteCode?: string | null; // Made optional and nullable
+  location?: string | null;
+  siteCode?: string | null;
 }
 
 export interface Allocation {
@@ -79,11 +77,36 @@ export interface Allocation {
 }
 
 export interface Category {
-  id: number; // Changed from string to number
-  category: string; // Field name in DB is 'category', not 'name'
-  // Description and parentCategory are not in the simple Category table based on scripts.
-  // If they were, they would be defined here.
-  // For example:
-  // description?: string;
-  // parentCategory?: number; // Assuming parent ID is also a number
+  id: number;
+  category: string;
+}
+
+// Payload for creating a PO Item (sent to backend)
+export interface POItemPayload {
+  partNumber?: string | null;
+  description: string;
+  categoryId: number | null; // Converted to number or null before sending
+  allocation: string; // This is Site.id for the item, sent as string
+  uom: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+// Payload for creating a Purchase Order (sent to backend)
+export interface PurchaseOrderPayload {
+  poNumber: string;
+  creationDate: string; // ISO date string
+  creatorUserId: string | null; // Firebase User ID, null for now
+  requestedByName?: string | null; // New field for the free-text requester
+  supplierId: string; // This is supplierCode from Supplier table
+  approverId: string; // This is Approver.id from Approver table
+  siteId?: number | null; // Overall PO Site ID - currently not in form header, items have allocation (siteId)
+  status: string;
+  subTotal: number;
+  vatAmount: number;
+  grandTotal: number;
+  currency: string;
+  pricesIncludeVat: boolean;
+  notes?: string | null;
+  items: POItemPayload[];
 }
