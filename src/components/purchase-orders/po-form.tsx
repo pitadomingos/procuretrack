@@ -67,7 +67,7 @@ export function POForm() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [approvers, setApproversData] = useState<Approver[]>([]);
+  const [approvers, setApproversData] = useState<Approver[]>([]); // Type updated by import
   const [users, setUsers] = useState<User[]>([]);
 
   const form = useForm<POFormValues>({
@@ -84,7 +84,7 @@ export function POForm() {
       poNumberDisplay: 'Loading PO...',
       currency: 'MZN',
       requestedBy: '', // This will hold userId
-      approver: '', // This will hold approverId
+      approver: '', // This will hold User.id for the selected approver
       pricesIncludeVat: false,
       notes: '',
       items: [defaultItem],
@@ -128,23 +128,27 @@ export function POForm() {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const suppliersRes = await fetch('/api/suppliers');
+        const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
+          fetch('/api/suppliers'),
+          fetch('/api/sites'),
+          fetch('/api/categories'),
+          fetch('/api/approvers'),
+          fetch('/api/users')
+        ]);
+
         if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
         setSuppliers(await suppliersRes.json());
 
-        const sitesRes = await fetch('/api/sites');
         if (!sitesRes.ok) throw new Error('Failed to fetch sites');
         setSites(await sitesRes.json());
 
-        const categoriesRes = await fetch('/api/categories');
         if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
         setCategories(await categoriesRes.json());
 
-        const approversRes = await fetch('/api/approvers');
         if (!approversRes.ok) throw new Error('Failed to fetch approvers');
         setApproversData(await approversRes.json());
 
-        const usersRes = await fetch('/api/users');
+
         if (!usersRes.ok) throw new Error('Failed to fetch users');
         setUsers(await usersRes.json());
 
@@ -181,8 +185,8 @@ export function POForm() {
     let newDisplayVatAmount = 0;
 
     if (currency === 'MZN') {
-        if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive"
-            newDisplaySubTotal = calculatedInputSum;
+        if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive" - as per user's specific request
+            newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal (which is gross)
             newDisplayVatAmount = 0; // VAT amount is explicitly 0
         } else { // User UNCHECKED "Prices are VAT inclusive"
             newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal (net)
@@ -220,7 +224,7 @@ export function POForm() {
       creationDate: poDate,
       creatorUserId: formData.requestedBy,
       supplierId: formData.vendorName,
-      approverUserId: formData.approver,
+      approverUserId: formData.approver, // This should now be User.id
       status: 'Pending Approval',
       subTotal: subTotal,
       vatAmount: vatAmount,
@@ -291,8 +295,8 @@ export function POForm() {
     form.clearErrors('requestedBy'); // Clear error on manual change
   };
 
-  const handleApproverChange = (selectedApproverId: string) => {
-    form.setValue('approver', selectedApproverId);
+  const handleApproverChange = (selectedUserApproverId: string) => { // Parameter is now User.id
+    form.setValue('approver', selectedUserApproverId);
     form.clearErrors('approver'); // Clear error on manual change
   };
 
@@ -433,8 +437,8 @@ export function POForm() {
                         </FormControl>
                         <SelectContent>
                           {approvers.map(appr => (
-                            <SelectItem key={appr.id} value={appr.id}>
-                              {appr.name}
+                            <SelectItem key={appr.id} value={appr.userId}> {/* Use appr.userId as value */}
+                              {appr.name} {/* Display appr.name */}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -671,6 +675,3 @@ export function POForm() {
     </Card>
   );
 }
-
-
-    

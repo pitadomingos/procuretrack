@@ -47,27 +47,28 @@ export interface Supplier {
 
 // Management Entity Types
 export interface Approver {
-  id: string;
+  id: string; // This is Approver.id from the Approver table
   name: string;
-  email: string;
+  email?: string | null; // Email from Approver table
   department?: string;
   isActive: boolean;
+  userId: string; // This is User.id from the User table, linked via email
 }
 
 export interface User {
   id: string;
   name: string;
-  email: string;
-  role: 'Admin' | 'Manager' | 'User' | 'Viewer';
-  siteAccess: string[]; // Array of site IDs or names
+  email?: string | null; // Changed to optional and nullable to match DB schema better
+  role: 'Admin' | 'Manager' | 'User' | 'Viewer' | string; // Allow string for flexibility if other roles exist
+  siteAccess?: string[]; // Made optional as it might not always be present
   isActive: boolean;
 }
 
 export interface Site {
   id: number; // Changed from string to number
   name: string;
-  location: string;
-  siteCode?: string;
+  location?: string | null; // Made optional and nullable
+  siteCode?: string | null; // Made optional and nullable
 }
 
 export interface Allocation {
