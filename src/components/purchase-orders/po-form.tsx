@@ -2,7 +2,7 @@
 'use client';
 
 // import { zodResolver } from '@hookform/resolvers/zod'; // Zod still commented
-import { useForm, useFieldArray } from 'react-hook-form'; // useFieldArray will be effectively unused for now
+import { useForm, useFieldArray } from 'react-hook-form';
 // import type * as z from 'zod'; // Zod still commented
 // import type { ChangeEvent } from 'react'; // Not used
 import { Button } from '@/components/ui/button';
@@ -96,27 +96,33 @@ export function POForm() {
     name: 'items',
   });
 
-  // useEffect for PO Number Generation
-  useEffect(() => {
-    const fetchNextPONumber = async () => {
-      try {
-        const response = await fetch('/api/purchase-orders/next-po-number');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch next PO number: ${response.statusText}`);
-        }
-        const data = await response.json();
-        if (data.nextPoNumber) {
-          form.setValue('poNumberDisplay', data.nextPoNumber);
-        } else {
-          form.setValue('poNumberDisplay', 'PO-ERROR');
-        }
-      } catch (error) {
-        console.error("Error fetching next PO number:", error);
+  const fetchNextPONumber = useCallback(async () => {
+    try {
+      const response = await fetch('/api/purchase-orders/next-po-number');
+      if (!response.ok) {
+        throw new Error(`Failed to fetch next PO number: ${response.statusText}`);
+      }
+      const data = await response.json();
+      if (data.nextPoNumber) {
+        form.setValue('poNumberDisplay', data.nextPoNumber);
+      } else {
         form.setValue('poNumberDisplay', 'PO-ERROR');
       }
-    };
+    } catch (error) {
+      console.error("Error fetching next PO number:", error);
+      form.setValue('poNumberDisplay', 'PO-ERROR');
+      toast({
+        title: "Error",
+        description: "Could not load next PO number.",
+        variant: "destructive",
+      });
+    }
+  }, [form, toast]);
+
+  // useEffect for PO Number Generation
+  useEffect(() => {
     fetchNextPONumber();
-  }, [form]);
+  }, [fetchNextPONumber]);
 
 
   // useEffect for fetching dropdown data
@@ -178,12 +184,10 @@ export function POForm() {
 
     if (currency === 'MZN') {
         if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive"
-            // Subtotal is the sum of item totals (which are considered gross)
-            newDisplaySubTotal = calculatedInputSum;
+            newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal
             newDisplayVatAmount = 0; // VAT amount is explicitly 0
         } else { // User UNCHECKED "Prices are VAT inclusive"
-            // Subtotal is the sum of item totals (which are considered net)
-            newDisplaySubTotal = calculatedInputSum;
+            newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal (net)
             newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate 16% VAT on net subtotal
         }
     } else {
@@ -192,7 +196,6 @@ export function POForm() {
         newDisplayVatAmount = 0;
     }
 
-    // Round to 2 decimal places to avoid floating point issues in display and further calculations
     setSubTotal(parseFloat(newDisplaySubTotal.toFixed(2)));
     setVatAmount(parseFloat(newDisplayVatAmount.toFixed(2)));
     setGrandTotal(parseFloat((newDisplaySubTotal + newDisplayVatAmount).toFixed(2)));
@@ -200,17 +203,17 @@ export function POForm() {
   }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]);
 
 
-  const onSubmit = (formData: POFormValues) => {
+  const onSubmit = async (formData: POFormValues) => {
     const poNumber = form.getValues('poNumberDisplay');
     const poDate = form.getValues('poDate');
 
     const purchaseOrderPayload = {
       poNumber: poNumber,
-      creationDate: poDate, 
+      creationDate: poDate,
       creatorUserId: formData.requestedBy,
-      supplierId: formData.vendorName, 
+      supplierId: formData.vendorName,
       approverUserId: formData.approver,
-      status: 'Pending Approval', 
+      status: 'Pending Approval',
       subTotal: subTotal,
       vatAmount: vatAmount,
       grandTotal: grandTotal,
@@ -220,34 +223,52 @@ export function POForm() {
       items: formData.items.map((item: any) => ({
         partNumber: item.partNumber,
         description: item.description,
-        categoryId: item.category, 
+        categoryId: item.category,
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
-        // allocation (item.allocation which is siteId) will be handled during actual DB insertion
+        // item.allocation (siteId for POItem) is present here but will be omitted by backend if POItem table doesn't have a corresponding column
+        allocation: item.allocation,
       })),
-      vendorEmail: formData.vendorEmail,
-      salesPerson: formData.salesPerson,
-      supplierContactNumber: formData.supplierContactNumber,
-      nuit: formData.nuit,
-      quoteNo: formData.quoteNo,
-      billingAddress: formData.billingAddress,
     };
 
-    console.log('Submitting Purchase Order Data:', purchaseOrderPayload);
-    toast({
-      title: 'PO Submitted (Simulation)',
-      description: 'Purchase Order data prepared and logged to console.',
-      duration: 5000,
-    });
-    // form.reset(); // Optionally reset form after submission
+    try {
+      const response = await fetch('/api/purchase-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(purchaseOrderPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to submit PO. Server returned an unreadable error.' }));
+        throw new Error(errorData.error || `Server error: ${response.status} - ${errorData.details || response.statusText}`);
+      }
+
+      const result = await response.json();
+      toast({
+        title: 'Success!',
+        description: `Purchase Order ${result.poNumber} (ID: ${result.poId}) created successfully.`,
+      });
+      form.reset(); // Reset form on success
+      await fetchNextPONumber(); // Fetch and set the next PO number
+
+    } catch (error: any) {
+      console.error('Error submitting PO:', error);
+      toast({
+        title: 'Error Submitting PO',
+        description: error.message || 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    }
   };
 
 
   const handleSupplierChange = (selectedSupplierCode: string) => {
     const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (selectedSupplier) {
-      form.setValue('vendorName', selectedSupplier.supplierCode); 
+      form.setValue('vendorName', selectedSupplier.supplierCode);
       form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
       form.setValue('salesPerson', selectedSupplier.salesPerson || '');
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
@@ -289,7 +310,7 @@ export function POForm() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="vendorName" 
+                  name="vendorName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supplier Name</FormLabel>
@@ -533,7 +554,7 @@ export function POForm() {
                 <div className="space-y-1">
                   <Label>Creator Name</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     System User (Placeholder - to be derived from logged-in user)
+                     {users.find(u => u.id === form.watch('requestedBy'))?.name || 'Select requester'}
                   </div>
                 </div>
               </div>
@@ -553,15 +574,15 @@ export function POForm() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full sm:w-auto" size="lg">
-              <Send className="mr-2 h-4 w-4" /> Submit PO
+            <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={form.formState.isSubmitting}>
+              <Send className="mr-2 h-4 w-4" /> {form.formState.isSubmitting ? 'Submitting...' : 'Submit PO'}
             </Button>
           </form>
         </Form>
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Upon submission, this will prepare the PO data. Actual database saving and email sending will be implemented next.
+          Upon submission, this purchase order will be saved to the database.
         </p>
       </CardFooter>
     </Card>
