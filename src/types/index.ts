@@ -49,10 +49,10 @@ export interface Supplier {
 export interface Approver {
   id: string; // This is Approver.id from the Approver table
   name: string;
-  email?: string | null; // Email from Approver table
-  department?: string;
-  isActive: boolean;
-  userId: string; // This is User.id from the User table, linked via email
+  email?: string | null;
+  department?: string | null;
+  isActive?: boolean | null;
+  // approvalLimit?: number | null; // Available in DB but not currently used in UI
 }
 
 export interface User {

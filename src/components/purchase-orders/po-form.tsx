@@ -23,7 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types';
+import type { Supplier, Site, Category as CategoryType, Approver } from '@/types'; // User type removed
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -67,8 +67,8 @@ export function POForm() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [approvers, setApproversData] = useState<Approver[]>([]); // Type updated by import
-  const [users, setUsers] = useState<User[]>([]);
+  const [approvers, setApproversData] = useState<Approver[]>([]);
+  // const [users, setUsers] = useState<User[]>([]); // Removed users state
 
   const form = useForm<POFormValues>({
     // resolver: zodResolver(poFormSchema), // Still commented
@@ -83,8 +83,8 @@ export function POForm() {
       poDate: new Date().toISOString().split('T')[0],
       poNumberDisplay: 'Loading PO...',
       currency: 'MZN',
-      requestedBy: '', // This will hold userId
-      approver: '', // This will hold User.id for the selected approver
+      requestedBy: '', // Now a text input
+      approver: '', // This will hold Approver.id
       pricesIncludeVat: false,
       notes: '',
       items: [defaultItem],
@@ -128,12 +128,12 @@ export function POForm() {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
+        const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
           fetch('/api/suppliers'),
           fetch('/api/sites'),
           fetch('/api/categories'),
           fetch('/api/approvers'),
-          fetch('/api/users')
+          // fetch('/api/users') // Removed user fetch
         ]);
 
         if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
@@ -148,9 +148,8 @@ export function POForm() {
         if (!approversRes.ok) throw new Error('Failed to fetch approvers');
         setApproversData(await approversRes.json());
 
-
-        if (!usersRes.ok) throw new Error('Failed to fetch users');
-        setUsers(await usersRes.json());
+        // if (!usersRes.ok) throw new Error('Failed to fetch users'); // Removed user fetch
+        // setUsers(await usersRes.json()); // Removed user fetch
 
       } catch (error) {
         console.error("Error fetching dropdown data:", error);
@@ -185,13 +184,13 @@ export function POForm() {
     let newDisplayVatAmount = 0;
 
     if (currency === 'MZN') {
-        if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive" - as per user's specific request
-            newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal (which is gross)
-            newDisplayVatAmount = 0; // VAT amount is explicitly 0
-        } else { // User UNCHECKED "Prices are VAT inclusive"
-            newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal (net)
-            newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate 16% VAT on net subtotal
-        }
+      if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive" - custom logic
+          newDisplaySubTotal = calculatedInputSum;
+          newDisplayVatAmount = 0; // VAT is 0 as per user request
+      } else { // User UNCHECKED "Prices are VAT inclusive"
+          newDisplaySubTotal = calculatedInputSum;
+          newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate 16% VAT on net subtotal
+      }
     } else {
         // For non-MZN currencies, VAT is 0
         newDisplaySubTotal = calculatedInputSum;
@@ -222,9 +221,9 @@ export function POForm() {
     const purchaseOrderPayload = {
       poNumber: poNumber,
       creationDate: poDate,
-      creatorUserId: formData.requestedBy,
+      creatorUserId: formData.requestedBy, // This is now a text string
       supplierId: formData.vendorName,
-      approverUserId: formData.approver, // This should now be User.id
+      approverUserId: formData.approver, // This is now Approver.id
       status: 'Pending Approval',
       subTotal: subTotal,
       vatAmount: vatAmount,
@@ -242,6 +241,8 @@ export function POForm() {
         allocation: item.allocation, 
       })),
     };
+
+    console.log('Submitting PO Payload:', purchaseOrderPayload); // Keep this log for now
 
     try {
       const response = await fetch('/api/purchase-orders', {
@@ -286,18 +287,15 @@ export function POForm() {
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
       form.setValue('nuit', selectedSupplier.nuitNumber || '');
       form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
-      form.clearErrors('vendorName'); // Clear error on manual change
+      form.clearErrors('vendorName'); 
     }
   };
 
-  const handleRequestedByChange = (selectedUserId: string) => {
-    form.setValue('requestedBy', selectedUserId);
-    form.clearErrors('requestedBy'); // Clear error on manual change
-  };
+  // Removed handleRequestedByChange as it's now a text input
 
-  const handleApproverChange = (selectedUserApproverId: string) => { // Parameter is now User.id
-    form.setValue('approver', selectedUserApproverId);
-    form.clearErrors('approver'); // Clear error on manual change
+  const handleApproverChange = (selectedApproverId: string) => { // Parameter is Approver.id
+    form.setValue('approver', selectedApproverId);
+    form.clearErrors('approver'); 
   };
 
   const handleItemCategoryChange = (index: number, selectedCategoryId: string) => {
@@ -307,7 +305,6 @@ export function POForm() {
 
   const handleItemAllocationChange = (index: number, selectedSiteId: string) => {
     form.setValue(`items.${index}.allocation`, selectedSiteId, { shouldValidate: true });
-    // No specific DB requirement for item.allocation (siteId for item) as it's not in POItem table yet.
   };
   
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
@@ -395,32 +392,21 @@ export function POForm() {
               <h3 className="text-lg font-medium font-headline mb-2">PO Configuration</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
-
-                 <FormField
-                   control={form.control}
-                   name="requestedBy"
-                   rules={{ required: 'Requested By is required' }}
-                   render={({ field }) => (
-                     <FormItem>
-                       <FormLabel>Requested By</FormLabel>
-                       <Select onValueChange={(value) => { field.onChange(value); handleRequestedByChange(value); }} value={field.value || ''}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select requester" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {users.map(user => (
-                              <SelectItem key={user.id} value={user.id}>
-                                {user.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                       <FormMessage />
-                     </FormItem>
-                   )}
-                 />
+                
+                <FormField
+                  control={form.control}
+                  name="requestedBy"
+                  rules={{ required: 'Requested By is required' }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Requested By</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter requester's name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -437,7 +423,7 @@ export function POForm() {
                         </FormControl>
                         <SelectContent>
                           {approvers.map(appr => (
-                            <SelectItem key={appr.id} value={appr.userId}> {/* Use appr.userId as value */}
+                            <SelectItem key={appr.id} value={appr.id}> {/* Use appr.id as value */}
                               {appr.name} {/* Display appr.name */}
                             </SelectItem>
                           ))}
@@ -517,7 +503,7 @@ export function POForm() {
                     <FormField
                       control={form.control}
                       name={`items.${index}.allocation`}
-                      // Not making allocation (site) required per item as it's not directly in POItem table yet
+                      rules={{ required: 'Allocation (Site) is required for each item' }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Allocation (Site)</FormLabel>
@@ -608,7 +594,6 @@ export function POForm() {
               variant="outline"
               onClick={() => {
                 append(defaultItem);
-                // Validate all fields when a new item is added to ensure UI updates if form was invalid
                 form.trigger(); 
               }}
               className="mt-0"
@@ -641,7 +626,7 @@ export function POForm() {
                 <div className="space-y-1">
                   <Label>Creator Name</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     {users.find(u => u.id === form.watch('requestedBy'))?.name || 'Select requester'}
+                     {form.watch('requestedBy') || 'Enter requester name'}
                   </div>
                 </div>
               </div>
@@ -661,7 +646,7 @@ export function POForm() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={form.formState.isSubmitting}>
+            <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={form.formState.isSubmitting || !form.formState.isValid && form.formState.isSubmitted}>
               <Send className="mr-2 h-4 w-4" /> {form.formState.isSubmitting ? 'Submitting...' : 'Submit PO'}
             </Button>
           </form>
