@@ -89,6 +89,7 @@ export function POForm() {
       notes: '',
       items: [defaultItem],
     },
+    mode: 'onBlur', // Validate on blur to show errors after user interacts
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -119,13 +120,11 @@ export function POForm() {
     }
   }, [form, toast]);
 
-  // useEffect for PO Number Generation
   useEffect(() => {
     fetchNextPONumber();
   }, [fetchNextPONumber]);
 
 
-  // useEffect for fetching dropdown data
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
@@ -166,7 +165,6 @@ export function POForm() {
   const watchedCurrency = form.watch('currency');
   const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
 
-  // useEffect for Totals Calculation
   useEffect(() => {
     const items = watchedItems || [];
     const pricesIncludeVat = watchedPricesIncludeVat;
@@ -184,7 +182,7 @@ export function POForm() {
 
     if (currency === 'MZN') {
         if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive"
-            newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal
+            newDisplaySubTotal = calculatedInputSum;
             newDisplayVatAmount = 0; // VAT amount is explicitly 0
         } else { // User UNCHECKED "Prices are VAT inclusive"
             newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is considered the subtotal (net)
@@ -195,7 +193,7 @@ export function POForm() {
         newDisplaySubTotal = calculatedInputSum;
         newDisplayVatAmount = 0;
     }
-
+    
     setSubTotal(parseFloat(newDisplaySubTotal.toFixed(2)));
     setVatAmount(parseFloat(newDisplayVatAmount.toFixed(2)));
     setGrandTotal(parseFloat((newDisplaySubTotal + newDisplayVatAmount).toFixed(2)));
@@ -204,6 +202,16 @@ export function POForm() {
 
 
   const onSubmit = async (formData: POFormValues) => {
+    // Check for at least one item
+    if (!formData.items || formData.items.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one item to the purchase order.",
+        variant: "destructive",
+      });
+      return; // Stop submission
+    }
+
     const poNumber = form.getValues('poNumberDisplay');
     const poDate = form.getValues('poDate');
 
@@ -223,12 +231,11 @@ export function POForm() {
       items: formData.items.map((item: any) => ({
         partNumber: item.partNumber,
         description: item.description,
-        categoryId: item.category,
+        categoryId: item.category, 
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
-        // item.allocation (siteId for POItem) is present here but will be omitted by backend if POItem table doesn't have a corresponding column
-        allocation: item.allocation,
+        allocation: item.allocation, 
       })),
     };
 
@@ -243,6 +250,7 @@ export function POForm() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to submit PO. Server returned an unreadable error.' }));
+        console.error('Server error details:', errorData.details); // Log server-side details
         throw new Error(errorData.error || `Server error: ${response.status} - ${errorData.details || response.statusText}`);
       }
 
@@ -251,8 +259,8 @@ export function POForm() {
         title: 'Success!',
         description: `Purchase Order ${result.poNumber} (ID: ${result.poId}) created successfully.`,
       });
-      form.reset(); // Reset form on success
-      await fetchNextPONumber(); // Fetch and set the next PO number
+      form.reset(); 
+      await fetchNextPONumber(); 
 
     } catch (error: any) {
       console.error('Error submitting PO:', error);
@@ -274,25 +282,30 @@ export function POForm() {
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
       form.setValue('nuit', selectedSupplier.nuitNumber || '');
       form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
+      form.clearErrors('vendorName'); // Clear error on manual change
     }
   };
 
   const handleRequestedByChange = (selectedUserId: string) => {
     form.setValue('requestedBy', selectedUserId);
+    form.clearErrors('requestedBy'); // Clear error on manual change
   };
 
   const handleApproverChange = (selectedApproverId: string) => {
     form.setValue('approver', selectedApproverId);
+    form.clearErrors('approver'); // Clear error on manual change
   };
 
   const handleItemCategoryChange = (index: number, selectedCategoryId: string) => {
     form.setValue(`items.${index}.category`, selectedCategoryId, { shouldValidate: true });
+    form.clearErrors(`items.${index}.category`);
   };
 
   const handleItemAllocationChange = (index: number, selectedSiteId: string) => {
     form.setValue(`items.${index}.allocation`, selectedSiteId, { shouldValidate: true });
+    // No specific DB requirement for item.allocation (siteId for item) as it's not in POItem table yet.
   };
-
+  
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
 
@@ -311,6 +324,7 @@ export function POForm() {
                 <FormField
                   control={form.control}
                   name="vendorName"
+                  rules={{ required: 'Supplier is required' }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supplier Name</FormLabel>
@@ -338,7 +352,18 @@ export function POForm() {
                 <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 401034676" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. EST741" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
 
-                <FormField control={form.control} name="poDate" render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField 
+                  control={form.control} 
+                  name="poDate" 
+                  rules={{ required: 'PO Date is required' }}
+                  render={({ field }) => ( 
+                    <FormItem> 
+                      <FormLabel>PO Date</FormLabel> 
+                      <FormControl><Input type="date" {...field} /></FormControl> 
+                      <FormMessage /> 
+                    </FormItem> 
+                  )} 
+                />
 
                 <div className="space-y-1">
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
@@ -370,6 +395,7 @@ export function POForm() {
                  <FormField
                    control={form.control}
                    name="requestedBy"
+                   rules={{ required: 'Requested By is required' }}
                    render={({ field }) => (
                      <FormItem>
                        <FormLabel>Requested By</FormLabel>
@@ -395,6 +421,7 @@ export function POForm() {
                 <FormField
                   control={form.control}
                   name="approver"
+                  rules={{ required: 'Approver is required' }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Approver</FormLabel>
@@ -449,11 +476,23 @@ export function POForm() {
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
                   <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( <FormItem> <FormLabel>Part Number</FormLabel> <FormControl><Input placeholder="Optional part no." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => ( <FormItem className="lg:col-span-2"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField 
+                      control={form.control} 
+                      name={`items.${index}.description`} 
+                      rules={{ required: 'Description is required' }}
+                      render={({ field }) => ( 
+                        <FormItem className="lg:col-span-2"> 
+                          <FormLabel>Description</FormLabel> 
+                          <FormControl><Input placeholder="Item description" {...field} /></FormControl> 
+                          <FormMessage /> 
+                        </FormItem> 
+                      )} 
+                    />
 
                     <FormField
                       control={form.control}
                       name={`items.${index}.category`}
+                      rules={{ required: 'Category is required' }}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Category</FormLabel>
@@ -474,6 +513,7 @@ export function POForm() {
                     <FormField
                       control={form.control}
                       name={`items.${index}.allocation`}
+                      // Not making allocation (site) required per item as it's not directly in POItem table yet
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Allocation (Site)</FormLabel>
@@ -491,9 +531,48 @@ export function POForm() {
                         </FormItem>
                       )}
                     />
-                    <FormField control={form.control} name={`items.${index}.uom`} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., EA, KG, M" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field }) => ( <FormItem> <FormLabel>Unit Price ({currencySymbol})</FormLabel> <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField 
+                      control={form.control} 
+                      name={`items.${index}.uom`} 
+                      rules={{ required: 'UOM is required' }}
+                      render={({ field }) => ( 
+                        <FormItem> 
+                          <FormLabel>UOM</FormLabel> 
+                          <FormControl><Input placeholder="e.g., EA, KG, M" {...field} /></FormControl> 
+                          <FormMessage /> 
+                        </FormItem> 
+                      )} 
+                    />
+                    <FormField 
+                      control={form.control} 
+                      name={`items.${index}.quantity`} 
+                      rules={{ 
+                        required: 'Quantity is required',
+                        min: { value: 1, message: 'Quantity must be at least 1' } 
+                      }}
+                      render={({ field }) => ( 
+                        <FormItem> 
+                          <FormLabel>Quantity</FormLabel> 
+                          <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> 
+                          <FormMessage /> 
+                        </FormItem> 
+                      )} 
+                    />
+                    <FormField 
+                      control={form.control} 
+                      name={`items.${index}.unitPrice`} 
+                      rules={{ 
+                        required: 'Unit Price is required',
+                        min: { value: 0.01, message: 'Unit price must be positive' }
+                      }}
+                      render={({ field }) => ( 
+                        <FormItem> 
+                          <FormLabel>Unit Price ({currencySymbol})</FormLabel> 
+                          <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> 
+                          <FormMessage /> 
+                        </FormItem> 
+                      )} 
+                    />
 
                     <div className="flex items-end">
                       <FormItem className="w-full">
@@ -523,7 +602,11 @@ export function POForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => append(defaultItem)}
+              onClick={() => {
+                append(defaultItem);
+                // Validate all fields when a new item is added to ensure UI updates if form was invalid
+                form.trigger(); 
+              }}
               className="mt-0"
             >
               <PlusCircle className="mr-2 h-4 w-4" /> Add Item
@@ -588,3 +671,6 @@ export function POForm() {
     </Card>
   );
 }
+
+
+    
