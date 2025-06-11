@@ -25,6 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
 import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 // Zod Schemas remain commented out
 /*
@@ -58,6 +59,7 @@ const defaultItem: any = { partNumber: '', description: '', category: '', alloca
 
 
 export function POForm() {
+  const { toast } = useToast();
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
@@ -71,7 +73,7 @@ export function POForm() {
   const form = useForm<POFormValues>({
     // resolver: zodResolver(poFormSchema), // Still commented
     defaultValues: {
-      vendorName: '',
+      vendorName: '', // This will hold supplierCode
       vendorEmail: '',
       salesPerson: '',
       supplierContactNumber: '',
@@ -79,11 +81,12 @@ export function POForm() {
       quoteNo: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: 'Loading PO...', 
+      poNumberDisplay: 'Loading PO...',
       currency: 'MZN',
-      requestedBy: '',
-      approver: '',
+      requestedBy: '', // This will hold userId
+      approver: '', // This will hold approverId
       pricesIncludeVat: false,
+      notes: '',
       items: [defaultItem],
     },
   });
@@ -109,7 +112,7 @@ export function POForm() {
         }
       } catch (error) {
         console.error("Error fetching next PO number:", error);
-        form.setValue('poNumberDisplay', 'PO-ERROR'); 
+        form.setValue('poNumberDisplay', 'PO-ERROR');
       }
     };
     fetchNextPONumber();
@@ -118,63 +121,42 @@ export function POForm() {
 
   // useEffect for fetching dropdown data
   useEffect(() => {
-    const fetchSuppliers = async () => {
+    const fetchDropdownData = async () => {
       try {
-        const response = await fetch('/api/suppliers');
-        if (!response.ok) throw new Error('Failed to fetch suppliers');
-        const data: Supplier[] = await response.json();
-        setSuppliers(data);
-      } catch (error) {
-        console.error("Error fetching suppliers:", error);
-      }
-    };
-    const fetchSites = async () => {
-      try {
-        const response = await fetch('/api/sites');
-        if (!response.ok) throw new Error('Failed to fetch sites');
-        const data: Site[] = await response.json();
-        setSites(data);
-      } catch (error) {
-        console.error("Error fetching sites:", error);
-      }
-    };
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/categories');
-        if (!response.ok) throw new Error('Failed to fetch categories');
-        const data: CategoryType[] = await response.json();
-        setCategories(data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      }
-    };
-    const fetchApprovers = async () => {
-      try {
-        const response = await fetch('/api/approvers');
-        if (!response.ok) throw new Error('Failed to fetch approvers');
-        const data: Approver[] = await response.json();
-        setApproversData(data);
-      } catch (error) {
-        console.error("Error fetching approvers:", error);
-      }
-    };
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/users');
-        if (!response.ok) throw new Error('Failed to fetch users');
-        const data: User[] = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
+        const [suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
+          fetch('/api/suppliers'),
+          fetch('/api/sites'),
+          fetch('/api/categories'),
+          fetch('/api/approvers'),
+          fetch('/api/users'),
+        ]);
 
-    fetchSuppliers();
-    fetchSites();
-    fetchCategories();
-    fetchApprovers();
-    fetchUsers();
-  }, []);
+        if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
+        setSuppliers(await suppliersRes.json());
+
+        if (!sitesRes.ok) throw new Error('Failed to fetch sites');
+        setSites(await sitesRes.json());
+
+        if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
+        setCategories(await categoriesRes.json());
+
+        if (!approversRes.ok) throw new Error('Failed to fetch approvers');
+        setApproversData(await approversRes.json());
+
+        if (!usersRes.ok) throw new Error('Failed to fetch users');
+        setUsers(await usersRes.json());
+
+      } catch (error) {
+        console.error("Error fetching dropdown data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load data for dropdowns. Please try refreshing.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchDropdownData();
+  }, [toast]);
 
 
   const watchedItems = form.watch('items');
@@ -184,9 +166,9 @@ export function POForm() {
   // useEffect for Totals Calculation
   useEffect(() => {
     let currentSubTotal = 0;
-    const items = watchedItems || []; 
-    const pricesIncludeVat = watchedPricesIncludeVat; 
-    const currency = watchedCurrency; 
+    const items = watchedItems || [];
+    const pricesIncludeVat = watchedPricesIncludeVat;
+    const currency = watchedCurrency;
 
     items.forEach((item: any) => {
         const quantity = Number(item.quantity) || 0;
@@ -198,14 +180,20 @@ export function POForm() {
 
     if (currency === 'MZN') {
         if (pricesIncludeVat) {
-            const subTotalExcludingVat = currentSubTotal / 1.16; 
+            // If prices include VAT, we need to calculate the base subtotal and the VAT amount from the total.
+            // Assuming VAT is 16%, GrossPrice = NetPrice * 1.16
+            // So, NetPrice = GrossPrice / 1.16
+            const subTotalExcludingVat = currentSubTotal / 1.16;
             currentVatAmount = currentSubTotal - subTotalExcludingVat;
-            currentSubTotal = subTotalExcludingVat; 
+            currentSubTotal = subTotalExcludingVat; // This is the net subtotal
         } else {
-            currentVatAmount = currentSubTotal * 0.16; 
+            // If prices do NOT include VAT, calculate VAT on the currentSubTotal.
+            currentVatAmount = currentSubTotal * 0.16;
         }
     }
-    
+    // For USD or other currencies, VAT is assumed to be 0 or handled differently (not specified yet)
+    // For now, if not MZN, VAT is 0.
+
     setSubTotal(currentSubTotal);
     setVatAmount(currentVatAmount);
     setGrandTotal(currentSubTotal + currentVatAmount);
@@ -213,16 +201,57 @@ export function POForm() {
   }, [watchedItems, watchedCurrency, watchedPricesIncludeVat]);
 
 
-  const onSubmit = (data: POFormValues) => {
-    console.log('PO Submitted (simplified):', { ...data, subTotal, vatAmount, grandTotal });
-    alert('PO Submitted! Functionality limited.');
+  const onSubmit = (formData: POFormValues) => {
+    const poNumber = form.getValues('poNumberDisplay');
+    const poDate = form.getValues('poDate');
+
+    const purchaseOrderPayload = {
+      poNumber: poNumber,
+      creationDate: poDate, // Or new Date().toISOString() if you want submission time
+      creatorUserId: formData.requestedBy,
+      supplierId: formData.vendorName, // This holds supplierCode
+      approverUserId: formData.approver,
+      // siteId: null, // Not collected at PO header level in current form
+      status: 'Pending Approval', // Default status
+      subTotal: subTotal,
+      vatAmount: vatAmount,
+      grandTotal: grandTotal,
+      currency: formData.currency,
+      pricesIncludeVat: formData.pricesIncludeVat,
+      notes: formData.notes,
+      items: formData.items.map((item: any) => ({
+        partNumber: item.partNumber,
+        description: item.description,
+        categoryId: item.category, // This is categoryId
+        uom: item.uom,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        // allocation (item.allocation which is siteId) is not directly in POItem table schema,
+        // but might be used for other logic or linked tables not yet defined.
+      })),
+      // For API backend, include other relevant fields from formData directly if needed
+      vendorEmail: formData.vendorEmail,
+      salesPerson: formData.salesPerson,
+      supplierContactNumber: formData.supplierContactNumber,
+      nuit: formData.nuit,
+      quoteNo: formData.quoteNo,
+      billingAddress: formData.billingAddress,
+    };
+
+    console.log('Submitting Purchase Order Data:', purchaseOrderPayload);
+    toast({
+      title: 'PO Submitted (Simulation)',
+      description: 'Purchase Order data prepared and logged to console.',
+      duration: 5000,
+    });
+    // form.reset(); // Optionally reset form after submission
   };
 
 
   const handleSupplierChange = (selectedSupplierCode: string) => {
     const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (selectedSupplier) {
-      form.setValue('vendorName', selectedSupplier.supplierCode); 
+      form.setValue('vendorName', selectedSupplier.supplierCode); // Store code in vendorName
       form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
       form.setValue('salesPerson', selectedSupplier.salesPerson || '');
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
@@ -264,7 +293,7 @@ export function POForm() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
-                  name="vendorName"
+                  name="vendorName" // This field now effectively stores supplierCode
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Supplier Name</FormLabel>
@@ -298,7 +327,7 @@ export function POForm() {
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
-                    value={form.watch('poNumberDisplay')} 
+                    value={form.watch('poNumberDisplay')}
                     readOnly
                     className="font-medium bg-muted/30 border-muted cursor-default"
                   />
@@ -318,7 +347,7 @@ export function POForm() {
 
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">PO Configuration</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"> {/* Adjusted lg:grid-cols from 4 to 3 */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
 
                  <FormField
@@ -427,7 +456,7 @@ export function POForm() {
                     />
                     <FormField
                       control={form.control}
-                      name={`items.${index}.allocation`} 
+                      name={`items.${index}.allocation`}
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Allocation (Site)</FormLabel>
@@ -448,7 +477,7 @@ export function POForm() {
                     <FormField control={form.control} name={`items.${index}.uom`} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., EA, KG, M" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                     <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage /> </FormItem> )} />
                     <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field }) => ( <FormItem> <FormLabel>Unit Price ({currencySymbol})</FormLabel> <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage /> </FormItem> )} />
-                    
+
                     <div className="flex items-end">
                       <FormItem className="w-full">
                         <FormLabel>Item Total ({currencySymbol})</FormLabel>
@@ -485,12 +514,30 @@ export function POForm() {
 
             <Separator />
 
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any relevant notes for this purchase order..."
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid md:grid-cols-2 gap-6 items-start">
               <div className="space-y-6">
                 <div className="space-y-1">
                   <Label>Creator Name</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     System User (Placeholder)
+                     System User (Placeholder - to be derived from logged-in user)
                   </div>
                 </div>
               </div>
@@ -518,10 +565,9 @@ export function POForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Upon submission, an email will be sent to the approver. Once approved, a PDF copy will be sent to the creator and approver. (Functionality limited)
+          Upon submission, this will prepare the PO data. Actual database saving and email sending will be implemented next.
         </p>
       </CardFooter>
     </Card>
   );
 }
-
