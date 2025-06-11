@@ -2,7 +2,7 @@
 'use client';
 
 // import { zodResolver } from '@hookform/resolvers/zod'; // Zod still commented
-import { useForm, useFieldArray } from 'react-hook-form'; // useFieldArray will be effectively unused for now
+import { useForm, useFieldArray } from 'react-hook-form';
 // import type * as z from 'zod'; // Zod still commented
 // import type { ChangeEvent } from 'react'; // Not used
 import { Button } from '@/components/ui/button';
@@ -23,8 +23,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Send } from 'lucide-react';
-import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types'; // Re-import types
-import { useState, useEffect, useCallback } from 'react'; // Re-import useEffect, useState
+import type { Supplier, Site, Category as CategoryType, Approver, User } from '@/types';
+import { useState, useEffect, useCallback } from 'react';
 
 // Zod Schemas remain commented out
 /*
@@ -62,7 +62,6 @@ export function POForm() {
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
 
-  // Re-enable state for fetched data
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
@@ -87,7 +86,7 @@ export function POForm() {
       approver: '',
       expectedDeliveryDate: '',
       pricesIncludeVat: false,
-      items: [defaultItem], // Initialize with one default item
+      items: [defaultItem],
     },
   });
 
@@ -103,7 +102,6 @@ export function POForm() {
   }, []);
   */
 
-  // Re-enable useEffect for data fetching (sequential version)
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
@@ -164,69 +162,57 @@ export function POForm() {
   }, []);
 
 
-  // Watch calls remain commented out for now
-  // const watchedItems = form.watch('items');
-  // const watchedCurrency = form.watch('currency');
-  // const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
+  const watchedItems = form.watch('items');
+  const watchedCurrency = form.watch('currency');
+  const watchedPricesIncludeVat = form.watch('pricesIncludeVat');
 
-  // useEffect for Totals Calculation remains commented out
-  /*
+  // useEffect for Totals Calculation
   useEffect(() => {
     let currentSubTotal = 0;
-    const items = form.getValues('items') || []; // Use getValues as watch is commented
-    const pricesIncludeVat = form.getValues('pricesIncludeVat'); // Use getValues
+    const items = watchedItems || [];
+    const pricesIncludeVat = watchedPricesIncludeVat;
 
-    items.forEach((item: any) => { // Assuming item is 'any' since schema is commented
+    items.forEach((item: any) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
         currentSubTotal += quantity * unitPrice;
     });
 
     let currentVatAmount = 0;
-    const currency = form.getValues('currency'); // Use getValues
+    const currency = watchedCurrency;
 
     if (currency === 'MZN') {
         if (pricesIncludeVat) {
-            // Price includes VAT, so extract VAT from subtotal
-            // Subtotal = PriceWithVAT / 1.16
-            // VAT = PriceWithVAT - (PriceWithVAT / 1.16)
             const subTotalExcludingVat = currentSubTotal / 1.16;
             currentVatAmount = currentSubTotal - subTotalExcludingVat;
-            currentSubTotal = subTotalExcludingVat; // Update subTotal to be ex-VAT
+            currentSubTotal = subTotalExcludingVat;
         } else {
-            // Price does not include VAT, so calculate VAT on subtotal
             currentVatAmount = currentSubTotal * 0.16;
         }
     }
-    // For USD or other currencies, VAT is assumed to be 0 or handled differently
-    // based on requirements not specified for this scenario.
-
+    // For USD, VAT is 0
     setSubTotal(currentSubTotal);
     setVatAmount(currentVatAmount);
     setGrandTotal(currentSubTotal + currentVatAmount);
 
-  // }, [watchedItems, watchedCurrency, watchedPricesIncludeVat, form]); // Dependencies commented as watches are
-  }, [form]); // Simplified dependency for now
-  */
+  }, [watchedItems, watchedCurrency, watchedPricesIncludeVat, form]);
 
 
-  // onSubmit remains simplified
   const onSubmit = (data: POFormValues) => {
     console.log('PO Submitted (simplified):', { ...data, subTotal, vatAmount, grandTotal });
     alert('PO Submitted! Functionality limited.');
   };
 
 
-  // Restore handlers for dropdowns
   const handleSupplierChange = (selectedSupplierCode: string) => {
     const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (selectedSupplier) {
-      form.setValue('vendorName', selectedSupplier.supplierCode); // Store code or name as needed
+      form.setValue('vendorName', selectedSupplier.supplierCode);
       form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
       form.setValue('salesPerson', selectedSupplier.salesPerson || '');
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
       form.setValue('nuit', selectedSupplier.nuitNumber || '');
-      form.setValue('billingAddress', selectedSupplier.physicalAddress || ''); // Or another specific billing field
+      form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
     }
   };
 
@@ -241,11 +227,10 @@ export function POForm() {
   const handleShippingAddressChange = (selectedSiteId: string) => {
     const selectedSite = sites.find(s => s.id.toString() === selectedSiteId);
     if (selectedSite) {
-        form.setValue('shippingAddress', selectedSite.name); // Set full site name or specific address field
+        form.setValue('shippingAddress', selectedSite.name);
     }
   };
 
-  // Item-specific handlers (will be used when items are re-enabled)
   const handleItemCategoryChange = (index: number, selectedCategoryId: string) => {
     form.setValue(`items.${index}.category`, selectedCategoryId, { shouldValidate: true });
   };
@@ -254,8 +239,7 @@ export function POForm() {
     form.setValue(`items.${index}.allocation`, selectedSiteId, { shouldValidate: true });
   };
 
-  // Using getValues as watch is commented
-  const currencySymbol = form.getValues('currency') === 'MZN' ? 'MZN' : '$';
+  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
 
   return (
@@ -306,7 +290,7 @@ export function POForm() {
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
-                    value={form.watch('poNumberDisplay') || 'PO_STATIC_001'} // form.watch is fine here for display
+                    value={form.watch('poNumberDisplay') || 'PO_STATIC_001'}
                     readOnly
                     className="font-medium bg-muted/30 border-muted cursor-default"
                   />
@@ -428,70 +412,85 @@ export function POForm() {
             <Separator />
             <h3 className="text-lg font-medium font-headline">Items</h3>
 
-            {fields.map((itemField, index) => (
-              <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( <FormItem> <FormLabel>Part Number</FormLabel> <FormControl><Input placeholder="Optional part no." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => ( <FormItem className="md:col-span-2 lg:col-span-3"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+            {fields.map((itemField, index) => {
+              const itemQuantity = form.watch(`items.${index}.quantity`) || 0;
+              const itemUnitPrice = form.watch(`items.${index}.unitPrice`) || 0;
+              const itemTotal = (itemQuantity * itemUnitPrice).toFixed(2);
 
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.category`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select onValueChange={(value) => { field.onChange(value); handleItemCategoryChange(index, value); }} value={field.value || ''}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {categories.map(cat => (
-                              <SelectItem key={cat.id} value={cat.id.toString()}>
-                                {cat.category}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
+              return (
+                <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
+                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4"> {/* Adjusted for 5 columns */}
+                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( <FormItem> <FormLabel>Part Number</FormLabel> <FormControl><Input placeholder="Optional part no." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => ( <FormItem className="lg:col-span-2"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...field} /></FormControl> <FormMessage /> </FormItem> )} /> {/* Adjusted span */}
+
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.category`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category</FormLabel>
+                          <Select onValueChange={(value) => { field.onChange(value); handleItemCategoryChange(index, value); }} value={field.value || ''}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {categories.map(cat => (
+                                <SelectItem key={cat.id} value={cat.id.toString()}>
+                                  {cat.category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.allocation`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Allocation (Site)</FormLabel>
+                           <Select onValueChange={(value) => { field.onChange(value); handleItemAllocationChange(index, value); }} value={field.value || ''}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select allocation" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              {sites.map(site => (
+                                <SelectItem key={site.id} value={site.id.toString()}>
+                                  {site.name} ({site.siteCode})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField control={form.control} name={`items.${index}.uom`} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., EA, KG, M" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage /> </FormItem> )} />
+                    <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field }) => ( <FormItem> <FormLabel>Unit Price ({currencySymbol})</FormLabel> <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage /> </FormItem> )} />
+                     {/* Item Total Display */}
+                    <div className="flex items-end">
+                      <FormItem className="w-full">
+                        <FormLabel>Item Total ({currencySymbol})</FormLabel>
+                        <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
+                          {itemTotal}
+                        </div>
                       </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.allocation`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Allocation (Site)</FormLabel>
-                         <Select onValueChange={(value) => { field.onChange(value); handleItemAllocationChange(index, value); }} value={field.value || ''}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select allocation" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            {sites.map(site => (
-                              <SelectItem key={site.id} value={site.id.toString()}>
-                                {site.name} ({site.siteCode})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField control={form.control} name={`items.${index}.uom`} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., EA, KG, M" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={form.control} name={`items.${index}.unitPrice`} render={({ field }) => ( <FormItem> <FormLabel>Unit Price ({currencySymbol})</FormLabel> <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage /> </FormItem> )} />
-                </div>
-                {fields.length > 1 && (
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        className="absolute top-2 right-2"
-                        title="Remove Item"
-                        >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                )}
-              </Card>
-            ))}
+                    </div>
+                  </div>
+                  {fields.length > 1 && (
+                      <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="absolute top-2 right-2"
+                          title="Remove Item"
+                          >
+                          <Trash2 className="h-4 w-4" />
+                      </Button>
+                  )}
+                </Card>
+              );
+            })}
 
             <Button
               type="button"
@@ -518,7 +517,7 @@ export function POForm() {
                 <div className="text-md">
                   Subtotal ({currencySymbol}): <span className="font-semibold">{subTotal.toFixed(2)}</span>
                 </div>
-                {form.getValues('currency') === 'MZN' && (
+                {watchedCurrency === 'MZN' && (
                   <div className="text-md">
                     VAT (16%) ({currencySymbol}): <span className="font-semibold">{vatAmount.toFixed(2)}</span>
                   </div>
@@ -543,4 +542,3 @@ export function POForm() {
     </Card>
   );
 }
-
