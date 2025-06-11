@@ -67,11 +67,15 @@ export async function POST(request) {
 
       if (items && items.length > 0) {
         for (const item of items) {
-          // Ensure categoryId is a number. item.allocation (siteId) is omitted as POItem schema doesn't have it.
+          let categoryIdToInsert = Number(item.categoryId);
+          if (isNaN(categoryIdToInsert) || categoryIdToInsert === 0) {
+            categoryIdToInsert = null; // Handle empty/invalid category selection
+          }
+
           await connection.execute(
             `INSERT INTO POItem (poId, partNumber, description, categoryId, uom, quantity, unitPrice)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [newPoId, item.partNumber, item.description, Number(item.categoryId), item.uom, Number(item.quantity), Number(item.unitPrice)]
+            [newPoId, item.partNumber, item.description, categoryIdToInsert, item.uom, Number(item.quantity), Number(item.unitPrice)]
           );
         }
       }
