@@ -80,7 +80,7 @@ export function POForm() {
       shippingAddress: '',
       billingAddress: '',
       poDate: new Date().toISOString().split('T')[0],
-      poNumberDisplay: 'PO_FROM_FORM_001', // Static placeholder
+      poNumberDisplay: 'Loading PO...', // Changed placeholder
       currency: 'MZN',
       requestedBy: '',
       approver: '',
@@ -95,13 +95,30 @@ export function POForm() {
     name: 'items',
   });
 
-  // useEffect for PO Number Generation remains commented out
-  /*
+  // useEffect for PO Number Generation
   useEffect(() => {
-    // ...
-  }, []);
-  */
+    const fetchNextPONumber = async () => {
+      try {
+        const response = await fetch('/api/purchase-orders/next-po-number');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch next PO number: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (data.nextPoNumber) {
+          form.setValue('poNumberDisplay', data.nextPoNumber);
+        } else {
+          form.setValue('poNumberDisplay', 'PO-ERROR');
+        }
+      } catch (error) {
+        console.error("Error fetching next PO number:", error);
+        form.setValue('poNumberDisplay', 'PO-ERROR'); // Display error in PO field
+      }
+    };
+    fetchNextPONumber();
+  }, [form]);
 
+
+  // useEffect for fetching dropdown data
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
@@ -169,8 +186,9 @@ export function POForm() {
   // useEffect for Totals Calculation
   useEffect(() => {
     let currentSubTotal = 0;
-    const items = watchedItems || [];
-    const pricesIncludeVat = watchedPricesIncludeVat;
+    const items = watchedItems || []; // form.getValues('items') could also be used if watchedItems causes issues
+    const pricesIncludeVat = watchedPricesIncludeVat; // form.getValues('pricesIncludeVat')
+    const currency = watchedCurrency; // form.getValues('currency')
 
     items.forEach((item: any) => {
         const quantity = Number(item.quantity) || 0;
@@ -179,18 +197,21 @@ export function POForm() {
     });
 
     let currentVatAmount = 0;
-    const currency = watchedCurrency;
 
     if (currency === 'MZN') {
         if (pricesIncludeVat) {
-            const subTotalExcludingVat = currentSubTotal / 1.16;
+            // If prices include VAT, extract VAT from subtotal
+            const subTotalExcludingVat = currentSubTotal / 1.16; // Assuming 16% VAT
             currentVatAmount = currentSubTotal - subTotalExcludingVat;
-            currentSubTotal = subTotalExcludingVat;
+            currentSubTotal = subTotalExcludingVat; // Update subTotal to be exclusive of VAT
         } else {
-            currentVatAmount = currentSubTotal * 0.16;
+            // If prices do not include VAT, calculate VAT on subtotal
+            currentVatAmount = currentSubTotal * 0.16; // Assuming 16% VAT
         }
     }
-    // For USD, VAT is 0
+    // For USD or other currencies, VAT is assumed to be 0 based on previous logic
+    // If other currencies can have VAT, this logic would need adjustment
+
     setSubTotal(currentSubTotal);
     setVatAmount(currentVatAmount);
     setGrandTotal(currentSubTotal + currentVatAmount);
@@ -207,7 +228,7 @@ export function POForm() {
   const handleSupplierChange = (selectedSupplierCode: string) => {
     const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (selectedSupplier) {
-      form.setValue('vendorName', selectedSupplier.supplierCode);
+      form.setValue('vendorName', selectedSupplier.supplierCode); // Store supplierCode in vendorName field
       form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
       form.setValue('salesPerson', selectedSupplier.salesPerson || '');
       form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
@@ -227,7 +248,7 @@ export function POForm() {
   const handleShippingAddressChange = (selectedSiteId: string) => {
     const selectedSite = sites.find(s => s.id.toString() === selectedSiteId);
     if (selectedSite) {
-        form.setValue('shippingAddress', selectedSite.name);
+        form.setValue('shippingAddress', selectedSite.name); // Store site name as shipping address
     }
   };
 
@@ -290,7 +311,7 @@ export function POForm() {
                   <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
                   <Input
                     id="poNumberDisplayGenerated"
-                    value={form.watch('poNumberDisplay') || 'PO_STATIC_001'}
+                    value={form.watch('poNumberDisplay')} // Directly watch the value for display
                     readOnly
                     className="font-medium bg-muted/30 border-muted cursor-default"
                   />
@@ -310,11 +331,11 @@ export function POForm() {
 
             <FormField
               control={form.control}
-              name="shippingAddress"
+              name="shippingAddress" // This field will store the site name after selection
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Shipping Address (Delivery)</FormLabel>
-                  <Select onValueChange={(value) => { field.onChange(value); handleShippingAddressChange(value); }} value={field.value || ''}>
+                  <Select onValueChange={(value) => { handleShippingAddressChange(value); field.onChange(sites.find(s => s.id.toString() === value)?.name || ''); }} value={sites.find(s => s.name === field.value)?.id.toString() || ''}>
                      <FormControl>
                        <SelectTrigger>
                          <SelectValue placeholder="Select a shipping site" />
@@ -337,7 +358,7 @@ export function POForm() {
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">PO Configuration</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
 
                  <FormField
                    control={form.control}
@@ -415,13 +436,14 @@ export function POForm() {
             {fields.map((itemField, index) => {
               const itemQuantity = form.watch(`items.${index}.quantity`) || 0;
               const itemUnitPrice = form.watch(`items.${index}.unitPrice`) || 0;
-              const itemTotal = (itemQuantity * itemUnitPrice).toFixed(2);
+              const itemTotal = (Number(itemQuantity) * Number(itemUnitPrice)).toFixed(2);
+
 
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
-                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4"> {/* Adjusted for 5 columns */}
+                  <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( <FormItem> <FormLabel>Part Number</FormLabel> <FormControl><Input placeholder="Optional part no." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => ( <FormItem className="lg:col-span-2"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...field} /></FormControl> <FormMessage /> </FormItem> )} /> {/* Adjusted span */}
+                    <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => ( <FormItem className="lg:col-span-2"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
 
                     <FormField
                       control={form.control}
@@ -445,7 +467,7 @@ export function POForm() {
                     />
                     <FormField
                       control={form.control}
-                      name={`items.${index}.allocation`}
+                      name={`items.${index}.allocation`} // This field will store the site ID
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Allocation (Site)</FormLabel>
