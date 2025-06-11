@@ -2,7 +2,7 @@
 'use client';
 
 // import { zodResolver } from '@hookform/resolvers/zod'; // Zod still commented
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form'; // useFieldArray will be effectively unused for now
 // import type * as z from 'zod'; // Zod still commented
 // import type { ChangeEvent } from 'react'; // Not used
 import { Button } from '@/components/ui/button';
@@ -177,15 +177,18 @@ export function POForm() {
     let newDisplayVatAmount = 0;
 
     if (currency === 'MZN') {
-        if (pricesIncludeVat) { // User entered GROSS prices
-            newDisplaySubTotal = calculatedInputSum / 1.16; // Calculate NET subtotal
-            newDisplayVatAmount = calculatedInputSum - newDisplaySubTotal; // Calculate VAT amount
-        } else { // User entered NET prices
-            // newDisplaySubTotal remains calculatedInputSum (which is NET)
-            newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate VAT on NET
+        if (pricesIncludeVat) { // User CHECKED "Prices are VAT inclusive"
+            // Subtotal is the sum of item totals (which are considered gross)
+            newDisplaySubTotal = calculatedInputSum;
+            newDisplayVatAmount = 0; // VAT amount is explicitly 0
+        } else { // User UNCHECKED "Prices are VAT inclusive"
+            // Subtotal is the sum of item totals (which are considered net)
+            newDisplaySubTotal = calculatedInputSum;
+            newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate 16% VAT on net subtotal
         }
     } else {
-        // For non-MZN currencies, VAT is 0. newDisplaySubTotal remains calculatedInputSum.
+        // For non-MZN currencies, VAT is 0
+        newDisplaySubTotal = calculatedInputSum;
         newDisplayVatAmount = 0;
     }
 
@@ -564,4 +567,3 @@ export function POForm() {
     </Card>
   );
 }
-
