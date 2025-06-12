@@ -14,7 +14,7 @@ const JACHRIS_COMPANY_DETAILS = {
   contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
-  logoUrl: '/jachris-logo.png', // Updated to reference local logo
+  logoUrl: '/jachris-logo.png', // Ensure 'jachris-logo.png' is in the 'public' folder at the project root. Check filename and case.
   nuit: '400 415 954', 
 };
 

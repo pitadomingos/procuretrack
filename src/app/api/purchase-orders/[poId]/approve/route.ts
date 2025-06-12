@@ -58,8 +58,6 @@ export async function POST(
       }
     } else {
       console.warn(`Approver with ID ${assignedApproverId} not found. approvedByUserId will be null.`);
-      // Depending on business rules, you might want to fail here if the assigned approver doesn't exist.
-      // For now, we'll proceed with null approvedByUserId if approver record is missing.
     }
 
     // 6. Update the Purchase Order
@@ -81,8 +79,12 @@ export async function POST(
 
   } catch (error: any) {
     if (connection) await connection.rollback();
-    console.error(`Error approving PO ${poId}:`, error);
-    return NextResponse.json({ error: 'Failed to approve Purchase Order.', details: error.message }, { status: 500 });
+    console.error(`Error approving PO ${poId}:`, error); // Detailed error logged on server
+    return NextResponse.json({ 
+      error: 'Failed to approve Purchase Order.', 
+      details: error.message,
+      stack: error.stack // Adding stack trace to the response for client-side debugging
+    }, { status: 500 });
   } finally {
     if (connection) connection.release();
   }
