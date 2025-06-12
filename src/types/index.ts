@@ -131,5 +131,7 @@ export interface PurchaseOrderPayload {
   // Resolved names - these would ideally be populated during data fetching for the print page
   creatorName?: string;
   approverName?: string;
+  approverSignatureUrl?: string; // Path to the approver's signature image
   quoteNo?: string; // Added based on template
 }
+

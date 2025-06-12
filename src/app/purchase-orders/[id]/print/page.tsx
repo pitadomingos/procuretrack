@@ -11,10 +11,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
 // Interface for the fully resolved data passed to PrintablePO
+// PurchaseOrderPayload already includes approverSignatureUrl due to type update
 interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
   items: POItemForPrint[];
   supplierDetails?: Supplier;
   approverName?: string;
+  // approverSignatureUrl is now part of PurchaseOrderPayload
 }
 
 export default function PrintPOPage() {
@@ -82,11 +84,15 @@ export default function PrintPOPage() {
           };
         });
         
+        // Construct a hypothetical signature URL
+        const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
+
         setPoData({
           ...headerData, 
           items: itemsForPrint,
           supplierDetails: supplierDetails,
           approverName: approverDetails?.name,
+          approverSignatureUrl: approverSignatureUrl, // Pass the signature URL
           poNumber: headerData.poNumber || `PO-${poId}`,
           status: headerData.status || 'Pending Approval',
           quoteNo: headerData.quoteNo || '',

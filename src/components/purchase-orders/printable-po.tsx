@@ -3,15 +3,9 @@
 
 import type { PurchaseOrderPayload, POItemForPrint, Supplier } from '@/types';
 
-interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
-  items: POItemForPrint[];
-  supplierDetails?: Supplier;
-  approverName?: string;
-  // quoteNo might come from form, or be part of PurchaseOrderPayload if saved
-}
-
+// PurchaseOrderPayload already includes approverSignatureUrl due to type update
 interface PrintablePOProps {
-  poData: FullPODataForPrint;
+  poData: PurchaseOrderPayload; // Use PurchaseOrderPayload directly as it now contains all needed fields
 }
 
 // Company Details from Template
@@ -21,7 +15,7 @@ const JACHRIS_COMPANY_DETAILS = {
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
   logoUrl: '/jachris-logo.png', // Updated to reference local logo
-  nuit: '400 415 954', // From other parts of app, not on PO template header directly but good to have
+  nuit: '400 415 954', 
 };
 
 
@@ -35,6 +29,9 @@ export function PrintablePO({ poData }: PrintablePOProps) {
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  // Cast items to POItemForPrint[] for type safety if needed, though structure should match
+  const printableItems = items as POItemForPrint[];
+
   return (
     <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}> {/* Styles to mimic template */}
       {/* Page Header */}
@@ -46,12 +43,11 @@ export function PrintablePO({ poData }: PrintablePOProps) {
           <p className="text-red-700">{JACHRIS_COMPANY_DETAILS.website}</p>
         </div>
         <div className="text-right">
-          {/* Reference the local logo. User should place their jachris-logo.png in the /public folder */}
           <img
             src={JACHRIS_COMPANY_DETAILS.logoUrl}
             alt="JACHRIS Logo"
-            className="h-12 mb-1 ml-auto" // Adjust height/styling as needed
-            data-ai-hint="company brand logo" // Keep hint for potential future AI image replacement if user desires
+            className="h-12 mb-1 ml-auto" 
+            data-ai-hint="company brand logo"
              />
           <h2 className="text-xl font-bold">Purchase Order</h2>
         </div>
@@ -84,7 +80,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
       </div>
 
       {/* Items Table */}
-      <div className="mb-1 min-h-[300px]"> {/* min-h to ensure table area has some space */}
+      <div className="mb-1 min-h-[300px]"> 
         <table className="w-full border-collapse border border-black">
           <thead>
             <tr className="bg-gray-100">
@@ -98,7 +94,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => (
+            {printableItems.map((item, index) => (
               <tr key={item.id || index}>
                 <td className="border border-black p-1 align-top">{item.partNumber || ''}</td>
                 <td className="border border-black p-1 align-top">{item.description}</td>
@@ -109,8 +105,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
                 <td className="border border-black p-1 text-right align-top">{formatCurrency(item.quantity * item.unitPrice)}</td>
               </tr>
             ))}
-            {/* Add empty rows to fill space if needed, for visual consistency with a fixed-height table area */}
-            {Array.from({ length: Math.max(0, 10 - items.length) }).map((_, i) => (
+            {Array.from({ length: Math.max(0, 10 - printableItems.length) }).map((_, i) => (
                 <tr key={`empty-${i}`}>
                     <td className="border border-black p-1 h-6">&nbsp;</td>
                     <td className="border border-black p-1">&nbsp;</td>
@@ -163,7 +158,17 @@ export function PrintablePO({ poData }: PrintablePOProps) {
                 </div>
             </div>
             <div className="flex flex-col items-end">
-                <div className="h-8 w-48 border-b border-black mb-1 mt-8"></div>
+                {poData.status === 'Approved' && poData.approverSignatureUrl ? (
+                  <img
+                    src={poData.approverSignatureUrl}
+                    alt={`Signature of ${poData.approverName || 'Approver'}`}
+                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]" // Added max-w for safety
+                    data-ai-hint="signature image"
+                  />
+                ) : (
+                  // Keep the space for manual signature if no image or not approved
+                  <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div>
+                )}
                 <p className="mr-[70px]">Signature</p>
             </div>
         </div>
