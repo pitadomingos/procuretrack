@@ -7,10 +7,11 @@ export async function POST(
   request: Request,
   { params }: { params: { poId: string } }
 ) {
-  const { poId } = params;
+  const poIdParam = params.poId;
+  const numericPoId = Number(poIdParam);
 
-  if (!poId) {
-    return NextResponse.json({ error: 'Purchase Order ID is required' }, { status: 400 });
+  if (!poIdParam || isNaN(numericPoId)) {
+    return NextResponse.json({ error: 'Valid Purchase Order ID is required' }, { status: 400 });
   }
 
   let connection;
@@ -19,10 +20,10 @@ export async function POST(
     await connection.beginTransaction();
 
     // 1. Fetch the Purchase Order
-    const [poRows]: any[] = await connection.execute('SELECT * FROM PurchaseOrder WHERE id = ? FOR UPDATE', [poId]);
+    const [poRows]: any[] = await connection.execute('SELECT * FROM PurchaseOrder WHERE id = ? FOR UPDATE', [numericPoId]);
     if (poRows.length === 0) {
       await connection.rollback();
-      return NextResponse.json({ error: `Purchase Order with ID ${poId} not found` }, { status: 404 });
+      return NextResponse.json({ error: `Purchase Order with ID ${numericPoId} not found` }, { status: 404 });
     }
     const purchaseOrder: PurchaseOrderPayload = poRows[0] as PurchaseOrderPayload;
 
@@ -64,14 +65,14 @@ export async function POST(
     const approvalDate = new Date();
     await connection.execute(
       'UPDATE PurchaseOrder SET status = ?, approvalDate = ?, approvedByUserId = ? WHERE id = ?',
-      ['Approved', approvalDate, finalApprovedByUserId, poId]
+      ['Approved', approvalDate, finalApprovedByUserId, numericPoId]
     );
 
     await connection.commit();
 
     return NextResponse.json({ 
       message: 'Purchase Order approved successfully.', 
-      poId: poId, 
+      poId: numericPoId, 
       newStatus: 'Approved', 
       approvalDate: approvalDate.toISOString(),
       approvedByUserId: finalApprovedByUserId 
@@ -79,11 +80,28 @@ export async function POST(
 
   } catch (error: any) {
     if (connection) await connection.rollback();
-    console.error(`Error approving PO ${poId}:`, error); // Detailed error logged on server
+    // Log the full error object to the server console for better inspection
+    console.error(`Error approving PO ${poIdParam}: Server-side full error:`, error); 
+    
+    let errorDetails = 'An unknown error occurred on the server.';
+    let errorStack = '';
+
+    if (error instanceof Error) {
+      errorDetails = error.message;
+      errorStack = error.stack || '';
+    } else if (typeof error === 'string') {
+      errorDetails = error;
+    } else if (error && typeof error.message === 'string') {
+      errorDetails = error.message;
+      if (typeof error.stack === 'string') {
+        errorStack = error.stack;
+      }
+    }
+
     return NextResponse.json({ 
-      error: 'Failed to approve Purchase Order.', 
-      details: error.message,
-      stack: error.stack // Adding stack trace to the response for client-side debugging
+      error: `Failed to approve Purchase Order ${poIdParam}.`, 
+      details: errorDetails,
+      stack: errorStack // Send stack to client for more debugging info if needed
     }, { status: 500 });
   } finally {
     if (connection) connection.release();

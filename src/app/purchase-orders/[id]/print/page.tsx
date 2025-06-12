@@ -164,12 +164,24 @@ export default function PrintPOPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Body can be empty if the backend derives the approving user from the PO's assigned approver
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Approval failed. Server returned an unreadable error.' }));
-        throw new Error(errorData.message || `Approval failed: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ 
+            error: 'Approval failed.', // Default error message
+            details: `Server responded with status: ${response.status} ${response.statusText}`, // Default details
+            stack: '' // Default stack
+        }));
+        
+        let clientErrorMessage = errorData.error || `Approval failed for PO ${poId}.`;
+        if (errorData.details) {
+            clientErrorMessage += ` Details: ${errorData.details}`;
+        }
+        // For very verbose client-side debugging in toast, you could uncomment the stack:
+        // if (errorData.stack) {
+        //     clientErrorMessage += ` Stack: ${errorData.stack.substring(0, 150)}...`;
+        // }
+        throw new Error(clientErrorMessage);
       }
 
       const result = await response.json();
@@ -177,10 +189,10 @@ export default function PrintPOPage() {
         title: "Success!",
         description: result.message || `Purchase Order ${poData.poNumber} approved.`,
       });
-      await fetchPODataForPrint(); // Re-fetch data to update UI
+      await fetchPODataForPrint(); 
 
     } catch (err: any) {
-      console.error('Error approving PO:', err);
+      console.error('Error approving PO (client-side catch):', err); 
       toast({
         title: 'Error Approving PO',
         description: err.message || 'Could not approve the PO.',
