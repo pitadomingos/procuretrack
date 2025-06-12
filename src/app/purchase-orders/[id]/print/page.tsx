@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category, POItemForPrint, Approver } from '@/types';
-import { ArrowLeft, Printer, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Loader2, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,9 +45,8 @@ export default function PrintPOPage() {
         ]);
 
         if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header: ${poHeaderRes.statusText}`);
-        const rawHeaderData: any = await poHeaderRes.json(); // Raw data, potentially with string numbers
+        const rawHeaderData: any = await poHeaderRes.json(); 
 
-        // Process header data to ensure correct types
         const headerData: PurchaseOrderPayload = {
           ...rawHeaderData,
           id: rawHeaderData.id ? Number(rawHeaderData.id) : undefined,
@@ -84,13 +83,13 @@ export default function PrintPOPage() {
         });
         
         setPoData({
-          ...headerData, // Use the processed headerData with correct types
+          ...headerData, 
           items: itemsForPrint,
           supplierDetails: supplierDetails,
           approverName: approverDetails?.name,
           poNumber: headerData.poNumber || `PO-${poId}`,
           status: headerData.status || 'Pending Approval',
-          quoteNo: headerData.quoteNo || '', // Ensure quoteNo is at least an empty string
+          quoteNo: headerData.quoteNo || '',
         });
 
       } catch (err: any) {
@@ -118,22 +117,12 @@ export default function PrintPOPage() {
         const errorData = await response.json().catch(() => ({ message: 'PDF generation failed. Server returned an unreadable error.' }));
         throw new Error(errorData.message || `PDF generation failed: ${response.statusText}`);
       }
-      // Assuming the API returns a JSON message for now, not the actual PDF file
+      
       const result = await response.json();
        toast({
         title: 'PDF Generation (Placeholder)',
         description: result.message || 'PDF generation initiated. Actual PDF download is not yet implemented.',
       });
-      // If the API were to return the actual PDF file:
-      // const blob = await response.blob();
-      // const url = window.URL.createObjectURL(blob);
-      // const a = document.createElement('a');
-      // a.href = url;
-      // a.download = `PO-${poData.poNumber}.pdf`;
-      // document.body.appendChild(a);
-      // a.click();
-      // a.remove();
-      // window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error('Error downloading PDF:', err);
       toast({
@@ -144,6 +133,16 @@ export default function PrintPOPage() {
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  const handleEditPO = () => {
+    if (!poData) return;
+    // For now, this will just show a toast. Later, it could navigate to an edit form.
+    // e.g., router.push(`/create-document?editPoId=${poData.id}`);
+    toast({
+      title: 'Edit Purchase Order',
+      description: `Edit functionality for PO ${poData.poNumber} would be initiated here. Full editing workflow to be implemented.`,
+    });
   };
 
   if (loading) {
@@ -178,6 +177,8 @@ export default function PrintPOPage() {
     );
   }
 
+  const canEditPO = poData.status === 'Pending Approval';
+
   return (
     <div className="bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
       <div className="container mx-auto max-w-4xl print:max-w-full print:p-0">
@@ -187,6 +188,15 @@ export default function PrintPOPage() {
             <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
               <Button onClick={() => router.back()} variant="outline" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Close
+              </Button>
+              <Button 
+                onClick={handleEditPO} 
+                variant="outline" 
+                size="sm" 
+                disabled={!canEditPO}
+                title={canEditPO ? "Edit this Purchase Order" : "This PO cannot be edited as it is not pending approval."}
+              >
+                <Edit className="mr-2 h-4 w-4" /> Edit PO
               </Button>
               <Button onClick={handlePrint} size="sm">
                 <Printer className="mr-2 h-4 w-4" /> Print PO
@@ -210,3 +220,4 @@ export default function PrintPOPage() {
     </div>
   );
 }
+
