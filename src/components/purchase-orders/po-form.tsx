@@ -18,10 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Send } from 'lucide-react';
+import { PlusCircle, Trash2, Send, Printer } from 'lucide-react';
 import type { Supplier, Site, Category as CategoryType, Approver, POItem as POItemType, PurchaseOrderPayload, POItemPayload } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 // Using 'any' for form values temporarily to simplify until Zod is fully integrated.
 type POFormValues = any;
@@ -34,6 +35,7 @@ export function POForm() {
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
+  const [lastSubmittedPoId, setLastSubmittedPoId] = useState<number | null>(null);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -199,7 +201,7 @@ export function POForm() {
         partNumber: item.partNumber,
         description: item.description,
         categoryId: item.category ? Number(item.category) : null, 
-        siteId: item.allocation ? Number(item.allocation) : null, // Ensure siteId is correctly mapped from allocation
+        siteId: item.allocation ? Number(item.allocation) : null,
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
@@ -228,11 +230,13 @@ export function POForm() {
         title: 'Success!',
         description: `Purchase Order ${result.poNumber} (ID: ${result.poId}) created successfully.`,
       });
+      setLastSubmittedPoId(result.poId); // Store the ID of the submitted PO
       form.reset(); 
       await fetchNextPONumber(); 
 
     } catch (error: any) {
       console.error('Error submitting PO:', error);
+      setLastSubmittedPoId(null); // Clear in case of error
       toast({
         title: 'Error Submitting PO',
         description: error.message || 'An unexpected error occurred.',
@@ -614,9 +618,20 @@ export function POForm() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={form.formState.isSubmitting || !form.formState.isValid && form.formState.isSubmitted}>
-              <Send className="mr-2 h-4 w-4" /> {form.formState.isSubmitting ? 'Submitting...' : 'Submit PO'}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 mt-6">
+              <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={form.formState.isSubmitting || !form.formState.isValid && form.formState.isSubmitted}>
+                <Send className="mr-2 h-4 w-4" /> {form.formState.isSubmitting ? 'Submitting...' : 'Submit PO'}
+              </Button>
+              {lastSubmittedPoId && (
+                <Link href={`/purchase-orders/${lastSubmittedPoId}/print`} passHref legacyBehavior>
+                  <a target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+                    <Button type="button" variant="outline" size="lg" className="w-full">
+                      <Printer className="mr-2 h-4 w-4" /> View/Print PO
+                    </Button>
+                  </a>
+                </Link>
+              )}
+            </div>
           </form>
         </Form>
       </CardContent>
