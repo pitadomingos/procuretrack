@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category, POItemForPrint } from '@/types';
+import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category, POItemForPrint, Approver } from '@/types';
 import { ArrowLeft, Printer, Download, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
   items: POItemForPrint[];
   supplierDetails?: Supplier;
-  // Add resolved names if needed, e.g., approverName
+  approverName?: string;
 }
 
 export default function PrintPOPage() {
@@ -35,19 +35,29 @@ export default function PrintPOPage() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all necessary data in parallel
         const [poHeaderRes, poItemsRes, suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
           fetch(`/api/purchase-orders/${poId}`),
           fetch(`/api/purchase-orders/${poId}/items`),
           fetch('/api/suppliers'),
           fetch('/api/sites'),
           fetch('/api/categories'),
-          fetch('/api/approvers'), // Fetch approvers to potentially resolve approver name
+          fetch('/api/approvers'),
         ]);
 
         if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header: ${poHeaderRes.statusText}`);
-        const headerData: PurchaseOrderPayload = await poHeaderRes.json();
+        const rawHeaderData: any = await poHeaderRes.json(); // Raw data, potentially with string numbers
 
+        // Process header data to ensure correct types
+        const headerData: PurchaseOrderPayload = {
+          ...rawHeaderData,
+          id: rawHeaderData.id ? Number(rawHeaderData.id) : undefined,
+          subTotal: Number(rawHeaderData.subTotal || 0),
+          vatAmount: Number(rawHeaderData.vatAmount || 0),
+          grandTotal: Number(rawHeaderData.grandTotal || 0),
+          pricesIncludeVat: Boolean(rawHeaderData.pricesIncludeVat),
+          siteId: rawHeaderData.siteId ? Number(rawHeaderData.siteId) : null,
+        };
+        
         if (!poItemsRes.ok) throw new Error(`Failed to fetch PO Items: ${poItemsRes.statusText}`);
         const itemsDataRaw: POItemPayload[] = await poItemsRes.json();
         
@@ -60,25 +70,27 @@ export default function PrintPOPage() {
         const approverDetails = allApprovers.find(a => a.id === headerData.approverId);
 
         const itemsForPrint: POItemForPrint[] = itemsDataRaw.map(item => {
-          const site = allSites.find(s => s.id === item.siteId);
-          const category = allCategories.find(c => c.id === item.categoryId);
+          const site = allSites.find(s => s.id === (item.siteId ? Number(item.siteId) : null));
+          const category = allCategories.find(c => c.id === (item.categoryId ? Number(item.categoryId) : null));
           return {
             ...item,
+            quantity: Number(item.quantity || 0),
+            unitPrice: Number(item.unitPrice || 0),
+            categoryId: item.categoryId ? Number(item.categoryId) : null,
+            siteId: item.siteId ? Number(item.siteId) : null,
             siteDisplay: site?.siteCode || site?.name || (item.siteId ? `Site ID ${item.siteId}` : 'N/A'),
             categoryDisplay: category?.category || (item.categoryId ? `Category ID ${item.categoryId}` : 'N/A'),
           };
         });
         
         setPoData({
-          ...headerData,
+          ...headerData, // Use the processed headerData with correct types
           items: itemsForPrint,
           supplierDetails: supplierDetails,
-          approverName: approverDetails?.name, // Add resolved approver name
-          // Ensure poNumber and status are present, possibly falling back
+          approverName: approverDetails?.name,
           poNumber: headerData.poNumber || `PO-${poId}`,
           status: headerData.status || 'Pending Approval',
-          // quoteNo might come from headerData if added to DB, or manually set if not
-          // For template matching, if not in DB, you might need a way to input/store it
+          quoteNo: headerData.quoteNo || '', // Ensure quoteNo is at least an empty string
         });
 
       } catch (err: any) {
@@ -106,11 +118,22 @@ export default function PrintPOPage() {
         const errorData = await response.json().catch(() => ({ message: 'PDF generation failed. Server returned an unreadable error.' }));
         throw new Error(errorData.message || `PDF generation failed: ${response.statusText}`);
       }
+      // Assuming the API returns a JSON message for now, not the actual PDF file
       const result = await response.json();
        toast({
         title: 'PDF Generation (Placeholder)',
         description: result.message || 'PDF generation initiated. Actual PDF download is not yet implemented.',
       });
+      // If the API were to return the actual PDF file:
+      // const blob = await response.blob();
+      // const url = window.URL.createObjectURL(blob);
+      // const a = document.createElement('a');
+      // a.href = url;
+      // a.download = `PO-${poData.poNumber}.pdf`;
+      // document.body.appendChild(a);
+      // a.click();
+      // a.remove();
+      // window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error('Error downloading PDF:', err);
       toast({
