@@ -52,8 +52,8 @@ export function POForm() {
       poDate: new Date().toISOString().split('T')[0],
       poNumberDisplay: 'Loading PO...',
       currency: 'MZN',
-      requestedBy: '', // Text input for who requested the PO
-      approver: '', // This will hold Approver.id
+      requestedBy: '', 
+      approver: '', 
       pricesIncludeVat: false,
       notes: '',
       items: [defaultItem],
@@ -150,11 +150,11 @@ export function POForm() {
 
     if (currency === 'MZN') {
       if (pricesIncludeVat) {
-          newDisplaySubTotal = calculatedInputSum; // Total sum from inputs
-          newDisplayVatAmount = 0; // VAT is 0 as per user request
+          newDisplaySubTotal = calculatedInputSum; 
+          newDisplayVatAmount = 0; 
       } else {
-          newDisplaySubTotal = calculatedInputSum; // Total sum from inputs is net
-          newDisplayVatAmount = newDisplaySubTotal * 0.16; // Calculate 16% VAT on net subtotal
+          newDisplaySubTotal = calculatedInputSum; 
+          newDisplayVatAmount = newDisplaySubTotal * 0.16; 
       }
     } else {
         newDisplaySubTotal = calculatedInputSum;
@@ -184,10 +184,10 @@ export function POForm() {
     const purchaseOrderPayload: PurchaseOrderPayload = {
       poNumber: poNumber,
       creationDate: new Date(poDate).toISOString(),
-      creatorUserId: null, // To be replaced with Firebase Auth User ID later
-      requestedByName: formData.requestedBy, // Text input for the requester
-      supplierId: formData.vendorName, // This is supplierCode
-      approverId: formData.approver, // This is Approver.id
+      creatorUserId: null, 
+      requestedByName: formData.requestedBy, 
+      supplierId: formData.vendorName, 
+      approverId: formData.approver, 
       status: 'Pending Approval',
       subTotal: subTotal,
       vatAmount: vatAmount,
@@ -199,7 +199,7 @@ export function POForm() {
         partNumber: item.partNumber,
         description: item.description,
         categoryId: item.category ? Number(item.category) : null, 
-        allocation: item.allocation, // Site.id as string
+        siteId: item.allocation ? Number(item.allocation) : null, // Ensure siteId is correctly mapped from allocation
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
@@ -270,7 +270,7 @@ export function POForm() {
     form.clearErrors(`items.${index}.allocation`);
   };
   
-  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; // Or other symbols as needed
+  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; 
 
 
   return (
@@ -373,7 +373,7 @@ export function POForm() {
 
                 <FormField
                   control={form.control}
-                  name="approver" // This field now stores Approver.id
+                  name="approver" 
                   rules={{ required: 'Approver is required' }}
                   render={({ field }) => (
                     <FormItem>
@@ -464,7 +464,7 @@ export function POForm() {
                     />
                     <FormField
                       control={form.control}
-                      name={`items.${index}.allocation`} // This is the Site ID for the item
+                      name={`items.${index}.allocation`} 
                       rules={{ required: 'Allocation (Site) is required for each item' }}
                       render={({ field }) => (
                         <FormItem>
@@ -474,7 +474,7 @@ export function POForm() {
                             <SelectContent>
                               {sites.map(site => (
                                 <SelectItem key={site.id} value={site.id.toString()}>
-                                  {site.name} ({site.siteCode})
+                                  {site.siteCode || site.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -555,7 +555,7 @@ export function POForm() {
               type="button"
               variant="outline"
               onClick={() => {
-                append({...defaultItem, id: crypto.randomUUID() }); // Ensure new items get unique IDs
+                append({...defaultItem, id: crypto.randomUUID() }); 
                 form.trigger(); 
               }}
               className="mt-0"
@@ -586,13 +586,13 @@ export function POForm() {
             <div className="grid md:grid-cols-2 gap-6 items-start">
               <div className="space-y-6">
                  <div className="space-y-1">
-                  <Label>Requester Name</Label>
+                  <Label>Requester</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
                      {form.watch('requestedBy') || 'Enter requester name above'}
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label>Creator Name (Logged-in User)</Label>
+                  <Label>Creator (System User)</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
                      System User (To be implemented with Firebase Auth)
                   </div>
@@ -622,9 +622,10 @@ export function POForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Upon submission, this purchase order will be saved to the database. Ensure all database schema changes have been applied.
+          Ensure all database schema changes have been applied before submission. The system will use `creatorUserId = null` for now.
         </p>
       </CardFooter>
     </Card>
   );
 }
+
