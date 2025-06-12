@@ -1,207 +1,177 @@
 
 'use client';
 
-import type { PurchaseOrderPayload, POItemPayload, Supplier } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
+import type { PurchaseOrderPayload, POItemForPrint, Supplier } from '@/types';
 
-interface FullPODataForPrint extends PurchaseOrderPayload {
+interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
+  items: POItemForPrint[];
   supplierDetails?: Supplier;
-  // If category names / site codes are resolved, add them here or look up
+  approverName?: string;
+  // quoteNo might come from form, or be part of PurchaseOrderPayload if saved
 }
 
 interface PrintablePOProps {
   poData: FullPODataForPrint;
 }
 
-// Placeholder Company Details - Move to config later
+// Company Details from Template
 const JACHRIS_COMPANY_DETAILS = {
-  name: 'Jachris Mining Services, Lda.',
-  addressLine1: 'Estrada Nacional N7, Matema',
-  addressLine2: 'Moatize, Tete, Mozambique',
-  nuit: '400 415 954',
-  contact: 'Tel: +258 84 784 3306 / +258 86 784 3305',
-  email: 'procurement@jachris.com',
-  logoUrl: 'https://placehold.co/200x80.png?text=Jachris+Logo', // Replace with actual logo URL
+  name: 'JACHRIS MOZAMBIQUE (LTD)',
+  contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
+  address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
+  website: 'www.jachris.com',
+  logoUrl: 'https://placehold.co/150x60/f8f8f8/c70000?text=JACHRIS&font=roboto', // Placeholder for JACHRIS logo with red element
+  nuit: '400 415 954', // From other parts of app, not on PO template header directly but good to have
 };
-
-const TERMS_AND_CONDITIONS = [
-  "1. All goods must be delivered to the address specified on this order.",
-  "2. Payment terms are 30 days from date of invoice, unless otherwise agreed in writing.",
-  "3. This Purchase Order number must appear on all invoices, delivery notes, and correspondence.",
-  "4. Jachris Mining Services reserves the right to cancel this order if goods are not delivered by the agreed date.",
-  "5. All goods supplied must be of satisfactory quality and fit for purpose."
-];
 
 
 export function PrintablePO({ poData }: PrintablePOProps) {
-  const { supplierDetails } = poData;
+  const { supplierDetails, items } = poData;
 
-  const poCreationDate = poData.creationDate ? new Date(poData.creationDate).toLocaleDateString() : 'N/A';
+  const poCreationDate = poData.creationDate ? new Date(poData.creationDate).toLocaleDateString('en-GB') : 'N/A';
+  const approvalDate = poData.approvalDate ? new Date(poData.approvalDate).toLocaleDateString('en-GB') : 'N/A';
 
-  // Helper to get category name (mocked for now)
-  const getCategoryDisplay = (categoryId: number | null): string => {
-    // In a real app, you'd have categories data to look this up
-    return categoryId ? `Category ID: ${categoryId}` : 'N/A';
-  };
-
-  // Helper to get site display (mocked for now)
-  const getSiteDisplay = (siteId: number | null): string => {
-    // In a real app, you'd have sites data to look this up
-    return siteId ? `Site ID: ${siteId}` : 'N/A';
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
-    <Card className="w-full shadow-lg print:shadow-none print:border-none rounded-lg">
-      <CardContent className="p-6 sm:p-8 print:p-0">
-        {/* Header Section */}
-        <header className="mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start">
-            <div className="mb-4 sm:mb-0">
-              <img 
-                src={JACHRIS_COMPANY_DETAILS.logoUrl} 
-                alt={`${JACHRIS_COMPANY_DETAILS.name} Logo`} 
-                className="h-16 object-contain print:h-20" 
-                data-ai-hint="company logo"
-              />
-              <h1 className="text-2xl font-bold text-primary mt-2">{JACHRIS_COMPANY_DETAILS.name}</h1>
-              <p className="text-xs text-muted-foreground">{JACHRIS_COMPANY_DETAILS.addressLine1}</p>
-              <p className="text-xs text-muted-foreground">{JACHRIS_COMPANY_DETAILS.addressLine2}</p>
-              <p className="text-xs text-muted-foreground">NUIT: {JACHRIS_COMPANY_DETAILS.nuit}</p>
-              <p className="text-xs text-muted-foreground">{JACHRIS_COMPANY_DETAILS.contact}</p>
-              <p className="text-xs text-muted-foreground">Email: {JACHRIS_COMPANY_DETAILS.email}</p>
-            </div>
-            <div className="text-left sm:text-right">
-              <h2 className="text-3xl font-bold text-primary mb-2 print:text-4xl">PURCHASE ORDER</h2>
-              <p className="text-sm"><strong>PO Number:</strong> {poData.poNumber}</p>
-              <p className="text-sm"><strong>Date:</strong> {poCreationDate}</p>
-              <p className="text-sm"><strong>Status:</strong> {poData.status}</p>
-              {poData.quoteNo && <p className="text-sm"><strong>Quote No.:</strong> {poData.quoteNo}</p>}
-            </div>
+    <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}> {/* Styles to mimic template */}
+      {/* Page Header */}
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h1 className="text-lg font-bold text-red-700">{JACHRIS_COMPANY_DETAILS.name}</h1>
+          <p>{JACHRIS_COMPANY_DETAILS.contactLine1}</p>
+          <p>{JACHRIS_COMPANY_DETAILS.address}</p>
+          <p className="text-red-700">{JACHRIS_COMPANY_DETAILS.website}</p>
+        </div>
+        <div className="text-right">
+          {/* Placeholder for JACHRIS logo with red triangle. User should replace this. */}
+          <img 
+            src={JACHRIS_COMPANY_DETAILS.logoUrl} 
+            alt="JACHRIS Logo" 
+            className="h-12 mb-1 ml-auto"
+            data-ai-hint="company brand logo"
+             />
+          <h2 className="text-xl font-bold">Purchase Order</h2>
+        </div>
+      </div>
+
+      {/* PO Number and Date */}
+      <div className="flex justify-between items-center mb-2 pb-1 border-b-2 border-black">
+        <span className="text-lg font-bold text-red-700">{poData.poNumber}</span>
+        <span className="text-sm"><strong>Date:</strong> {poCreationDate}</span>
+      </div>
+
+      {/* Supplier and Other Info */}
+      <div className="grid grid-cols-2 gap-x-4 mb-4 text-xs">
+        <div>
+          <p className="mb-1"><strong>TO:</strong></p>
+          <div className="grid grid-cols-[max-content_1fr] gap-x-2">
+            <span>SUPPLIER NAME</span><span>: {supplierDetails?.supplierName || 'N/A'}</span>
+            <span>SUPPLIER ADDRESS</span><span>: {supplierDetails?.physicalAddress || 'N/A'}</span>
+            <span>SALES PERSON</span><span>: {supplierDetails?.salesPerson || 'N/A'}</span>
+            <span>CONTACT NUMBER</span><span>: {supplierDetails?.cellNumber || 'N/A'}</span>
+            <span>EMAIL ADDRESS</span><span>: {supplierDetails?.emailAddress || 'N/A'}</span>
           </div>
-        </header>
-
-        <Separator className="my-6 print:my-8" />
-
-        {/* Supplier and Requester Info */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 print:mb-8">
-          <div>
-            <h3 className="font-semibold text-primary mb-1">SUPPLIER:</h3>
-            {supplierDetails ? (
-              <>
-                <p className="font-medium">{supplierDetails.supplierName}</p>
-                {supplierDetails.physicalAddress && <p className="text-sm">{supplierDetails.physicalAddress}</p>}
-                {supplierDetails.emailAddress && <p className="text-sm">Email: {supplierDetails.emailAddress}</p>}
-                {supplierDetails.cellNumber && <p className="text-sm">Tel: {supplierDetails.cellNumber}</p>}
-                {supplierDetails.nuitNumber && <p className="text-sm">NUIT: {supplierDetails.nuitNumber}</p>}
-                {supplierDetails.salesPerson && <p className="text-sm">Contact: {supplierDetails.salesPerson}</p>}
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">Supplier details not found.</p>
-            )}
+        </div>
+        <div className="text-right">
+          <div className="inline-grid grid-cols-[max-content_1fr] gap-x-2">
+            <span>NUIT</span><span>: {supplierDetails?.nuitNumber || 'N/A'}</span>
+            <span>QUOTE No.</span><span>: {poData.quoteNo || 'N/A'}</span>
           </div>
-          <div>
-            <h3 className="font-semibold text-primary mb-1">REQUESTER DETAILS:</h3>
-            <p className="text-sm"><strong>Requested By:</strong> {poData.requestedByName || 'N/A'}</p>
-            {/* Add Creator and Approver once resolved names are available */}
-            {/* <p className="text-sm"><strong>Created By:</strong> {poData.creatorName || 'System User (TBD)'}</p> */}
-            {/* <p className="text-sm"><strong>Approved By:</strong> {poData.approverName || 'Pending Approval'}</p> */}
-          </div>
-        </section>
+        </div>
+      </div>
 
-        {/* Items Table */}
-        <section className="mb-6 print:mb-8">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 print:bg-gray-100">
-                <TableHead className="w-[50px] print:w-12">No.</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="hidden sm:table-cell">Part No.</TableHead>
-                <TableHead className="hidden md:table-cell">Category</TableHead>
-                <TableHead className="hidden md:table-cell">Site</TableHead>
-                <TableHead className="text-right">UOM</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead className="text-right">Unit Price ({poData.currency})</TableHead>
-                <TableHead className="text-right">Total ({poData.currency})</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {poData.items.map((item, index) => (
-                <TableRow key={item.partNumber || index}>
-                  <TableCell className="print:py-1">{index + 1}</TableCell>
-                  <TableCell className="font-medium print:py-1">{item.description}</TableCell>
-                  <TableCell className="hidden sm:table-cell print:py-1">{item.partNumber || '-'}</TableCell>
-                  <TableCell className="hidden md:table-cell print:py-1">{getCategoryDisplay(item.categoryId)}</TableCell>
-                  <TableCell className="hidden md:table-cell print:py-1">{getSiteDisplay(item.allocation ? Number(item.allocation) : null)}</TableCell>
-                  <TableCell className="text-right print:py-1">{item.uom}</TableCell>
-                  <TableCell className="text-right print:py-1">{item.quantity}</TableCell>
-                  <TableCell className="text-right print:py-1">{item.unitPrice.toFixed(2)}</TableCell>
-                  <TableCell className="text-right print:py-1">{(item.quantity * item.unitPrice).toFixed(2)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </section>
-
-        {/* Totals Section */}
-        <section className="flex justify-end mb-6 print:mb-8">
-          <div className="w-full sm:w-auto sm:min-w-[280px] space-y-1 text-sm">
-            <div className="flex justify-between py-1 border-b">
-              <span>Subtotal:</span>
-              <span className="font-medium">{poData.currency} {poData.subTotal.toFixed(2)}</span>
-            </div>
-            {poData.currency === 'MZN' && (
-              <div className="flex justify-between py-1 border-b">
-                <span>VAT (16%):</span>
-                <span className="font-medium">{poData.currency} {poData.vatAmount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between py-2 text-lg font-bold border-t-2 border-primary mt-2">
-              <span>GRAND TOTAL:</span>
-              <span>{poData.currency} {poData.grandTotal.toFixed(2)}</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Notes Section */}
-        {poData.notes && (
-          <section className="mb-6 print:mb-8">
-            <h3 className="font-semibold text-primary mb-1">Notes:</h3>
-            <p className="text-sm whitespace-pre-wrap p-3 border rounded-md bg-muted/30">{poData.notes}</p>
-          </section>
-        )}
-
-        {/* Terms and Conditions */}
-        <section className="mb-6 print:mb-8">
-          <h3 className="font-semibold text-primary mb-2">Terms &amp; Conditions:</h3>
-          <ol className="list-decimal list-inside text-xs space-y-1 text-muted-foreground">
-            {TERMS_AND_CONDITIONS.map((term, index) => (
-              <li key={index}>{term}</li>
+      {/* Items Table */}
+      <div className="mb-1 min-h-[300px]"> {/* min-h to ensure table area has some space */}
+        <table className="w-full border-collapse border border-black">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-black p-1 text-left">PART NUMBER</th>
+              <th className="border border-black p-1 text-left">DESCRIPTION</th>
+              <th className="border border-black p-1 text-left">ALLOCATION</th>
+              <th className="border border-black p-1 text-center">UNIT</th>
+              <th className="border border-black p-1 text-center">QTY</th>
+              <th className="border border-black p-1 text-right">UNIT PRICE</th>
+              <th className="border border-black p-1 text-right">TOTAL (Excl VAT)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={item.id || index}>
+                <td className="border border-black p-1 align-top">{item.partNumber || ''}</td>
+                <td className="border border-black p-1 align-top">{item.description}</td>
+                <td className="border border-black p-1 align-top">{item.siteDisplay || 'N/A'}</td>
+                <td className="border border-black p-1 text-center align-top">{item.uom}</td>
+                <td className="border border-black p-1 text-center align-top">{item.quantity}</td>
+                <td className="border border-black p-1 text-right align-top">{formatCurrency(item.unitPrice)}</td>
+                <td className="border border-black p-1 text-right align-top">{formatCurrency(item.quantity * item.unitPrice)}</td>
+              </tr>
             ))}
-          </ol>
-        </section>
-
-        {/* Signature Section */}
-        <footer className="pt-8 mt-8 border-t">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div>
-              <p className="mb-1 text-sm font-medium">Prepared By:</p>
-              <div className="h-16 border-b mb-1 print:h-20"></div>
-              <p className="text-xs text-muted-foreground">Procurement Department</p>
-            </div>
-            <div>
-              <p className="mb-1 text-sm font-medium">Approved By:</p>
-              <div className="h-16 border-b mb-1 print:h-20"></div>
-              <p className="text-xs text-muted-foreground">Authorised Signatory</p>
-            </div>
+            {/* Add empty rows to fill space if needed, for visual consistency with a fixed-height table area */}
+            {Array.from({ length: Math.max(0, 10 - items.length) }).map((_, i) => (
+                <tr key={`empty-${i}`}>
+                    <td className="border border-black p-1 h-6">&nbsp;</td>
+                    <td className="border border-black p-1">&nbsp;</td>
+                    <td className="border border-black p-1">&nbsp;</td>
+                    <td className="border border-black p-1">&nbsp;</td>
+                    <td className="border border-black p-1">&nbsp;</td>
+                    <td className="border border-black p-1">&nbsp;</td>
+                    <td className="border border-black p-1">&nbsp;</td>
+                </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Totals Section */}
+      <div className="flex justify-end mb-4">
+        <div className="w-[250px] text-xs">
+          <div className="flex justify-between border-b border-black py-0.5">
+            <span>SUBTOTAL</span>
+            <span>{formatCurrency(poData.subTotal)}</span>
           </div>
-          <p className="text-center text-xs text-muted-foreground mt-8 print:mt-12">
-            Thank you for your business!
-          </p>
-        </footer>
+          <div className="flex justify-between border-b border-black py-0.5">
+            <span>IVA (16%)</span>
+            <span>
+              {poData.currency === 'MZN' ? formatCurrency(poData.vatAmount) : (poData.pricesIncludeVat ? 'IVA Incl.' : 'N/A')}
+            </span>
+          </div>
+          <div className="flex justify-between font-bold pt-0.5">
+            <span>GRAND TOTAL</span>
+            <span>{poData.currency} {formatCurrency(poData.grandTotal)}</span>
+          </div>
+        </div>
+      </div>
 
-      </CardContent>
-    </Card>
+      {/* Footer Section */}
+      <div className="text-xs pt-2 border-t-2 border-black">
+        <div className="grid grid-cols-2 gap-x-4">
+            <div>
+                <div className="flex mb-1">
+                    <span className="w-28">Prepared By</span><span>: {poData.creatorName || "System User (JMS)"}</span>
+                </div>
+                <div className="flex mb-1">
+                    <span className="w-28">Requested By</span><span>: {poData.requestedByName || 'N/A'}</span>
+                </div>
+                <div className="flex mb-1">
+                    <span className="w-28">Approved By</span><span>: {poData.approverName || (poData.approverId ? `Approver ID: ${poData.approverId}`: 'Pending')}</span>
+                </div>
+                 <div className="flex">
+                    <span className="w-28">Date</span><span>: {poData.status === 'Approved' && approvalDate !== 'N/A' ? approvalDate : 'Pending Approval'}</span>
+                </div>
+            </div>
+            <div className="flex flex-col items-end">
+                <div className="h-8 w-48 border-b border-black mb-1 mt-8"></div>
+                <p className="mr-[70px]">Signature</p>
+            </div>
+        </div>
+      </div>
+       {/* Optional: Add a small note about the company if needed, not in template but common */}
+       {/* <p className="text-center text-[10px] text-gray-500 mt-6">
+        {JACHRIS_COMPANY_DETAILS.name} - NUIT: {JACHRIS_COMPANY_DETAILS.nuit}
+      </p> */}
+    </div>
   );
 }
