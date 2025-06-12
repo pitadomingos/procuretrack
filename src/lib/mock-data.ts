@@ -28,10 +28,16 @@ export const dashboardStats: StatCardItem[] = [
     description: 'POs awaiting approval or items.',
   },
   {
-    title: 'Total Quotes',
+    title: 'Total Requisitions',
     value: 'N/A',
     icon: ClipboardList,
-    description: 'Coming Soon: Track quotations.',
+    description: 'Coming Soon: Track requisitions.',
+  },
+  {
+    title: 'Total Quotes',
+    value: 'N/A',
+    icon: FileText, // Changed from ClipboardList to avoid repetition, FileText for quotes
+    description: 'Coming Soon: Track client quotations.',
   },
   {
     title: 'Fuel Entries',
@@ -120,21 +126,13 @@ export const poCountByCategoryData: ChartDataPoint[] = [
 ];
 
 export const mockSuppliers: Supplier[] = [
-  { id: 'supplier1', name: 'Lebreya Limitada', email: 'lebreya@fulaho.com', salesPerson: 'Mr Eugenio', contactNumber: '258 84 784 3306', nuit: '401034676', address: 'En7, Matema Loja 3, Tete' },
-  { id: 'supplier2', name: 'Global Office Solutions', email: 'sales@globaloffice.co.mz', salesPerson: 'Ana Pereira', contactNumber: '258 82 123 4567', nuit: '400123456', address: 'Av. 25 de Setembro, Maputo' },
-  { id: 'supplier3', name: 'Tete Hardware Store', email: 'info@tetehardware.com', salesPerson: 'John Banda', contactNumber: '258 87 987 6543', nuit: '400654321', address: 'Bairro Josina Machel, Tete' },
-  { id: 'supplier4', name: 'Moz Safety Gear', email: 'contact@mozsafety.co.mz', salesPerson: 'Sofia Charle', contactNumber: '258 86 111 2222', nuit: '400987654', address: 'Rua da Segurança, Beira' },
-  { id: 'supplier5', name: 'InfoTech Mozambique', email: 'support@infotech.co.mz', salesPerson: 'David Junior', contactNumber: '258 84 555 0000', nuit: '400112233', address: 'Av. Eduardo Mondlane, Maputo' },
+  { supplierCode: 'supplier1', supplierName: 'Lebreya Limitada', emailAddress: 'lebreya@fulaho.com', salesPerson: 'Mr Eugenio', cellNumber: '258 84 784 3306', nuitNumber: '401034676', physicalAddress: 'En7, Matema Loja 3, Tete' },
+  { supplierCode: 'supplier2', supplierName: 'Global Office Solutions', emailAddress: 'sales@globaloffice.co.mz', salesPerson: 'Ana Pereira', cellNumber: '258 82 123 4567', nuitNumber: '400123456', physicalAddress: 'Av. 25 de Setembro, Maputo' },
+  { supplierCode: 'supplier3', supplierName: 'Tete Hardware Store', emailAddress: 'info@tetehardware.com', salesPerson: 'John Banda', cellNumber: '258 87 987 6543', nuitNumber: '400654321', physicalAddress: 'Bairro Josina Machel, Tete' },
+  { supplierCode: 'supplier4', supplierName: 'Moz Safety Gear', emailAddress: 'contact@mozsafety.co.mz', salesPerson: 'Sofia Charle', cellNumber: '258 86 111 2222', nuitNumber: '400987654', physicalAddress: 'Rua da Segurança, Beira' },
+  { supplierCode: 'supplier5', supplierName: 'InfoTech Mozambique', emailAddress: 'support@infotech.co.mz', salesPerson: 'David Junior', cellNumber: '258 84 555 0000', nuitNumber: '400112233', physicalAddress: 'Av. Eduardo Mondlane, Maputo' },
 ];
 
-export const mockApprovers: { id: string; name: string }[] = [
-  { id: 'approver1', name: 'Alice Manager' },
-  { id: 'approver2', name: 'Bob Director' },
-  { id: 'approver3', name: 'Carol CFO' },
-  { id: 'approver4', name: 'David Operations Head' },
-];
-
-// Mock Data for Management Pages
 export const mockApproversData: Approver[] = [
   { id: 'APP001', name: 'Alice Wonderland', email: 'alice.w@example.com', department: 'Finance', isActive: true },
   { id: 'APP002', name: 'Bob The Builder', email: 'bob.b@example.com', department: 'Operations', isActive: true },
@@ -155,10 +153,10 @@ export const mockUsersData: User[] = [
 ];
 
 export const mockSitesData: Site[] = [
-  { id: 'SITE001', name: 'Head Office - Maputo', location: 'Maputo, Mozambique', siteCode: 'HQ-MPM' },
-  { id: 'SITE002', name: 'Tete Operations Base', location: 'Tete, Mozambique', siteCode: 'OPS-TET' },
-  { id: 'SITE003', name: 'Beira Warehouse', location: 'Beira, Mozambique', siteCode: 'WH-BEW' },
-  { id: 'SITE004', name: 'Nampula Branch', location: 'Nampula, Mozambique', siteCode: 'BR-NPL' },
+  { id: 1, name: 'Head Office - Maputo', location: 'Maputo, Mozambique', siteCode: 'HQ-MPM' },
+  { id: 2, name: 'Tete Operations Base', location: 'Tete, Mozambique', siteCode: 'OPS-TET' },
+  { id: 3, name: 'Beira Warehouse', location: 'Beira, Mozambique', siteCode: 'WH-BEW' },
+  { id: 4, name: 'Nampula Branch', location: 'Nampula, Mozambique', siteCode: 'BR-NPL' },
 ];
 
 export const mockAllocationsData: Allocation[] = [
@@ -175,17 +173,16 @@ export const mockAllocationsData: Allocation[] = [
 ];
 
 export const mockCategoriesData: Category[] = [
-  { id: 'CAT001', name: 'Stationery', description: 'Office stationery supplies' },
-  { id: 'CAT002', name: 'IT Equipment', description: 'Computers, peripherals, software' },
-  { id: 'CAT003', name: 'Safety Gear (PPE)', parentCategory: 'CAT009' },
-  { id: 'CAT004', name: 'Tools & Hardware' },
-  { id: 'CAT005', name: 'Consultancy Services', description: 'External consulting fees' },
-  { id: 'CAT006', name: 'Vehicle Maintenance', parentCategory: 'CAT010' },
-  { id: 'CAT007', name: 'Office Furniture' },
-  { id: 'CAT008', name: 'Cleaning Supplies' },
-  { id: 'CAT009', name: 'Safety Equipment', description: 'General safety items' },
-  { id: 'CAT010', name: 'Fleet Management', description: 'Vehicle related expenses' },
-  { id: 'CAT011', name: 'Software Licenses', parentCategory: 'CAT002' },
-  { id: 'CAT012', name: 'Travel & Accommodation' },
+  { id: 1, category: 'Stationery' },
+  { id: 2, category: 'IT Equipment' },
+  { id: 3, category: 'Safety Gear (PPE)' },
+  { id: 4, category: 'Tools & Hardware' },
+  { id: 5, category: 'Consultancy Services' },
+  { id: 6, category: 'Vehicle Maintenance' },
+  { id: 7, category: 'Office Furniture' },
+  { id: 8, category: 'Cleaning Supplies' },
+  { id: 9, category: 'Safety Equipment' },
+  { id: 10, category: 'Fleet Management' },
+  { id: 11, category: 'Software Licenses' },
+  { id: 12, category: 'Travel & Accommodation' },
 ];
-
