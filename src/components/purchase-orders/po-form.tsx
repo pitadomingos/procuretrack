@@ -18,11 +18,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Send, Printer } from 'lucide-react';
+import { PlusCircle, Trash2, Send, Printer, Loader2 } from 'lucide-react';
 import type { Supplier, Site, Category as CategoryType, Approver, POItem as POItemType, PurchaseOrderPayload, POItemPayload } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 // Using 'any' for form values temporarily to simplify until Zod is fully integrated.
 type POFormValues = any;
@@ -32,10 +32,12 @@ const defaultItem: POItemType = { id: crypto.randomUUID(), partNumber: '', descr
 
 export function POForm() {
   const { toast } = useToast();
+  const router = useRouter(); // Initialize useRouter
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
-  const [lastSubmittedPoId, setLastSubmittedPoId] = useState<number | null>(null);
+  const [lastSubmittedPoNumber, setLastSubmittedPoNumber] = useState<string | null>(null);
+  const [isPrintingLoading, setIsPrintingLoading] = useState(false);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -44,7 +46,7 @@ export function POForm() {
 
   const form = useForm<POFormValues>({
     defaultValues: {
-      vendorName: '', // This will hold supplierCode
+      vendorName: '', 
       vendorEmail: '',
       salesPerson: '',
       supplierContactNumber: '',
@@ -180,7 +182,7 @@ export function POForm() {
       return;
     }
 
-    const poNumber = form.getValues('poNumberDisplay');
+    const poNumber = form.getValues('poNumberDisplay'); // Use the current value from the (now editable) field
     const poDate = form.getValues('poDate');
 
     const purchaseOrderPayload: PurchaseOrderPayload = {
@@ -208,8 +210,6 @@ export function POForm() {
       })),
     };
 
-    console.log('Submitting PO Payload:', purchaseOrderPayload);
-
     try {
       const response = await fetch('/api/purchase-orders', {
         method: 'POST',
@@ -230,18 +230,64 @@ export function POForm() {
         title: 'Success!',
         description: `Purchase Order ${result.poNumber} (ID: ${result.poId}) created successfully.`,
       });
-      setLastSubmittedPoId(result.poId); // Store the ID of the submitted PO
+      setLastSubmittedPoNumber(result.poNumber); // Store the PO number for potential immediate print
       form.reset(); 
       await fetchNextPONumber(); 
 
     } catch (error: any) {
       console.error('Error submitting PO:', error);
-      setLastSubmittedPoId(null); // Clear in case of error
+      setLastSubmittedPoNumber(null); 
       toast({
         title: 'Error Submitting PO',
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleViewPrintPO = async () => {
+    const currentPoNumber = form.getValues('poNumberDisplay');
+    if (!currentPoNumber || currentPoNumber === 'Loading PO...' || currentPoNumber === 'PO-ERROR') {
+      toast({
+        title: 'PO Number Required',
+        description: 'Please enter or load a valid PO Number to view/print.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsPrintingLoading(true);
+    try {
+      const response = await fetch(`/api/purchase-orders/get-by-po-number/${encodeURIComponent(currentPoNumber)}`);
+      if (response.ok) {
+        const poDetails = await response.json();
+        if (poDetails && poDetails.id) {
+          window.open(`/purchase-orders/${poDetails.id}/print`, '_blank');
+        } else {
+          toast({
+            title: 'PO Not Found',
+            description: `Purchase Order ${currentPoNumber} could not be found.`,
+            variant: 'destructive',
+          });
+        }
+      } else if (response.status === 404) {
+        toast({
+          title: 'PO Not Found',
+          description: `Purchase Order ${currentPoNumber} not found. It might not be submitted yet or the number is incorrect.`,
+          variant: 'destructive',
+        });
+      } else {
+        throw new Error(`Failed to fetch PO details: ${response.statusText}`);
+      }
+    } catch (error: any) {
+      console.error('Error preparing PO for print:', error);
+      toast({
+        title: 'Error',
+        description: `Could not prepare PO for printing: ${error.message}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsPrintingLoading(false);
     }
   };
 
@@ -332,16 +378,25 @@ export function POForm() {
                     </FormItem> 
                   )} 
                 />
-
-                <div className="space-y-1">
-                  <Label htmlFor="poNumberDisplayGenerated">PO Number</Label>
-                  <Input
-                    id="poNumberDisplayGenerated"
-                    value={form.watch('poNumberDisplay')}
-                    readOnly
-                    className="font-medium bg-muted/30 border-muted cursor-default"
-                  />
-                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="poNumberDisplay"
+                  rules={{ required: 'PO Number is required' }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PO Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Enter PO Number or auto-generates"
+                          {...field}
+                          // Removed readOnly, it's now editable
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 
@@ -619,28 +674,35 @@ export function POForm() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 mt-6">
-              <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={form.formState.isSubmitting || !form.formState.isValid && form.formState.isSubmitted}>
-                <Send className="mr-2 h-4 w-4" /> {form.formState.isSubmitting ? 'Submitting...' : 'Submit PO'}
+              <Button 
+                type="submit" 
+                className="w-full sm:w-auto" 
+                size="lg" 
+                disabled={form.formState.isSubmitting || (!form.formState.isValid && form.formState.isSubmitted)}
+              >
+                {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                {form.formState.isSubmitting ? 'Submitting...' : 'Submit PO'}
               </Button>
-              {lastSubmittedPoId && (
-                <Link href={`/purchase-orders/${lastSubmittedPoId}/print`} passHref legacyBehavior>
-                  <a target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
-                    <Button type="button" variant="outline" size="lg" className="w-full">
-                      <Printer className="mr-2 h-4 w-4" /> View/Print PO
-                    </Button>
-                  </a>
-                </Link>
-              )}
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="lg" 
+                className="w-full sm:w-auto"
+                onClick={handleViewPrintPO}
+                disabled={isPrintingLoading}
+              >
+                {isPrintingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
+                {isPrintingLoading ? 'Loading...' : 'View/Print PO'}
+              </Button>
             </div>
           </form>
         </Form>
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Ensure all database schema changes have been applied before submission. The system will use `creatorUserId = null` for now.
+          PO Number can be edited. If viewing an existing PO, ensure the number is correct before clicking 'View/Print PO'.
         </p>
       </CardFooter>
     </Card>
   );
 }
-
