@@ -31,25 +31,25 @@ export const dashboardStats: StatCardItem[] = [
     title: 'Total Requisitions',
     value: 'N/A',
     icon: ClipboardList,
-    description: 'Coming Soon: Track requisitions.',
+    description: 'Overview of internal purchase requisitions.',
   },
   {
-    title: 'Total Quotes',
+    title: 'Client Quotes',
     value: 'N/A',
-    icon: FileText, // Changed from ClipboardList to avoid repetition, FileText for quotes
-    description: 'Coming Soon: Track client quotations.',
+    icon: FileText, 
+    description: 'Overview of quotes issued to Jachris Mining Services clients.',
   },
   {
-    title: 'Fuel Entries',
+    title: 'Fuel Records',
     value: 'N/A',
     icon: Fuel,
-    description: 'Coming Soon: Logged fuel records.',
+    description: 'Summary of logged fuel consumption entries.',
   },
   {
-    title: 'Recent GRNs',
+    title: 'Goods Received Notes',
     value: 'N/A',
     icon: Truck,
-    description: 'Coming Soon: Goods Received Notes.',
+    description: 'Overview of recent GRNs processed.',
   },
 ];
 
