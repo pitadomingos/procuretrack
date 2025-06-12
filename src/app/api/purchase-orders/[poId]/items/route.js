@@ -1,5 +1,5 @@
 
-import { pool } from '../../../../../../backend/db.js'; // Adjust path as needed
+import { pool } from '../../../../../../backend/db.js'; // Corrected relative path
 import { NextResponse } from 'next/server';
 import multer from 'multer';
 import csv from 'csv-parser';
