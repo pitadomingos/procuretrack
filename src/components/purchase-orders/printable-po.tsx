@@ -20,7 +20,7 @@ const JACHRIS_COMPANY_DETAILS = {
   contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
-  logoUrl: 'https://placehold.co/150x60/f8f8f8/c70000?text=JACHRIS&font=roboto', // Placeholder for JACHRIS logo with red element
+  logoUrl: '/jachris-logo.png', // Updated to reference local logo
   nuit: '400 415 954', // From other parts of app, not on PO template header directly but good to have
 };
 
@@ -46,12 +46,12 @@ export function PrintablePO({ poData }: PrintablePOProps) {
           <p className="text-red-700">{JACHRIS_COMPANY_DETAILS.website}</p>
         </div>
         <div className="text-right">
-          {/* Placeholder for JACHRIS logo with red triangle. User should replace this. */}
-          <img 
-            src={JACHRIS_COMPANY_DETAILS.logoUrl} 
-            alt="JACHRIS Logo" 
-            className="h-12 mb-1 ml-auto"
-            data-ai-hint="company brand logo"
+          {/* Reference the local logo. User should place their jachris-logo.png in the /public folder */}
+          <img
+            src={JACHRIS_COMPANY_DETAILS.logoUrl}
+            alt="JACHRIS Logo"
+            className="h-12 mb-1 ml-auto" // Adjust height/styling as needed
+            data-ai-hint="company brand logo" // Keep hint for potential future AI image replacement if user desires
              />
           <h2 className="text-xl font-bold">Purchase Order</h2>
         </div>
@@ -124,7 +124,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
           </tbody>
         </table>
       </div>
-      
+
       {/* Totals Section */}
       <div className="flex justify-end mb-4">
         <div className="w-[250px] text-xs">
@@ -168,10 +168,6 @@ export function PrintablePO({ poData }: PrintablePOProps) {
             </div>
         </div>
       </div>
-       {/* Optional: Add a small note about the company if needed, not in template but common */}
-       {/* <p className="text-center text-[10px] text-gray-500 mt-6">
-        {JACHRIS_COMPANY_DETAILS.name} - NUIT: {JACHRIS_COMPANY_DETAILS.nuit}
-      </p> */}
     </div>
   );
 }
