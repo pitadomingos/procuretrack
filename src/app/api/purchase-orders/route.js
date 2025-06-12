@@ -37,11 +37,10 @@ export async function POST(request) {
       const {
         poNumber,
         creationDate,
-        creatorUserId, // Expecting null for now, or Firebase User ID later
-        requestedByName, // New field for the requester's name
-        supplierId,    // This is supplierCode
-        approverId,    // This is Approver.id
-        // siteId,     // Overall PO siteId, not currently in form header
+        creatorUserId, 
+        requestedByName, 
+        supplierId,    
+        approverId,    
         status,
         subTotal,
         vatAmount,
@@ -55,7 +54,6 @@ export async function POST(request) {
       connection = await pool.getConnection();
       await connection.beginTransaction();
 
-      // Ensure creatorUserId is explicitly null if not provided or empty
       const finalCreatorUserId = creatorUserId || null;
 
       const [poResult] = await connection.execute(
@@ -68,14 +66,12 @@ export async function POST(request) {
 
       if (items && items.length > 0) {
         for (const item of items) {
-          // item.allocation is Site.id, item.categoryId is Category.id (number | null)
-          // The POItem table itself doesn't have an 'allocation' or 'siteId' column in the current schema.
-          // If it needs to be linked to a site per item, the POItem table needs a siteId column.
-          // For now, item.allocation is not saved to POItem table.
+          // item.allocation is Site.id (string from payload), item.categoryId is Category.id (number | null)
+          // POItem.siteId expects an INT.
           await connection.execute(
-            `INSERT INTO POItem (poId, partNumber, description, categoryId, uom, quantity, unitPrice)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [newPoId, item.partNumber, item.description, item.categoryId, item.uom, Number(item.quantity), Number(item.unitPrice)]
+            `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [newPoId, item.partNumber, item.description, item.categoryId, Number(item.allocation) || null, item.uom, Number(item.quantity), Number(item.unitPrice)]
           );
         }
       }
