@@ -13,13 +13,17 @@ import {
   Settings2, 
   ShieldCheck, 
   BrainCircuit,
-  LayoutDashboard, // Added
-  Settings,        // Added
-  BarChart3,       // Added (assuming this is the intended icon, lucide has BarChartBig, BarChartHorizontal etc.)
-  FileText,        // Added
-  BookUser,        // Added
-  FileCode,        // Added
-  ClipboardCheck   // Added (for CardHeader)
+  LayoutDashboard,
+  Settings,
+  BarChart3,
+  FileText,
+  BookUser,
+  FileCode,
+  ClipboardCheck,
+  Printer, // Added for PDF Generation
+  UserCheck, // Added for My Approvals
+  ServerCog, // Added for API
+  Edit3, // Added for PO Editing specific task
 } from "lucide-react";
 
 export default function TodoProgressPage() {
@@ -30,7 +34,12 @@ export default function TodoProgressPage() {
     { icon: Palette, text: "Dark Mode & Light Mode theme toggle functionality." },
     { icon: LayoutDashboard, text: "Dashboard Page: Stat cards, placeholder charts for PO status and allocations." },
     { icon: FileSignature, text: "Create Document Page: Tabbed interface for PO, GRN, Quote (placeholder), Fuel (placeholder)." },
-    { icon: FileSignature, text: "Purchase Order (PO) Form: Detailed form with item array, calculations, supplier selection." },
+    { icon: FileSignature, text: "Purchase Order (PO) Form: Detailed form for creating POs with item arrays, calculations, and supplier selection." },
+    { icon: Edit3, text: "PO Editing Functionality: Load existing PO data into form, update header & items via API, manage PO number display (read-only in edit mode)." },
+    { icon: Printer, text: "PO PDF Generation: Server-side creation and download of POs as PDF documents using Puppeteer, including print styling." },
+    { icon: UserCheck, text: "'My Approvals' Page: List POs pending for a specific (mock) approver with navigation to print/approve page." },
+    { icon: ServerCog, text: "API for Pending Approvals: Endpoint to fetch purchase orders awaiting approval for a given approver email." },
+    { icon: DatabaseZap, text: "Database Schema Management: Enhanced scripts for `PurchaseOrder` table columns (approver links, dropping obsolete fields, FK constraints)." },
     { icon: Users, text: "Goods Received Note (GRN) Interface: PO search and item receiving simulation." },
     { icon: Settings, text: "Management Section Hub: Links to individual entity management pages." },
     { icon: Users, text: "Placeholder Management Pages: For Approvers, Users, Sites, Allocations, Categories with mock data tables." },
@@ -42,14 +51,14 @@ export default function TodoProgressPage() {
   ];
 
   const upcomingTasks = [
-    { icon: DatabaseZap, text: "Full Backend Integration: Connect forms and tables to the MySQL database via Express API for all CRUD operations (Suppliers, POs, Users, Sites, etc.)." },
+    { icon: DatabaseZap, text: "Full Backend Integration: Connect forms and tables to the MySQL database via Express API for all CRUD operations (Suppliers, Users, Sites, Categories, etc.)." },
     { icon: FileSignature, text: "Complete GRN Functionality: Actual item receipt processing, stock updates, back-order handling." },
-    { icon: FileSignature, text: "Build 'Create Quotation' Form & Workflow: Allow users to generate and manage supplier quotations." },
+    { icon: ClipboardList, text: "Implement Purchase Requisition & Supplier Quotation Process: Forms for internal requisitions, handling supplier quotes, and converting to POs." },
     { icon: Fuel, text: "Implement 'Record Fuel' Form & Logic: Track fuel consumption, vehicle mileage, and inventory." },
     { icon: FileText, text: "Develop Report Generation: Create dynamic reports based on system data (PO status, spend, vendor performance)." },
-    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement login, user roles, and permissions." },
+    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement login, user roles, and permissions (critical for 'My Approvals' with actual user)." },
     { icon: BrainCircuit, text: "Integrate Genkit for AI Features: Explore AI-assisted form filling, data analysis, or report summaries." },
-    { icon: Zap, text: "Real-time Notifications: For PO approvals, new assignments, etc." },
+    { icon: Zap, text: "Real-time Notifications (e.g., Email for PO approvals, new assignments)." },
     { icon: DatabaseZap, text: "Data Upload Functionality: Implement CSV/Excel uploads for suppliers, POs, etc. via backend routes." },
     { icon: Users, text: "User Profile & Settings Page: Allow users to manage their preferences." },
   ];
