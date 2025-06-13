@@ -237,8 +237,13 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
     }
     setIsSubmitting(true);
 
+    // For edit mode, the poNumber is taken from the read-only display field which was populated from initial data.
+    // For new mode, it's taken from what the user might have typed or the suggested value.
+    const poNumberToSubmit = formData.poNumberDisplay;
+
+
     const payload: Omit<PurchaseOrderPayload, 'id' | 'status' | 'creatorUserId' | 'approvalDate' | 'supplierDetails' | 'creatorName' | 'approverName' | 'approverSignatureUrl'> & { items: POItemPayload[] } = {
-      poNumber: formData.poNumberDisplay,
+      poNumber: poNumberToSubmit,
       creationDate: new Date(formData.poDate).toISOString(),
       requestedByName: formData.requestedByName,
       supplierId: formData.vendorName,
@@ -265,7 +270,7 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
       let response;
       let successMessage = '';
 
-      if (editMode) {
+      if (editMode && poIdToEdit) { // Ensure poIdToEdit is present for PUT
         response = await fetch(`/api/purchase-orders/${poIdToEdit}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -292,9 +297,11 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
       if (!editMode) {
         form.reset(); // Reset form only on create
         await fetchNextPONumber();
-      } else {
-        // Optionally, navigate away or refresh data for edit mode
+      } else if (result.poId) { // Ensure result.poId is available before redirecting
         router.push(`/purchase-orders/${result.poId}/print`);
+      } else {
+        // Fallback or error handling if poId isn't returned on update
+        router.push(`/`); // Or some other sensible default
       }
 
     } catch (error: any) {
@@ -305,24 +312,33 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
   };
 
   const handleViewPrintPO = async () => {
-    const currentPoNumber = form.getValues('poNumberDisplay');
-    if (!currentPoNumber || currentPoNumber === 'Loading PO...' || currentPoNumber === 'PO-ERROR') {
-      toast({ title: 'PO Number Required', description: 'PO Number must be loaded or entered.', variant: 'destructive' });
-      return;
-    }
     setIsPrintingLoading(true);
     try {
-      // Try to find PO by number first. If editing, poIdToEdit should exist.
-      const targetPoId = poIdToEdit || (await (async () => {
-        const res = await fetch(`/api/purchase-orders/get-by-po-number/${encodeURIComponent(currentPoNumber)}`);
-        if (res.ok) return (await res.json()).id;
-        return null;
-      })());
+      let targetPoId = poIdToEdit; // Prioritize poIdToEdit if in edit mode
+
+      if (!targetPoId) { // If not in edit mode (new PO), try to get ID from the current PO number in the form
+        const currentPoNumberInForm = form.getValues('poNumberDisplay');
+        if (!currentPoNumberInForm || currentPoNumberInForm === 'Loading PO...' || currentPoNumberInForm === 'PO-ERROR') {
+          toast({ title: 'PO Number Required', description: 'PO Number must be loaded or entered to view/print.', variant: 'destructive' });
+          setIsPrintingLoading(false);
+          return;
+        }
+        const res = await fetch(`/api/purchase-orders/get-by-po-number/${encodeURIComponent(currentPoNumberInForm)}`);
+        if (res.ok) {
+          const poDetails = await res.json();
+          targetPoId = poDetails.id;
+        } else {
+          toast({ title: 'PO Not Found', description: `PO ${currentPoNumberInForm} not found. Save it first if it's a new PO.`, variant: 'destructive' });
+          setIsPrintingLoading(false);
+          return;
+        }
+      }
 
       if (targetPoId) {
         window.open(`/purchase-orders/${targetPoId}/print`, '_blank');
       } else {
-        toast({ title: 'PO Not Found', description: `PO ${currentPoNumber} not found.`, variant: 'destructive' });
+        // This case should ideally not be hit if the logic above is sound
+        toast({ title: 'Error', description: 'Could not determine PO to view/print.', variant: 'destructive' });
       }
     } catch (error: any) {
       toast({ title: 'Error', description: `Could not prepare PO for printing: ${error.message}`, variant: 'destructive' });
@@ -399,6 +415,7 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
                         <Input
                           placeholder="PO Number"
                           {...field}
+                          readOnly={editMode} // PO Number is read-only in edit mode
                         />
                       </FormControl>
                       <FormMessage />
@@ -469,7 +486,7 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          {editMode ? "You are editing an existing Purchase Order." : "PO Number can be edited. If viewing an existing PO, ensure the number is correct."}
+          {editMode ? "You are editing an existing Purchase Order. PO Number is not editable here." : "PO Number can be edited. If viewing an existing PO, ensure the number is correct."}
         </p>
       </CardFooter>
     </Card>
