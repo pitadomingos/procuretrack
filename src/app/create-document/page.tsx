@@ -8,72 +8,23 @@ import { GRNInterface } from '@/components/receiving/grn-interface';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import type { PurchaseOrderPayload } from '@/types';
+// No longer need PurchaseOrderPayload here as POForm handles its own fetching via prop
+// import type { PurchaseOrderPayload } from '@/types';
 
 function CreateDocumentContent() {
   const searchParams = useSearchParams();
-  const poIdToEdit = searchParams.get('editPoId');
-  const [initialPOData, setInitialPOData] = useState<PurchaseOrderPayload | null>(null);
-  const [loadingPO, setLoadingPO] = useState(false);
-  const [errorPO, setErrorPO] = useState<string | null>(null);
+  const poIdToEditFromUrl = searchParams.get('editPoId');
+  // POForm now handles its own data fetching based on poIdToEditProp.
+  // No need for initialPOData, loadingPO, errorPO states here anymore.
 
-  useEffect(() => {
-    if (poIdToEdit) {
-      setLoadingPO(true);
-      setErrorPO(null);
-      fetch(`/api/purchase-orders/${poIdToEdit}`)
-        .then(res => {
-          if (!res.ok) {
-            throw new Error(`Failed to fetch PO ${poIdToEdit} for editing. Status: ${res.status}`);
-          }
-          return res.json();
-        })
-        .then((data: PurchaseOrderPayload) => {
-          // Additional fetch for supplier details if not included
-          if (data.supplierId && !data.supplierDetails) {
-            return fetch(`/api/suppliers`) // Assuming GET /api/suppliers returns all, then find
-              .then(supRes => supRes.json())
-              .then(allSuppliers => {
-                const supplier = allSuppliers.find((s: any) => s.supplierCode === data.supplierId);
-                setInitialPOData({ ...data, supplierDetails: supplier });
-              });
-          } else {
-            setInitialPOData(data);
-          }
-        })
-        .catch(err => {
-          console.error("Error fetching PO for edit:", err);
-          setErrorPO(err.message || "Could not load PO data for editing.");
-        })
-        .finally(() => setLoadingPO(false));
-    }
-  }, [poIdToEdit]);
-
-  if (poIdToEdit && loadingPO) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[300px]">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-        <p className="text-muted-foreground">Loading Purchase Order for editing...</p>
-      </div>
-    );
-  }
-
-  if (poIdToEdit && errorPO) {
-    return (
-      <div className="text-center p-6 bg-destructive/10 border border-destructive rounded-md">
-        <p className="text-destructive-foreground font-semibold">Error Loading PO</p>
-        <p className="text-destructive-foreground/80 text-sm">{errorPO}</p>
-      </div>
-    );
-  }
-  
-  const defaultTab = poIdToEdit ? "create-po" : "create-po";
+  // Determine default tab. If poIdToEditFromUrl is present, default to PO tab.
+  const defaultTab = poIdToEditFromUrl ? "create-po" : "create-po";
 
   return (
     <Tabs defaultValue={defaultTab} className="w-full space-y-6">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
         <TabsTrigger value="create-po">
-          {poIdToEdit ? 'Edit PO' : 'Create PO'}
+          {poIdToEditFromUrl ? 'Edit PO' : 'Create PO'}
         </TabsTrigger>
         <TabsTrigger value="create-grn">Create GRN</TabsTrigger>
         <TabsTrigger value="create-quote">Create Quote</TabsTrigger>
@@ -82,7 +33,8 @@ function CreateDocumentContent() {
       </TabsList>
 
       <TabsContent value="create-po">
-        <POForm poIdToEdit={poIdToEdit} initialData={initialPOData} />
+        {/* Pass the poIdToEditFromUrl to the POForm. It will handle fetching. */}
+        <POForm poIdToEditProp={poIdToEditFromUrl} />
       </TabsContent>
 
       <TabsContent value="create-grn">
