@@ -126,7 +126,7 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
       approverId: data.approverId,
       pricesIncludeVat: data.pricesIncludeVat,
       notes: data.notes || '',
-      items: data.items.map(item => ({
+      items: (data.items || []).map(item => ({ // Ensure data.items is an array
         id: crypto.randomUUID(), // For field array key
         partNumber: item.partNumber || '',
         description: item.description,
@@ -388,7 +388,23 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
                 <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. QT-001" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="poDate" rules={{ required: 'PO Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="poNumberDisplay" rules={{ required: 'PO Number is required' }} render={({ field }) => ( <FormItem> <FormLabel>PO Number</FormLabel> <FormControl><Input placeholder="PO Number" {...field} readOnly={editMode} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField
+                  control={form.control}
+                  name="poNumberDisplay"
+                  rules={{ required: 'PO Number is required' }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PO Number</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="PO Number"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
             <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's billing address..." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
@@ -459,3 +475,5 @@ export function POForm({ poIdToEdit, initialData }: POFormProps) {
     </Card>
   );
 }
+
+    
