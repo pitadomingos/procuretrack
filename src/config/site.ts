@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode, ClipboardCheck, UserCheck } from 'lucide-react';
 
 export interface NavItem {
   title: string;
@@ -20,6 +20,11 @@ export const navItems: NavItem[] = [
     title: 'Create Document',
     href: '/create-document',
     icon: FilePlus2,
+  },
+  {
+    title: 'My Approvals',
+    href: '/approvals',
+    icon: UserCheck,
   },
   {
     title: 'Activity Log',

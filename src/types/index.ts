@@ -105,7 +105,7 @@ export interface PurchaseOrderPayload {
   creationDate: string; 
   creatorUserId: string | null; 
   requestedByName?: string | null;
-  supplierId: string; 
+  supplierId: string | null; // Can be null if PO is not for a specific supplier initially
   approverId: string | null; // This is Approver.id from Approver table (who is ASSIGNED to approve)
   siteId?: number | null; 
   status: string;
@@ -117,10 +117,22 @@ export interface PurchaseOrderPayload {
   notes?: string | null;
   items: POItemPayload[] | POItemForPrint[]; 
   approvalDate?: string | null; 
-  // approvedByUserId: string | null; // REMOVED as per user request - was for User.id of who PERFORMED approval
   supplierDetails?: Supplier;
   creatorName?: string;
   approverName?: string;
   approverSignatureUrl?: string; 
   quoteNo?: string; 
 }
+
+// For the "My Approvals" page
+export interface ApprovalQueueItem {
+  id: number; // PO ID
+  poNumber: string;
+  creationDate: string;
+  supplierName: string | null;
+  requestedByName: string | null;
+  grandTotal: number;
+  currency: string;
+  status: string; // Should be 'Pending Approval'
+}
+
