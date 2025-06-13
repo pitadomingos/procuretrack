@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
 interface POFormProps {
-  poIdToEditProp?: string | null; // Renamed to avoid confusion with internal state
+  poIdToEditProp?: string | null;
   initialData?: PurchaseOrderPayload | null;
 }
 
@@ -60,12 +60,11 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrintingLoading, setIsPrintingLoading] = useState(false);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(false); // For overall dropdowns
-  const [isLoadingPOForEdit, setIsLoadingPOForEdit] = useState(false); // Specifically for loading a PO to edit
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
+  const [isLoadingPOForEdit, setIsLoadingPOForEdit] = useState(false);
 
-  // Internal state to manage edit mode
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [currentEditingPoId, setCurrentEditingPoId] = useState<string | null>(null);
+  const [isEditingLoadedPO, setIsEditingLoadedPO] = useState(false);
+  const [loadedPOId, setLoadedPOId] = useState<string | null>(null);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [sites, setSites] = useState<Site[]>([]);
@@ -94,8 +93,8 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       poNumberDisplay: 'Fetching...', currency: 'MZN', requestedByName: '',
       approverId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
     });
-    setIsEditMode(false);
-    setCurrentEditingPoId(null);
+    setIsEditingLoadedPO(false);
+    setLoadedPOId(null);
     try {
       const response = await fetch('/api/purchase-orders/next-po-number');
       if (!response.ok) throw new Error('Failed to fetch next PO number');
@@ -108,7 +107,7 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
   }, [form, toast]);
 
 
-  const loadPODataIntoForm = useCallback((data: PurchaseOrderPayload) => {
+  const loadPODataIntoForm = useCallback((data: PurchaseOrderPayload, currentSuppliers: Supplier[]) => {
     form.reset({
       vendorName: data.supplierId,
       vendorEmail: data.supplierDetails?.emailAddress || '',
@@ -118,7 +117,7 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       billingAddress: data.supplierDetails?.physicalAddress || '',
       quoteNo: data.quoteNo || '',
       poDate: format(new Date(data.creationDate), 'yyyy-MM-dd'),
-      poNumberDisplay: data.poNumber, // This is the crucial part
+      poNumberDisplay: data.poNumber,
       currency: data.currency,
       requestedByName: data.requestedByName || '',
       approverId: data.approverId,
@@ -131,9 +130,8 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       })),
     });
 
-    // Trigger supplier fields update if a supplier is selected
     if (data.supplierId) {
-      const selectedSupplier = suppliers.find(s => s.supplierCode === data.supplierId);
+      const selectedSupplier = currentSuppliers.find(s => s.supplierCode === data.supplierId);
       if (selectedSupplier) {
         form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
         form.setValue('salesPerson', selectedSupplier.salesPerson || '');
@@ -142,52 +140,60 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
         form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
       }
     }
-    setIsEditMode(true); // Set edit mode active
-    setCurrentEditingPoId(String(data.id)); // Store the ID of the PO being edited
-  }, [form, suppliers]);
+    setIsEditingLoadedPO(true);
+    setLoadedPOId(String(data.id));
+  }, [form]);
 
-  // Effect for loading dropdown data and initial PO (if poIdToEditProp or initialDataFromProp is provided)
   useEffect(() => {
-    const fetchCoreData = async () => {
+    const fetchCoreDataAndInitializeForm = async () => {
       setIsLoadingInitialData(true);
+      let fetchedSuppliers: Supplier[] = [];
+      let fetchedSites: Site[] = [];
+      let fetchedCategories: CategoryType[] = [];
+      let fetchedApprovers: Approver[] = [];
+
       try {
         const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
           fetch('/api/suppliers'), fetch('/api/sites'), fetch('/api/categories'), fetch('/api/approvers'),
         ]);
-        setSuppliers(suppliersRes.ok ? await suppliersRes.json() : []);
-        setSites(sitesRes.ok ? await sitesRes.json() : []);
-        setCategories(categoriesRes.ok ? await categoriesRes.json() : []);
-        setApproversData(approversRes.ok ? await approversRes.json() : []);
+        
+        fetchedSuppliers = suppliersRes.ok ? await suppliersRes.json() : [];
+        fetchedSites = sitesRes.ok ? await sitesRes.json() : [];
+        fetchedCategories = categoriesRes.ok ? await categoriesRes.json() : [];
+        fetchedApprovers = approversRes.ok ? await approversRes.json() : [];
+
+        setSuppliers(fetchedSuppliers);
+        setSites(fetchedSites);
+        setCategories(fetchedCategories);
+        setApproversData(fetchedApprovers);
 
         if (initialDataFromProp) {
-          loadPODataIntoForm(initialDataFromProp);
+          loadPODataIntoForm(initialDataFromProp, fetchedSuppliers);
         } else if (poIdToEditProp) {
           setIsLoadingPOForEdit(true);
           const poRes = await fetch(`/api/purchase-orders/${poIdToEditProp}`);
           if (!poRes.ok) throw new Error(`Failed to fetch PO ${poIdToEditProp}`);
           const poDataToEdit: PurchaseOrderPayload = await poRes.json();
+          
           if (poDataToEdit.supplierId && !poDataToEdit.supplierDetails) {
-             const allSupRes = await fetch('/api/suppliers');
-             if(allSupRes.ok) {
-                const allSuppliersList: Supplier[] = await allSupRes.json();
-                poDataToEdit.supplierDetails = allSuppliersList.find(s => s.supplierCode === poDataToEdit.supplierId);
-             }
+             poDataToEdit.supplierDetails = fetchedSuppliers.find(s => s.supplierCode === poDataToEdit.supplierId);
           }
-          loadPODataIntoForm(poDataToEdit);
+          loadPODataIntoForm(poDataToEdit, fetchedSuppliers);
           setIsLoadingPOForEdit(false);
         } else {
-          await resetFormForNew(); // If no edit prop, set up for new PO
+          await resetFormForNew();
         }
       } catch (error) {
         toast({ title: "Error Loading Data", description: `Failed to load initial form data: ${error instanceof Error ? error.message : String(error)}`, variant: "destructive" });
-        if (!poIdToEditProp && !initialDataFromProp) form.setValue('poNumberDisplay', 'PO-ERROR'); // Set error for new PO number if initial fetch fails
+        if (!poIdToEditProp && !initialDataFromProp) form.setValue('poNumberDisplay', 'PO-ERROR');
       } finally {
         setIsLoadingInitialData(false);
       }
     };
-    fetchCoreData();
+    fetchCoreDataAndInitializeForm();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poIdToEditProp, initialDataFromProp, loadPODataIntoForm, resetFormForNew, toast]); // Removed suppliers from deps to avoid loop with loadPODataIntoForm
+  }, [poIdToEditProp, initialDataFromProp, toast, loadPODataIntoForm, resetFormForNew]);
+
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -238,18 +244,12 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
         return;
       }
        if (poDataToLoad.supplierId && !poDataToLoad.supplierDetails) {
-         const supRes = await fetch(`/api/suppliers`);
-         if(supRes.ok) {
-           const allSuppliersList: Supplier[] = await supRes.json();
-           poDataToLoad.supplierDetails = allSuppliersList.find(s => s.supplierCode === poDataToLoad.supplierId);
-         }
+         poDataToLoad.supplierDetails = suppliers.find(s => s.supplierCode === poDataToLoad.supplierId);
        }
-      loadPODataIntoForm(poDataToLoad);
+      loadPODataIntoForm(poDataToLoad, suppliers); // Pass current suppliers state
       toast({title: "PO Loaded", description: `PO ${poNumberToLoad} loaded for editing.`});
     } catch (error) {
       toast({ title: "Error Loading PO", description: `${error instanceof Error ? error.message : String(error)}`, variant: "destructive"});
-      // Optionally reset to new PO mode if loading fails
-      // await resetFormForNew(); 
     } finally {
       setIsLoadingPOForEdit(false);
     }
@@ -263,7 +263,7 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
     setIsSubmitting(true);
 
     const payload: Omit<PurchaseOrderPayload, 'id' | 'status' | 'creatorUserId' | 'approvalDate' | 'supplierDetails' | 'creatorName' | 'approverName' | 'approverSignatureUrl'> & { items: POItemPayload[] } = {
-      poNumber: formData.poNumberDisplay, // Always take from form, backend validates uniqueness for new
+      poNumber: formData.poNumberDisplay,
       creationDate: new Date(formData.poDate).toISOString(),
       requestedByName: formData.requestedByName,
       supplierId: formData.vendorName,
@@ -281,8 +281,8 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       let response;
       let successMessage = '';
 
-      if (isEditMode && currentEditingPoId) {
-        response = await fetch(`/api/purchase-orders/${currentEditingPoId}`, {
+      if (isEditingLoadedPO && loadedPOId) {
+        response = await fetch(`/api/purchase-orders/${loadedPOId}`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
         });
         successMessage = `Purchase Order ${payload.poNumber} updated successfully.`;
@@ -295,21 +295,20 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `Failed to ${isEditMode ? 'update' : 'submit'} PO. Server error.` }));
+        const errorData = await response.json().catch(() => ({ error: `Failed to ${isEditingLoadedPO ? 'update' : 'submit'} PO. Server error.` }));
         throw new Error(errorData.error || `Server error: ${response.status} - ${errorData.details || response.statusText}`);
       }
       const result = await response.json();
       toast({ title: 'Success!', description: successMessage });
       
-      if (result.poId) { // For both new and edit, redirect to print page
+      if (result.poId) {
         router.push(`/purchase-orders/${result.poId}/print`);
-      } else if (!isEditMode) { // Fallback for new PO if no ID in result for some reason
+      } else if (!isEditingLoadedPO) {
         await resetFormForNew();
       }
-      // If it was an edit and no poId in result, we stay on the form, data is re-synced by `loadPODataIntoForm` if necessary
       
     } catch (error: any) {
-      toast({ title: `Error ${isEditMode ? 'Updating' : 'Submitting'} PO`, description: error.message || 'An unexpected error occurred.', variant: "destructive" });
+      toast({ title: `Error ${isEditingLoadedPO ? 'Updating' : 'Submitting'} PO`, description: error.message || 'An unexpected error occurred.', variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -318,7 +317,7 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
   const handleViewPrintPO = async () => {
     setIsPrintingLoading(true);
     try {
-      let targetPoId = currentEditingPoId; 
+      let targetPoId = loadedPOId; 
       if (!targetPoId) {
         const poNumberInForm = form.getValues('poNumberDisplay');
         if (!poNumberInForm || ['Loading PO...', 'Fetching...', 'PO-ERROR'].includes(poNumberInForm)) {
@@ -354,17 +353,17 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
   
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; 
 
-  if (isLoadingInitialData && !poIdToEditProp && !initialDataFromProp) { // Show loader only for initial dropdown data if not editing
+  if (isLoadingInitialData && !poIdToEditProp && !initialDataFromProp) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
   }
-  if (isLoadingPOForEdit) { // Show loader specifically when a PO is being fetched for edit
+  if (isLoadingPOForEdit && poIdToEditProp) { 
      return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading PO for editing...</div>;
   }
 
   return (
     <Card className="w-full max-w-6xl mx-auto shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">{isEditMode ? `Editing PO: ${form.getValues('poNumberDisplay')}` : 'Create New Purchase Order'}</CardTitle>
+        <CardTitle className="font-headline text-2xl">{isEditingLoadedPO ? `Editing PO: ${form.getValues('poNumberDisplay')}` : 'Create New Purchase Order'}</CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <Form {...form}>
@@ -379,11 +378,11 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
                       <FormLabel>PO Number</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
-                          <Input placeholder="PO Number" {...field} readOnly={isEditMode} />
+                          <Input placeholder="PO Number or type to load" {...field} readOnly={isEditingLoadedPO} />
                         </FormControl>
-                        {!isEditMode && ( // Show Load button only if not already in edit mode
+                        {!isEditingLoadedPO && (
                            <Button type="button" variant="outline" onClick={handleLoadPOForEditing} disabled={isLoadingPOForEdit}>
-                            {isLoadingPOForEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Load for Edit
+                            {isLoadingPOForEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Load
                            </Button>
                         )}
                       </div>
@@ -459,14 +458,14 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
 
             <div className="flex flex-col sm:flex-row gap-2 mt-6">
               <Button type="submit" className="w-full sm:w-auto" size="lg" disabled={isSubmitting || isLoadingPOForEdit || (!form.formState.isValid && form.formState.isSubmitted)}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditMode ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
-                {isSubmitting ? (isEditMode ? 'Updating...' : 'Submitting...') : (isEditMode ? 'Update PO' : 'Submit PO')}
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedPO ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
+                {isSubmitting ? (isEditingLoadedPO ? 'Updating...' : 'Submitting...') : (isEditingLoadedPO ? 'Update PO' : 'Submit PO')}
               </Button>
               <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" onClick={handleViewPrintPO} disabled={isPrintingLoading}>
                 {isPrintingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
                 {isPrintingLoading ? 'Loading...' : 'View/Print PO'}
               </Button>
-               {!isEditMode && ( // Show Clear/New PO button only if not in edit mode
+               {!isEditingLoadedPO && (
                 <Button type="button" variant="ghost" size="lg" className="w-full sm:w-auto" onClick={() => resetFormForNew()} disabled={isSubmitting || isLoadingPOForEdit}>
                   Clear / New PO
                 </Button>
@@ -477,9 +476,11 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          {isEditMode ? `Editing PO: ${form.getValues('poNumberDisplay')}. PO Number is read-only.` : "Enter PO details. Use 'Load for Edit' for existing POs."}
+          {isEditingLoadedPO ? `Editing PO: ${form.getValues('poNumberDisplay')}. PO Number is read-only.` : "Enter PO details. Use 'Load' for existing POs."}
         </p>
       </CardFooter>
     </Card>
   );
 }
+
+    
