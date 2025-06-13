@@ -1,13 +1,14 @@
 
 import * as db from '../backend/db.js';
 
-async function alterPurchaseOrdersTableAddApprovedByUserId() {
+async function alterPurchaseOrdersTableHandleApprovedByUserId() {
+  console.log("Information: The 'approvedByUserId' column (linking to User.id for who performed approval action) is no longer part of the target PurchaseOrder schema as per recent design changes.");
+  console.log("This script originally intended to add this column. It will now check if it exists and suggest removal if found, or confirm it's absent.");
+
   let connection;
   try {
     connection = await db.pool.getConnection();
-    await connection.beginTransaction();
-
-    const dbName = connection.config.database; // Get current database name
+    const dbName = connection.config.database;
 
     const checkColumnQuery = `
       SELECT COUNT(*) AS count
@@ -18,53 +19,20 @@ async function alterPurchaseOrdersTableAddApprovedByUserId() {
     `;
     const [rows] = await connection.execute(checkColumnQuery, [dbName]);
 
-    if (rows[0].count === 0) {
-      console.log('approvedByUserId column does not exist in PurchaseOrder table. Adding it...');
-      // Add column
-      const addColumnSql = \`
-        ALTER TABLE PurchaseOrder
-        ADD COLUMN approvedByUserId VARCHAR(255) NULL;
-      \`;
-      await connection.execute(addColumnSql);
-      console.log('approvedByUserId column added.');
-
-      // Add foreign key constraint
-      // First, check if User table exists to avoid error during constraint creation if User table is missing for some reason
-      const checkUserTableQuery = `
-        SELECT COUNT(*) AS count
-        FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_SCHEMA = ?
-        AND TABLE_NAME = 'User';
-      `;
-      const [userTableRows] = await connection.execute(checkUserTableQuery, [dbName]);
-
-      if (userTableRows[0].count > 0) {
-        const addForeignKeySql = \`
-          ALTER TABLE PurchaseOrder
-          ADD CONSTRAINT fk_po_approved_by_user
-          FOREIGN KEY (approvedByUserId) REFERENCES User(id) ON DELETE SET NULL;
-        \`;
-        await connection.execute(addForeignKeySql);
-        console.log('Foreign key constraint fk_po_approved_by_user for approvedByUserId added.');
-      } else {
-        console.warn('User table does not exist. Foreign key for approvedByUserId cannot be added. Please ensure User table is created first.');
-      }
+    if (rows[0].count > 0) {
+      console.warn("WARNING: The column 'approvedByUserId' still exists in the PurchaseOrder table.");
+      console.warn("As per the current design, this column is obsolete and should ideally be removed.");
+      console.warn("Consider using a separate SQL command to drop it if it's no longer needed: ALTER TABLE PurchaseOrder DROP COLUMN approvedByUserId; (after ensuring any FK constraints are dropped first).");
     } else {
-      console.log('approvedByUserId column already exists in PurchaseOrder table.');
+      console.log("Confirmed: The 'approvedByUserId' column does not exist in PurchaseOrder table, which aligns with the current schema design.");
     }
 
-    await connection.commit();
-    console.log('PurchaseOrder table schema check/update for approvedByUserId complete.');
-
   } catch (error) {
-    if (connection) await connection.rollback();
-    console.error('Error altering PurchaseOrder table for approvedByUserId:', error);
+    console.error("Error during check for 'approvedByUserId' column:", error);
   } finally {
     if (connection) connection.release();
-    // For a script, you might want to end the pool if it's the last operation.
-    // Consider if other scripts run sequentially.
-    // await db.pool.end(); 
+    // await db.pool.end(); // Optional: end pool if script is standalone
   }
 }
 
-alterPurchaseOrdersTableAddApprovedByUserId();
+alterPurchaseOrdersTableHandleApprovedByUserId();

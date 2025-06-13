@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../../../backend/db.js'; // Adjusted path
-import type { PurchaseOrderPayload, Approver, User as UserType } from '@/types';
+import type { PurchaseOrderPayload } from '@/types';
 
 export async function POST(
   request: Request,
@@ -33,39 +33,19 @@ export async function POST(
       return NextResponse.json({ error: `Purchase Order is not pending approval. Current status: ${purchaseOrder.status}` }, { status: 400 });
     }
 
-    // 3. Get the assigned approverId from the PO
+    // 3. Get the assigned approverId from the PO (still useful for context if needed later, but not directly used in this simplified update)
     const assignedApproverId = purchaseOrder.approverId;
     if (!assignedApproverId) {
       await connection.rollback();
-      return NextResponse.json({ error: 'No approver assigned to this Purchase Order.' }, { status: 400 });
+      // This check remains as a PO should have an assigned approver to be approved.
+      return NextResponse.json({ error: 'No approver assigned to this Purchase Order. Cannot approve.' }, { status: 400 });
     }
 
-    // 4. Fetch the Approver details
-    const [approverRows]: any[] = await connection.execute('SELECT * FROM Approver WHERE id = ?', [assignedApproverId]);
-    let finalApprovedByUserId: string | null = null;
-
-    if (approverRows.length > 0) {
-      const approver: Approver = approverRows[0] as Approver;
-      // 5. If approver has an email, try to find matching User.id
-      if (approver.email) {
-        const [userRows]: any[] = await connection.execute('SELECT id FROM User WHERE email = ?', [approver.email]);
-        if (userRows.length > 0) {
-          finalApprovedByUserId = (userRows[0] as UserType).id;
-        } else {
-          console.warn(`No User found with email ${approver.email} for Approver ID ${assignedApproverId}. approvedByUserId will be null.`);
-        }
-      } else {
-        console.warn(`Approver ID ${assignedApproverId} has no email. approvedByUserId will be null.`);
-      }
-    } else {
-      console.warn(`Approver with ID ${assignedApproverId} not found. approvedByUserId will be null.`);
-    }
-
-    // 6. Update the Purchase Order
+    // 4. Update the Purchase Order status and approval date
     const approvalDate = new Date();
     await connection.execute(
-      'UPDATE PurchaseOrder SET status = ?, approvalDate = ?, approvedByUserId = ? WHERE id = ?',
-      ['Approved', approvalDate, finalApprovedByUserId, numericPoId]
+      'UPDATE PurchaseOrder SET status = ?, approvalDate = ? WHERE id = ?',
+      ['Approved', approvalDate, numericPoId]
     );
 
     await connection.commit();
@@ -75,12 +55,10 @@ export async function POST(
       poId: numericPoId, 
       newStatus: 'Approved', 
       approvalDate: approvalDate.toISOString(),
-      approvedByUserId: finalApprovedByUserId 
     });
 
   } catch (error: any) {
     if (connection) await connection.rollback();
-    // Log the full error object to the server console for better inspection
     console.error(`Error approving PO ${poIdParam}: Server-side full error:`, error); 
     
     let errorDetails = 'An unknown error occurred on the server.';
@@ -101,7 +79,7 @@ export async function POST(
     return NextResponse.json({ 
       error: `Failed to approve Purchase Order ${poIdParam}.`, 
       details: errorDetails,
-      stack: errorStack // Send stack to client for more debugging info if needed
+      stack: errorStack 
     }, { status: 500 });
   } finally {
     if (connection) connection.release();
