@@ -644,12 +644,6 @@ export function POForm() {
 
             <div className="grid md:grid-cols-2 gap-6 items-start">
               <div className="space-y-6">
-                 <div className="space-y-1">
-                  <Label>Requester</Label>
-                  <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     {form.watch('requestedBy') || 'Enter requester name above'}
-                  </div>
-                </div>
                 <div className="space-y-1">
                   <Label>Creator (System User)</Label>
                   <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">
@@ -706,3 +700,4 @@ export function POForm() {
     </Card>
   );
 }
+
