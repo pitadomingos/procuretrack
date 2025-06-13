@@ -20,10 +20,11 @@ import {
   BookUser,
   FileCode,
   ClipboardCheck,
-  Printer, // Added for PDF Generation
-  UserCheck, // Added for My Approvals
-  ServerCog, // Added for API
-  Edit3, // Added for PO Editing specific task
+  Printer, 
+  UserCheck, 
+  ServerCog, 
+  Edit3, 
+  ClipboardList // Added ClipboardList here
 } from "lucide-react";
 
 export default function TodoProgressPage() {
@@ -34,12 +35,12 @@ export default function TodoProgressPage() {
     { icon: Palette, text: "Dark Mode & Light Mode theme toggle functionality." },
     { icon: LayoutDashboard, text: "Dashboard Page: Stat cards, placeholder charts for PO status and allocations." },
     { icon: FileSignature, text: "Create Document Page: Tabbed interface for PO, GRN, Quote (placeholder), Fuel (placeholder)." },
-    { icon: FileSignature, text: "Purchase Order (PO) Form: Detailed form for creating POs with item arrays, calculations, and supplier selection." },
+    { icon: FileSignature, text: "Purchase Order (PO) Form: Detailed form for creating POs with item arrays, calculations, supplier selection, and support for editing existing POs." },
     { icon: Edit3, text: "PO Editing Functionality: Load existing PO data into form, update header & items via API, manage PO number display (read-only in edit mode)." },
     { icon: Printer, text: "PO PDF Generation: Server-side creation and download of POs as PDF documents using Puppeteer, including print styling." },
     { icon: UserCheck, text: "'My Approvals' Page: List POs pending for a specific (mock) approver with navigation to print/approve page." },
     { icon: ServerCog, text: "API for Pending Approvals: Endpoint to fetch purchase orders awaiting approval for a given approver email." },
-    { icon: DatabaseZap, text: "Database Schema Management: Enhanced scripts for `PurchaseOrder` table columns (approver links, dropping obsolete fields, FK constraints)." },
+    { icon: DatabaseZap, text: "Database Schema Management: Ensured correct handling of `PurchaseOrder` table's `approverId` and removed obsolete `approvedByUserId` columns/logic, updated related foreign keys." },
     { icon: Users, text: "Goods Received Note (GRN) Interface: PO search and item receiving simulation." },
     { icon: Settings, text: "Management Section Hub: Links to individual entity management pages." },
     { icon: Users, text: "Placeholder Management Pages: For Approvers, Users, Sites, Allocations, Categories with mock data tables." },
@@ -118,4 +119,3 @@ export default function TodoProgressPage() {
     </div>
   );
 }
-
