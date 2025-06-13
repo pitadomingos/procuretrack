@@ -23,51 +23,72 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
       return;
     }
 
-    // Define potential old constraint names
-    const oldConstraintNamesToTryDrop = ['fk_po_approved_by_user', 'PurchaseOrder_ibfk_5'];
+    // Define potential old constraint names to try to drop from approverId
+    // These might be leftover if approverId was previously linked to User or had other names.
+    const oldConstraintNamesToTryDrop = ['fk_po_approved_by_user', 'PurchaseOrder_ibfk_5']; // Add any other known old names
 
     for (const constraintName of oldConstraintNamesToTryDrop) {
-      try {
-        const dropFkQuery = `ALTER TABLE PurchaseOrder DROP FOREIGN KEY ${constraintName};`;
-        await connection.execute(dropFkQuery);
-        console.log(`Successfully dropped foreign key constraint ${constraintName} (if it existed).`);
-      } catch (error) {
-        if (error.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
-          console.warn(`Foreign key constraint ${constraintName} not found or could not be dropped. This might be okay if it was already removed or named differently.`);
-        } else {
-          // For other errors, it's better to rollback and throw
-          await connection.rollback();
-          if (connection) connection.release();
-          throw error;
+      const checkConstraintQuery = `
+        SELECT CONSTRAINT_NAME 
+        FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+        WHERE TABLE_SCHEMA = ? 
+          AND TABLE_NAME = 'PurchaseOrder' 
+          AND COLUMN_NAME = 'approverId' 
+          AND CONSTRAINT_NAME = ?;
+      `;
+      const [constraintRows] = await connection.execute(checkConstraintQuery, [dbName, constraintName]);
+
+      if (constraintRows.length > 0) {
+        try {
+          const dropFkQuery = `ALTER TABLE PurchaseOrder DROP FOREIGN KEY ${constraintName};`;
+          await connection.execute(dropFkQuery);
+          console.log(`Successfully dropped foreign key constraint ${constraintName} from approverId column.`);
+        } catch (error) {
+          // If ER_CANT_DROP_FIELD_OR_KEY it means it might be an index or other issue, but typically it's not found.
+          console.warn(`Could not drop foreign key constraint ${constraintName}. It might have been dropped already or is not on approverId. Error: ${error.message}`);
         }
+      } else {
+        console.log(`Constraint ${constraintName} not found on approverId column.`);
       }
     }
-
-    // Add the new foreign key constraint referencing the Approver table
+    
+    // Add the new foreign key constraint referencing the Approver table if it doesn't exist
     const newConstraintNameApproverTable = 'fk_po_approver';
-    const addFkQuery = `
-      ALTER TABLE PurchaseOrder
-      ADD CONSTRAINT ${newConstraintNameApproverTable}
-      FOREIGN KEY (approverId) REFERENCES Approver(id) ON DELETE RESTRICT;
+    const checkNewConstraintQuery = `
+      SELECT COUNT(*) AS count 
+      FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS 
+      WHERE TABLE_SCHEMA = ? 
+        AND TABLE_NAME = 'PurchaseOrder' 
+        AND CONSTRAINT_NAME = ? 
+        AND CONSTRAINT_TYPE = 'FOREIGN KEY';
     `;
-    try {
-      await connection.execute(addFkQuery);
-      console.log(`Added new foreign key constraint ${newConstraintNameApproverTable} on approverId referencing Approver(id).`);
-    } catch (addError) {
-      if (addError.code === 'ER_FK_DUP_NAME' || (addError.code === 'ER_CANNOT_ADD_FOREIGN' && addError.sqlMessage.includes('already exists'))) {
-         console.warn(`Could not add foreign key ${newConstraintNameApproverTable}. It likely already exists. Message: ${addError.sqlMessage}`);
-      } else {
+    const [newConstraintRows] = await connection.execute(checkNewConstraintQuery, [dbName, newConstraintNameApproverTable]);
+
+    if (newConstraintRows[0].count === 0) {
+      const addFkQuery = `
+        ALTER TABLE PurchaseOrder
+        ADD CONSTRAINT ${newConstraintNameApproverTable}
+        FOREIGN KEY (approverId) REFERENCES Approver(id) ON DELETE RESTRICT;
+      `;
+      try {
+        await connection.execute(addFkQuery);
+        console.log(`Added new foreign key constraint ${newConstraintNameApproverTable} on approverId referencing Approver(id).`);
+      } catch (addError) {
+        // Handle cases where it might fail due to data integrity issues or other reasons
+        console.error(`Failed to add foreign key ${newConstraintNameApproverTable}. Error: ${addError.message}`);
         await connection.rollback();
         if (connection) connection.release();
-        throw addError;
+        throw addError; // Rethrow to indicate failure
       }
+    } else {
+      console.log(`Foreign key constraint ${newConstraintNameApproverTable} on approverId already exists.`);
     }
     
     await connection.commit();
     console.log('PurchaseOrder table foreign key update for approverId to Approver(id) processed.');
 
   } catch (error) {
-    if (connection && connection.connection._closing === false) { // Check if connection is still open before rollback
+    if (connection && connection.connection._closing === false) {
         try {
             await connection.rollback();
         } catch (rollbackError) {
@@ -75,7 +96,6 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
         }
     }
     console.error('Error updating PurchaseOrder table foreign key for approverId to Approver(id):', error.message);
-    // Optionally log the full error for more details: console.error(error);
   } finally {
     if (connection) {
         try {
@@ -84,9 +104,6 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
             console.error('Error releasing connection:', releaseError);
         }
     }
-    // It's often better to let the main application manage pool.end()
-    // For a standalone script, you might end it, but ensure all operations are done.
-    // await db.pool.end(); 
   }
 }
 
