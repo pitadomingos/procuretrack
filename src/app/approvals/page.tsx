@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 // --- AUTHENTICATION PLACEHOLDER ---
 // In a real application, you would get the logged-in user's email from your authentication system.
 // For now, we'll use a hardcoded email of a known approver.
-const MOCK_LOGGED_IN_APPROVER_EMAIL = 'cherinne.deklerk@jachris.com'; 
+const MOCK_LOGGED_IN_APPROVER_EMAIL = 'pita.domingos@jachris.com'; 
 // This should match an email in your Approver table for testing.
 
 export default function ApprovalsPage() {
@@ -55,24 +55,24 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'poNumber', 
       header: 'PO Number',
-      cell: (row) => <span className="font-medium">{row.poNumber}</span>
+      cell: ({ row }) => <span className="font-medium">{row.original.poNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (row) => format(new Date(row.creationDate), 'PP') // E.g., Jul 29, 2024
+      cell: ({ row }) => format(new Date(row.original.creationDate), 'PP') // E.g., Jul 29, 2024
     },
     { accessorKey: 'supplierName', header: 'Supplier' },
     { accessorKey: 'requestedByName', header: 'Requested By' },
     { 
       accessorKey: 'grandTotal', 
       header: 'Total Amount',
-      cell: (row) => `${row.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.currency}`
+      cell: ({ row }) => `${row.original.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.original.currency}`
     },
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (row) => <span className="text-orange-600 font-semibold">{row.status}</span>
+      cell: ({ row }) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
     },
   ];
 
@@ -134,4 +134,3 @@ export default function ApprovalsPage() {
     </div>
   );
 }
-
