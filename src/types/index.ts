@@ -28,8 +28,8 @@ export interface POItem {
   id: string; // Client-side ID for react-hook-form field array
   partNumber?: string;
   description: string;
-  category: string; // Stores Category ID as string (from form select value)
-  allocation: string; // Stores Site ID as string (from form select value)
+  categoryId: number | null; // Stores Category ID as number
+  siteId: number | null;    // Stores Site ID as number
   uom: string;
   quantity: number;
   unitPrice: number;
@@ -46,7 +46,7 @@ export interface Supplier {
 }
 
 export interface Approver {
-  id: string; // This is Approver.id from the Approver table
+  id: string; 
   name: string;
   email?: string | null;
   department?: string | null;
@@ -78,7 +78,7 @@ export interface Allocation {
 
 export interface Category {
   id: number;
-  category: string; // This is the name/description of the category
+  category: string;
 }
 
 export interface POItemPayload {
@@ -91,7 +91,6 @@ export interface POItemPayload {
   uom: string;
   quantity: number;
   unitPrice: number;
-  allocation?: string; 
 }
 
 export interface POItemForPrint extends POItemPayload {
@@ -105,8 +104,8 @@ export interface PurchaseOrderPayload {
   creationDate: string; 
   creatorUserId: string | null; 
   requestedByName?: string | null;
-  supplierId: string | null; // Can be null if PO is not for a specific supplier initially
-  approverId: string | null; // This is Approver.id from Approver table (who is ASSIGNED to approve)
+  supplierId: string | null; 
+  approverId: string | null; 
   siteId?: number | null; 
   status: string;
   subTotal: number;
@@ -124,15 +123,13 @@ export interface PurchaseOrderPayload {
   quoteNo?: string; 
 }
 
-// For the "My Approvals" page
 export interface ApprovalQueueItem {
-  id: number; // PO ID
+  id: number; 
   poNumber: string;
   creationDate: string;
   supplierName: string | null;
   requestedByName: string | null;
   grandTotal: number;
   currency: string;
-  status: string; // Should be 'Pending Approval'
+  status: string;
 }
-

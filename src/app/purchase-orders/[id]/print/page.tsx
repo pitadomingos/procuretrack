@@ -14,7 +14,6 @@ interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
   items: POItemForPrint[];
   supplierDetails?: Supplier;
   approverName?: string;
-  // approverSignatureUrl is part of PurchaseOrderPayload
 }
 
 export default function PrintPOPage() {
@@ -28,20 +27,18 @@ export default function PrintPOPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  const [allUsers, setAllUsers] = useState<UserType[]>([]); // To find user ID for approval
 
   const fetchPODataForPrint = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [poHeaderRes, poItemsRes, suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
+      const [poHeaderRes, poItemsRes, suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
         fetch(`/api/purchase-orders/${poId}`),
         fetch(`/api/purchase-orders/${poId}/items`),
         fetch('/api/suppliers'),
         fetch('/api/sites'),
         fetch('/api/categories'),
         fetch('/api/approvers'),
-        fetch('/api/users'), // Fetch all users
       ]);
 
       if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header: ${poHeaderRes.statusText}`);
@@ -55,6 +52,7 @@ export default function PrintPOPage() {
         grandTotal: Number(rawHeaderData.grandTotal || 0),
         pricesIncludeVat: Boolean(rawHeaderData.pricesIncludeVat),
         siteId: rawHeaderData.siteId ? Number(rawHeaderData.siteId) : null,
+        items: [], // items will be populated
       };
       
       if (!poItemsRes.ok) throw new Error(`Failed to fetch PO Items: ${poItemsRes.statusText}`);
@@ -64,8 +62,6 @@ export default function PrintPOPage() {
       const allSites: Site[] = sitesRes.ok ? await sitesRes.json() : [];
       const allCategories: Category[] = categoriesRes.ok ? await categoriesRes.json() : [];
       const allApprovers: Approver[] = approversRes.ok ? await approversRes.json() : [];
-      const fetchedUsers: UserType[] = usersRes.ok ? await usersRes.json() : [];
-      setAllUsers(fetchedUsers);
 
       const supplierDetails = allSuppliers.find(s => s.supplierCode === headerData.supplierId);
       const approverDetails = allApprovers.find(a => a.id === headerData.approverId);
@@ -126,10 +122,19 @@ export default function PrintPOPage() {
         throw new Error(errorData.message || `PDF generation failed: ${response.statusText}`);
       }
       
-      const result = await response.json();
-       toast({
-        title: 'PDF Generation (Placeholder)',
-        description: result.message || 'PDF generation initiated. Actual PDF download is not yet implemented.',
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PO-${poData.poNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'PDF Downloaded',
+        description: `PO-${poData.poNumber}.pdf has started downloading.`,
       });
     } catch (err: any) {
       console.error('Error downloading PDF:', err);
@@ -144,11 +149,8 @@ export default function PrintPOPage() {
   };
 
   const handleEditPO = () => {
-    if (!poData) return;
-    toast({
-      title: 'Edit Purchase Order',
-      description: `Edit functionality for PO ${poData.poNumber} would be initiated here. Full editing workflow to be implemented.`,
-    });
+    if (!poData || !poId) return;
+    router.push(`/create-document?editPoId=${poId}`);
   };
 
   const handleApprovePO = async () => {
@@ -188,7 +190,7 @@ export default function PrintPOPage() {
       await fetchPODataForPrint(); 
 
     } catch (err: any) {
-      console.error('Error approving PO (client-side catch):', err); 
+      console.error(`Error approving PO (client-side catch):`, err); 
       let errorMessage = 'Could not approve the PO.';
       if (err instanceof Error && err.message) {
         errorMessage = err.message;
@@ -297,4 +299,3 @@ export default function PrintPOPage() {
     </div>
   );
 }
-

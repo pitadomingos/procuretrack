@@ -1,17 +1,80 @@
 
 'use client';
 
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { POForm } from '@/components/purchase-orders/po-form';
 import { GRNInterface } from '@/components/receiving/grn-interface';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Loader2 } from 'lucide-react';
+import type { PurchaseOrderPayload } from '@/types';
 
-export default function CreateDocumentPage() {
+function CreateDocumentContent() {
+  const searchParams = useSearchParams();
+  const poIdToEdit = searchParams.get('editPoId');
+  const [initialPOData, setInitialPOData] = useState<PurchaseOrderPayload | null>(null);
+  const [loadingPO, setLoadingPO] = useState(false);
+  const [errorPO, setErrorPO] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (poIdToEdit) {
+      setLoadingPO(true);
+      setErrorPO(null);
+      fetch(`/api/purchase-orders/${poIdToEdit}`)
+        .then(res => {
+          if (!res.ok) {
+            throw new Error(`Failed to fetch PO ${poIdToEdit} for editing. Status: ${res.status}`);
+          }
+          return res.json();
+        })
+        .then((data: PurchaseOrderPayload) => {
+          // Additional fetch for supplier details if not included
+          if (data.supplierId && !data.supplierDetails) {
+            return fetch(`/api/suppliers`) // Assuming GET /api/suppliers returns all, then find
+              .then(supRes => supRes.json())
+              .then(allSuppliers => {
+                const supplier = allSuppliers.find((s: any) => s.supplierCode === data.supplierId);
+                setInitialPOData({ ...data, supplierDetails: supplier });
+              });
+          } else {
+            setInitialPOData(data);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching PO for edit:", err);
+          setErrorPO(err.message || "Could not load PO data for editing.");
+        })
+        .finally(() => setLoadingPO(false));
+    }
+  }, [poIdToEdit]);
+
+  if (poIdToEdit && loadingPO) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+        <p className="text-muted-foreground">Loading Purchase Order for editing...</p>
+      </div>
+    );
+  }
+
+  if (poIdToEdit && errorPO) {
+    return (
+      <div className="text-center p-6 bg-destructive/10 border border-destructive rounded-md">
+        <p className="text-destructive-foreground font-semibold">Error Loading PO</p>
+        <p className="text-destructive-foreground/80 text-sm">{errorPO}</p>
+      </div>
+    );
+  }
+  
+  const defaultTab = poIdToEdit ? "create-po" : "create-po";
+
   return (
-    <Tabs defaultValue="create-po" className="w-full space-y-6">
+    <Tabs defaultValue={defaultTab} className="w-full space-y-6">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-        <TabsTrigger value="create-po">Create PO</TabsTrigger>
+        <TabsTrigger value="create-po">
+          {poIdToEdit ? 'Edit PO' : 'Create PO'}
+        </TabsTrigger>
         <TabsTrigger value="create-grn">Create GRN</TabsTrigger>
         <TabsTrigger value="create-quote">Create Quote</TabsTrigger>
         <TabsTrigger value="create-requisition">Create Requisition</TabsTrigger>
@@ -19,11 +82,10 @@ export default function CreateDocumentPage() {
       </TabsList>
 
       <TabsContent value="create-po">
-        <POForm />
+        <POForm poIdToEdit={poIdToEdit} initialData={initialPOData} />
       </TabsContent>
 
       <TabsContent value="create-grn">
-        {/* GRNInterface is already wrapped in a Card, so no extra Card needed here if GRNInterface handles its own layout well */}
         <GRNInterface />
       </TabsContent>
 
@@ -73,5 +135,14 @@ export default function CreateDocumentPage() {
         </Card>
       </TabsContent>
     </Tabs>
+  );
+}
+
+// Wrap with Suspense because useSearchParams() needs it
+export default function CreateDocumentPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading...</div>}>
+      <CreateDocumentContent />
+    </Suspense>
   );
 }

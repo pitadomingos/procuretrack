@@ -3,23 +3,22 @@
 
 import type { PurchaseOrderPayload, POItemForPrint, Supplier } from '@/types';
 
-// PurchaseOrderPayload already includes approverSignatureUrl due to type update
 interface PrintablePOProps {
-  poData: PurchaseOrderPayload; // Use PurchaseOrderPayload directly as it now contains all needed fields
+  poData: PurchaseOrderPayload;
+  logoDataUri?: string; // Optional prop for base64 logo
 }
 
-// Company Details from Template
 const JACHRIS_COMPANY_DETAILS = {
   name: 'JACHRIS MOZAMBIQUE (LTD)',
   contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
-  logoUrl: '/jachris-logo.png', // Ensure 'jachris-logo.png' is in the 'public' folder at the project root. Check filename and case.
-  nuit: '400 415 954', 
+  logoUrl: '/jachris-logo.png', // Default logo path
+  nuit: '400 415 954',
 };
 
 
-export function PrintablePO({ poData }: PrintablePOProps) {
+export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
   const { supplierDetails, items } = poData;
 
   const poCreationDate = poData.creationDate ? new Date(poData.creationDate).toLocaleDateString('en-GB') : 'N/A';
@@ -29,12 +28,11 @@ export function PrintablePO({ poData }: PrintablePOProps) {
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // Cast items to POItemForPrint[] for type safety if needed, though structure should match
   const printableItems = items as POItemForPrint[];
+  const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
   return (
-    <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}> {/* Styles to mimic template */}
-      {/* Page Header */}
+    <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}>
       <div className="flex justify-between items-start mb-4">
         <div>
           <h1 className="text-lg font-bold text-red-700">{JACHRIS_COMPANY_DETAILS.name}</h1>
@@ -44,22 +42,20 @@ export function PrintablePO({ poData }: PrintablePOProps) {
         </div>
         <div className="text-right">
           <img
-            src={JACHRIS_COMPANY_DETAILS.logoUrl}
+            src={currentLogoSrc}
             alt="JACHRIS Logo"
-            className="h-12 mb-1 ml-auto" 
+            className="h-12 mb-1 ml-auto"
             data-ai-hint="company brand logo"
              />
           <h2 className="text-xl font-bold">Purchase Order</h2>
         </div>
       </div>
 
-      {/* PO Number and Date */}
       <div className="flex justify-between items-center mb-2 pb-1 border-b-2 border-black">
         <span className="text-lg font-bold text-red-700">{poData.poNumber}</span>
         <span className="text-sm"><strong>Date:</strong> {poCreationDate}</span>
       </div>
 
-      {/* Supplier and Other Info */}
       <div className="grid grid-cols-2 gap-x-4 mb-4 text-xs">
         <div>
           <p className="mb-1"><strong>TO:</strong></p>
@@ -79,8 +75,7 @@ export function PrintablePO({ poData }: PrintablePOProps) {
         </div>
       </div>
 
-      {/* Items Table */}
-      <div className="mb-1 min-h-[300px]"> 
+      <div className="mb-1 min-h-[300px]">
         <table className="w-full border-collapse border border-black">
           <thead>
             <tr className="bg-gray-100">
@@ -120,7 +115,6 @@ export function PrintablePO({ poData }: PrintablePOProps) {
         </table>
       </div>
 
-      {/* Totals Section */}
       <div className="flex justify-end mb-4">
         <div className="w-[250px] text-xs">
           <div className="flex justify-between border-b border-black py-0.5">
@@ -140,7 +134,6 @@ export function PrintablePO({ poData }: PrintablePOProps) {
         </div>
       </div>
 
-      {/* Footer Section */}
       <div className="text-xs pt-2 border-t-2 border-black">
         <div className="grid grid-cols-2 gap-x-4">
             <div>
@@ -162,11 +155,10 @@ export function PrintablePO({ poData }: PrintablePOProps) {
                   <img
                     src={poData.approverSignatureUrl}
                     alt={`Signature of ${poData.approverName || 'Approver'}`}
-                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]" // Added max-w for safety
+                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]"
                     data-ai-hint="signature image"
                   />
                 ) : (
-                  // Keep the space for manual signature if no image or not approved
                   <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div>
                 )}
                 <p className="mr-[70px]">Signature</p>
