@@ -168,19 +168,15 @@ export default function PrintPOPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
-            error: 'Approval failed.', // Default error message
-            details: `Server responded with status: ${response.status} ${response.statusText}`, // Default details
-            stack: '' // Default stack
+            error: 'Approval failed.', 
+            details: `Server responded with status: ${response.status} ${response.statusText}`,
+            stack: '' 
         }));
         
         let clientErrorMessage = errorData.error || `Approval failed for PO ${poId}.`;
         if (errorData.details) {
             clientErrorMessage += ` Details: ${errorData.details}`;
         }
-        // For very verbose client-side debugging in toast, you could uncomment the stack:
-        // if (errorData.stack) {
-        //     clientErrorMessage += ` Stack: ${errorData.stack.substring(0, 150)}...`;
-        // }
         throw new Error(clientErrorMessage);
       }
 
@@ -193,9 +189,13 @@ export default function PrintPOPage() {
 
     } catch (err: any) {
       console.error('Error approving PO (client-side catch):', err); 
+      let errorMessage = 'Could not approve the PO.';
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
       toast({
         title: 'Error Approving PO',
-        description: err.message || 'Could not approve the PO.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -240,8 +240,8 @@ export default function PrintPOPage() {
   const canApprovePO = poData.status === 'Pending Approval';
 
   return (
-    <div className="bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
-      <div className="container mx-auto max-w-4xl print:max-w-full print:p-0">
+    <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
+      <div className="print-page-inner-container container mx-auto max-w-4xl print:max-w-full print:p-0">
         <Card className="mb-6 print:hidden shadow-lg">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">PO: {poData.poNumber} ({poData.status})</h1>
@@ -290,10 +290,11 @@ export default function PrintPOPage() {
           </CardContent>
         </Card>
         
-        <div className="bg-white p-2 sm:p-4 print:p-0">
+        <div className="printable-po-content-wrapper bg-white p-2 sm:p-4 print:p-0">
          <PrintablePO poData={poData} />
         </div>
       </div>
     </div>
   );
 }
+

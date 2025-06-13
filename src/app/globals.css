@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -88,5 +89,86 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media print {
+  body, html {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    height: auto;
+    font-size: 10pt; /* Adjust base font size for print */
+  }
+
+  /* Hide elements not meant for printing by default */
+  header, nav, aside, footer, .print-hidden {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Ensure the printable area takes full width and has no weird shadows/borders */
+  .printable-po-content-wrapper { /* Applied to the div wrapping PrintablePO */
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important; /* Crucial to remove padding that might cause overflow */
+    width: 100% !important;
+    max-width: 100% !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Reset any card styling that might cause issues for the main PO card */
+  .print-page-card { /* Specific class for the outer Card on print page if needed */
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: #ffffff !important;
+  }
+  
+  /* The main container for the print page itself */
+  .print-page-container {
+    background-color: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important; /* Reset min-height */
+  }
+
+  .print-page-inner-container {
+     padding: 0 !important;
+     margin: 0 !important;
+     max-width: 100% !important; /* Ensure it doesn't try to be 'max-w-4xl' */
+  }
+
+
+  /* Attempt to control page breaks and sizing better */
+  @page {
+    size: A4 portrait;
+    margin: 0.75cm; /* Adjust margins to control space for browser headers/footers */
+  }
+
+  /* Prevent page breaks inside the main PO content if possible */
+  .printable-po-content { /* This class should be on the root div inside PrintablePO.tsx if needed */
+    page-break-inside: avoid;
+  }
+
+  /* Remove transitions and transforms that might interfere with print */
+  *, *::before, *::after {
+    transition: none !important;
+    transform: none !important;
+    box-shadow: none !important; /* Aggressively remove shadows */
+  }
+
+  /* Ensure table borders are visible and simple for print */
+  table, th, td {
+    border: 1px solid #000000 !important; /* Simple black border for all table elements */
+  }
+  th, td {
+    padding: 4pt !important; /* Reduce padding for table cells */
   }
 }
