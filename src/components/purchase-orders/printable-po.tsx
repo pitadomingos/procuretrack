@@ -1,6 +1,4 @@
 
-'use client';
-
 import type { PurchaseOrderPayload, POItemForPrint, Supplier } from '@/types';
 
 interface PrintablePOProps {

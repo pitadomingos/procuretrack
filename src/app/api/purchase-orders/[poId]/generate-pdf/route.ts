@@ -2,11 +2,11 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../../../backend/db.js';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, POItemForPrint, Approver } from '@/types';
-import ReactDOMServer from 'react-dom/server';
-import { PrintablePO } from '@/components/purchase-orders/printable-po';
+import { renderPoToHtml } from '@/lib/render-po-to-html';
 import puppeteer from 'puppeteer';
 import fs from 'fs/promises';
 import path from 'path';
+import React from 'react'; // Keep React import if createElement is used inside renderPoToHtml or indirectly
 
 export async function GET(
   request: Request,
@@ -79,11 +79,10 @@ export async function GET(
       items: itemsForPrint,
       supplierDetails: supplierDetails,
       approverName: approverDetails?.name,
-      approverSignatureUrl: approverSignatureUrl, // This is part of PurchaseOrderPayload type
-      quoteNo: headerData.quoteNo || '', // Ensure quoteNo is present
+      approverSignatureUrl: approverSignatureUrl, 
+      quoteNo: headerData.quoteNo || '', 
     };
 
-    // Read logo and convert to base64
     let logoDataUri = '';
     try {
       const logoPath = path.resolve(process.cwd(), 'public', 'jachris-logo.png');
@@ -91,17 +90,10 @@ export async function GET(
       logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
     } catch (logoError) {
       console.warn('Logo file not found or could not be read, PDF will use default path:', logoError);
-      // If logo can't be read, PrintablePO will use its default relative path, which might not work in PDF
     }
     
-    // Render React component to HTML string
-    const poHtml = ReactDOMServer.renderToString(
-      React.createElement(PrintablePO, { poData: fullPoData, logoDataUri: logoDataUri })
-    );
+    const poHtml = renderPoToHtml(fullPoData, logoDataUri);
 
-    // Read global print CSS (simplified for example, could be more complex)
-    // For a more robust solution, ensure Puppeteer can access linked stylesheets or inline critical CSS.
-    // Here, we rely on the @media print styles in globals.css being picked up by emulateMediaType.
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -109,11 +101,10 @@ export async function GET(
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Purchase Order ${fullPoData.poNumber}</title>
-        <link rel="stylesheet" href="/globals.css"> {/* Adjust if your globals.css is served differently or inline styles */}
-         <style>
+        <style>
           /* Minimal reset for Puppeteer if globals.css is not fully effective via link */
           body, html { margin: 0; padding: 0; background-color: #fff; font-family: 'Arial', sans-serif; color: #000; }
-          /* Ensure @media print from globals.css is respected by Puppeteer */
+          /* You might need to inline critical CSS from globals.css here if link tag doesn't work */
         </style>
       </head>
       <body>
@@ -124,15 +115,14 @@ export async function GET(
     
     const browser = await puppeteer.launch({ 
       headless: true, 
-      args: ['--no-sandbox', '--disable-setuid-sandbox'] // Common args for server environments
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const page = await browser.newPage();
     
-    // It's often better to use page.goto(`data:text/html,${fullHtml}`, { waitUntil: 'networkidle0' }) 
-    // or serve the HTML from a temporary local file/endpoint if assets need to be loaded relative to it.
-    // For simplicity, setContent is used here. Relative paths in poHtml (like for CSS) might need adjustment.
+    // It's often better to use page.goto(`data:text/html,${encodeURIComponent(fullHtml)}`, { waitUntil: 'networkidle0' })
+    // or serve the HTML from a temporary local file/endpoint if assets (like linked CSS) need to be loaded relative to it.
     await page.setContent(fullHtml, { waitUntil: 'networkidle0' }); 
-    await page.emulateMediaType('print'); // Crucial for applying @media print styles
+    await page.emulateMediaType('print');
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
