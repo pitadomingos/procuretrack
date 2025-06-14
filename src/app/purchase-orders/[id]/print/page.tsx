@@ -27,6 +27,7 @@ export default function PrintPOPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [logoDataUri, setLogoDataUri] = useState<string | undefined>(undefined);
 
   const fetchPODataForPrint = useCallback(async () => {
     setLoading(true);
@@ -52,7 +53,7 @@ export default function PrintPOPage() {
         grandTotal: Number(rawHeaderData.grandTotal || 0),
         pricesIncludeVat: Boolean(rawHeaderData.pricesIncludeVat),
         siteId: rawHeaderData.siteId ? Number(rawHeaderData.siteId) : null,
-        items: [], // items will be populated
+        items: [], 
       };
       
       if (!poItemsRes.ok) throw new Error(`Failed to fetch PO Items: ${poItemsRes.statusText}`);
@@ -82,6 +83,25 @@ export default function PrintPOPage() {
       });
       
       const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
+      
+      // Fetch logo for client-side preview
+      try {
+        const logoResponse = await fetch('/jachris-logo.png');
+        if (logoResponse.ok) {
+            const logoBlob = await logoResponse.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setLogoDataUri(reader.result as string);
+            };
+            reader.readAsDataURL(logoBlob);
+        } else {
+            console.warn('Client-side logo fetch failed, using default path for preview.');
+            setLogoDataUri(undefined); // Fallback to default path in PrintablePO
+        }
+      } catch (logoError) {
+          console.warn('Error fetching client-side logo:', logoError);
+          setLogoDataUri(undefined);
+      }
 
       setPoData({
         ...headerData, 
@@ -89,9 +109,9 @@ export default function PrintPOPage() {
         supplierDetails: supplierDetails,
         approverName: approverDetails?.name,
         approverSignatureUrl: approverSignatureUrl,
-        poNumber: headerData.poNumber || `PO-${poId}`,
+        poNumber: headerData.poNumber || `PO-${poId}`, // Ensure poNumber is defined
         status: headerData.status || 'Pending Approval',
-        quoteNo: headerData.quoteNo || '',
+        quoteNo: headerData.quoteNo || '', // Ensure quoteNo is always defined
       });
 
     } catch (err: any) {
@@ -116,7 +136,9 @@ export default function PrintPOPage() {
     if (!poData) return;
     setIsDownloading(true);
     try {
-      const response = await fetch(`/api/purchase-orders/${poId}/generate-pdf`);
+      // Call the new pages/api endpoint
+      const response = await fetch(`/api/generate-po-pdf?poId=${poId}`); // Pass poId as query param
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'PDF generation failed. Server returned an unreadable error.' }));
         throw new Error(errorData.message || `PDF generation failed: ${response.statusText}`);
@@ -126,7 +148,7 @@ export default function PrintPOPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `PO-${poData.poNumber}.pdf`;
+      a.download = `${poData.poNumber || `PO-${poId}`}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -134,7 +156,7 @@ export default function PrintPOPage() {
 
       toast({
         title: 'PDF Downloaded',
-        description: `PO-${poData.poNumber}.pdf has started downloading.`,
+        description: `${poData.poNumber || `PO-${poId}`}.pdf has started downloading.`,
       });
     } catch (err: any) {
       console.error('Error downloading PDF:', err);
@@ -187,7 +209,7 @@ export default function PrintPOPage() {
         title: "Success!",
         description: result.message || `Purchase Order ${poData.poNumber} approved.`,
       });
-      await fetchPODataForPrint(); 
+      await fetchPODataForPrint(); // Re-fetch data to update status
 
     } catch (err: any) {
       console.error(`Error approving PO (client-side catch):`, err); 
@@ -204,7 +226,6 @@ export default function PrintPOPage() {
       setIsApproving(false);
     }
   };
-
 
   if (loading) {
     return (
@@ -293,7 +314,7 @@ export default function PrintPOPage() {
         </Card>
         
         <div className="printable-po-content-wrapper bg-white p-2 sm:p-4 print:p-0">
-         <PrintablePO poData={poData} />
+         <PrintablePO poData={poData} logoDataUri={logoDataUri} />
         </div>
       </div>
     </div>
