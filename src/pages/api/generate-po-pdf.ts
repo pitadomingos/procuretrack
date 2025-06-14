@@ -1,7 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import ReactDOMServer from 'react-dom/server';
-import { chromium, type Browser } from 'playwright'; // Using Playwright
+import { chromium, type Browser } from 'playwright';
 import fs from 'fs/promises';
 import path from 'path';
 import React from 'react';
@@ -41,7 +41,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     console.log(`[PDF API][getPODataForPdf] Executing PO Items query for PO ID: ${numericPoId}`);
     const [poItemRows]: any[] = await pool.execute('SELECT * FROM POItem WHERE poId = ?', [numericPoId]);
     console.log(`[PDF API][getPODataForPdf] PO Items query done. Rows found: ${poItemRows.length}`);
-    
+
     console.log(`[PDF API][getPODataForPdf] Fetching auxiliary data (suppliers, sites, categories, approvers)`);
     const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
       pool.query('SELECT * FROM Supplier'),
@@ -76,8 +76,8 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       };
     });
     console.log(`[PDF API][getPODataForPdf] PO Items processed for printing: ${itemsForPrint.length} items.`);
-    
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; 
+
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
 
     console.log(`[PDF API][getPODataForPdf] END - Successfully processed data for PO ID: ${numericPoId}`);
     return {
@@ -89,9 +89,10 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       quoteNo: headerData.quoteNo || '',
     };
   } catch (dbError: any) {
-    console.error(`[PDF API][getPODataForPdf][CRITICAL DB ERROR] PO ID ${poId}: ${dbError.message}`, dbError.stack);
-    // Re-throw the error to be caught by the main handler's catch block
-    throw new Error(`Database error in getPODataForPdf for PO ID ${poId}: ${dbError.message}`);
+    console.error(`[PDF API][getPODataForPdf][DB_ERROR] PO ID ${poId}: ${dbError.message}`);
+    console.error(`[PDF API][getPODataForPdf][DB_ERROR_STACK]: ${dbError.stack || 'No stack available'}`);
+    // Re-throw to be caught by the main handler, which will send the HTTP response
+    throw dbError;
   }
 }
 
@@ -139,7 +140,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const htmlContent = ReactDOMServer.renderToString(reactElement);
     console.log(`[PDF API][Handler] HTML content rendered. Length: ${htmlContent.length}`);
 
-    // Playwright launch arguments
     const playwrightArgs = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -147,20 +147,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process', // Useful for some environments
-      '--disable-gpu', // Often needed in headless environments
+      '--single-process',
+      '--disable-gpu',
     ];
-    console.log(`[PDF API][Handler] Attempting to launch Playwright Chromium with args: ${playwrightArgs.join(' ')} for PO ID: ${poId}`);
-    
+    console.log(`[PDF API][Handler] Launching Playwright Chromium with args: ${playwrightArgs.join(' ')} for PO ID: ${poId}`);
     browser = await chromium.launch({
       args: playwrightArgs,
       headless: true,
     });
-    console.log(`[PDF API][Handler] Playwright browser launched successfully. Creating new page for PO ID: ${poId}`);
-    const context = await browser.newContext();
+    console.log(`[PDF API][Handler] Playwright browser launched. Version: ${browser.version()}`);
+
+    const context = await browser.newContext({
+      // Consider viewport if your print styles are viewport-dependent
+      // viewport: { width: 1200, height: 800 } 
+    });
+    console.log(`[PDF API][Handler] Playwright context created.`);
     const page = await context.newPage();
-    
-    // Log page console messages (useful for debugging client-side issues in the headless browser)
+    console.log(`[PDF API][Handler] Playwright page created.`);
+
     if (process.env.NODE_ENV === 'development') {
         page.on('console', msg => console.log('[PDF API][Playwright Page Console]', msg.type().toUpperCase(), msg.text()));
         page.on('pageerror', pageError => console.error('[PDF API][Playwright Page Error]', pageError.message, pageError.stack));
@@ -168,6 +172,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log(`[PDF API][Handler] Setting page content for PO ID: ${poId}`);
+    // It's generally better to include basic CSS for Playwright if Tailwind is not inlined by ReactDOMServer
+    // or if the component relies heavily on external CSS not available in this isolated HTML.
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -176,29 +182,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <title>Purchase Order ${poData.poNumber}</title>
           <style>
             body { margin: 0; padding: 0; font-family: 'Arial', sans-serif; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            /* You might need to include Tailwind CSS or ensure PrintablePO uses inline styles for Playwright to render correctly */
+            /* Add critical print CSS here if necessary, or ensure PrintablePO inlines styles */
           </style>
         </head>
         <body>
           ${htmlContent}
         </body>
       </html>`;
-    await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' }); // 'domcontentloaded' or 'load' might be sufficient
-    console.log(`[PDF API][Handler] Page content set. Emulating print media for PO ID: ${poId}`);
-    // No direct equivalent for page.emulateMediaType('print') in Playwright for pdf generation.
-    // PDF options control print rendering.
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0' }); // networkidle0 can be more reliable
+    console.log(`[PDF API][Handler] Page content set. Generating PDF for PO ID: ${poId}`);
 
-    console.log(`[PDF API][Handler] Generating PDF with 30s timeout for PO ID: ${poId}`);
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '20mm', right: '10mm', bottom: '20mm', left: '10mm' },
-      timeout: 30000, // 30 seconds timeout for PDF generation
+      timeout: 30000, // 30 seconds timeout
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
-    console.log(`[PDF API][Handler] Attempting to close Playwright browser BEFORE sending response for PO ID: ${poId}`);
-    await browser.close(); 
+    console.log(`[PDF API][Handler] Attempting to close Playwright browser for PO ID: ${poId}`);
+    await browser.close();
     browser = null; // Mark as closed
     console.log(`[PDF API][Handler] Playwright browser closed successfully.`);
 
@@ -206,35 +209,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`[PDF API][Handler] Setting response headers for PDF download: ${poNumberForFile}.pdf`);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${poNumberForFile}.pdf"`);
-    
+
     console.log(`[PDF API][Handler] SUCCESS - Sending PDF response for PO ID: ${poId}`);
     res.send(pdfBuffer);
 
   } catch (error: any) {
-    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] CRITICAL ERROR for PO ID ${poId}: ${error.message}`, error.stack);
-    
-    if (!res.headersSent) {
-      res.status(500).json({
-          source: 'api-handler-main-catch',
-          error: `Server error during PDF generation with Playwright: ${error.message || 'Unknown error'}`,
-          details: error.message || 'An unknown critical error occurred during PDF generation.',
-          poIdProcessed: poId,
-          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      });
-    } else {
-      console.error("[PDF API][Handler][MAIN CATCH BLOCK] Headers already sent, cannot send JSON error response. This usually means the response was partially sent before the error.");
-    }
-  } finally {
-    console.log(`[PDF API][Handler][FINALLY BLOCK] Entered finally block for PO ID: ${poId}. Browser instance: ${browser ? 'exists' : 'null'}`);
-    if (browser) {
+    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] CRITICAL ERROR for PO ID ${poId}: ${error.message || 'Unknown error occurred'}`);
+    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] STACK TRACE: ${error.stack || 'No stack trace available'}`);
+
+    if (browser) { // Attempt to close browser if it was opened and an error occurred
       try {
-        console.log(`[PDF API][Handler][FINALLY BLOCK] Attempting to close Playwright browser for PO ID: ${poId} (might be redundant if already closed in try)`);
+        console.warn(`[PDF API][Handler][MAIN CATCH BLOCK] Attempting to close browser due to error for PO ID: ${poId}`);
         await browser.close();
-        console.log(`[PDF API][Handler][FINALLY BLOCK] Playwright browser closed successfully in finally block for PO ID: ${poId}`);
+        browser = null; // Mark as closed
+        console.warn(`[PDF API][Handler][MAIN CATCH BLOCK] Browser closed after error for PO ID: ${poId}`);
       } catch (closeError: any) {
-        console.error(`[PDF API][Handler][FINALLY BLOCK] Error closing Playwright browser in finally for PO ID ${poId}: ${closeError.message}`, closeError.stack);
+        console.error(`[PDF API][Handler][MAIN CATCH BLOCK] Error closing browser after initial error for PO ID ${poId}: ${closeError.message}`);
       }
     }
-    console.log(`[PDF API][Handler][FINALLY BLOCK] Exiting finally block for PO ID: ${poId}`);
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        source: 'api-handler-main-catch',
+        error: `Server error during PDF generation with Playwright for PO ID ${poId}. Check server logs for more details.`,
+        details: error.message || 'An unknown critical error occurred on the server.',
+        stack: process.env.NODE_ENV === 'development' ? (error.stack || 'No stack trace available') : undefined,
+      });
+    } else {
+      console.error("[PDF API][Handler][MAIN CATCH BLOCK] Headers already sent, cannot send JSON error response. This indicates a severe issue or a response was partially sent before the error was fully handled.");
+    }
+  } finally {
+    // This finally block ensures an attempt to close the browser if it's still open,
+    // for example, if an error occurred outside the main try block or before the browser could be explicitly closed.
+    if (browser) {
+      try {
+        console.warn(`[PDF API][Handler][FINALLY BLOCK] Ensuring Playwright browser is closed (might be redundant) for PO ID: ${poId}`);
+        await browser.close();
+        console.warn(`[PDF API][Handler][FINALLY BLOCK] Playwright browser closed in finally block for PO ID: ${poId}`);
+      } catch (closeError: any) {
+        console.error(`[PDF API][Handler][FINALLY BLOCK] Error closing Playwright browser in finally for PO ID ${poId}: ${closeError.message}`);
+      }
+    }
+    console.log(`[PDF API][Handler] END - Request processed for PO ID: ${poId}`);
   }
 }
