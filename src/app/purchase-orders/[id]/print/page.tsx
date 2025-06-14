@@ -95,11 +95,11 @@ export default function PrintPOPage() {
             reader.readAsDataURL(logoBlob);
         } else {
             console.warn('Client-side logo fetch failed, using default path for preview.');
-            setLogoDataUri(undefined);
+            setLogoDataUri(undefined); // Or '/jachris-logo.png' if you want to rely on browser caching for the preview
         }
       } catch (logoError) {
           console.warn('Error fetching client-side logo:', logoError);
-          setLogoDataUri(undefined);
+          setLogoDataUri(undefined); // Or '/jachris-logo.png'
       }
 
       setPoData({
@@ -108,9 +108,9 @@ export default function PrintPOPage() {
         supplierDetails: supplierDetails,
         approverName: approverDetails?.name,
         approverSignatureUrl: approverSignatureUrl,
-        poNumber: headerData.poNumber || `PO-${poId}`,
-        status: headerData.status || 'Pending Approval',
-        quoteNo: headerData.quoteNo || '',
+        poNumber: headerData.poNumber || `PO-${poId}`, // Fallback if poNumber is somehow null
+        status: headerData.status || 'Pending Approval', // Fallback status
+        quoteNo: headerData.quoteNo || '', // Fallback quoteNo
       });
 
     } catch (err: any) {
@@ -187,19 +187,25 @@ export default function PrintPOPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        // No body needed based on current approve route, but pass approver info if your logic changes
+        // body: JSON.stringify({ approverId: MOCK_APPROVER_ID_FOR_ACTION }), 
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
             error: 'Approval failed.', 
             details: `Server responded with status: ${response.status} ${response.statusText}`,
-            stack: ''
+            stack: '' // Placeholder for stack if needed
         }));
         
+        // Construct a more informative error message for the client
         let clientErrorMessage = errorData.error || `Approval failed for PO ${poId}.`;
         if (errorData.details) {
             clientErrorMessage += ` Details: ${errorData.details}`;
         }
+        // If a stack trace is provided and useful for client-side debugging (rarely the case), append it.
+        // if (errorData.stack) { clientErrorMessage += ` Stack: ${errorData.stack}`; }
+        
         throw new Error(clientErrorMessage);
       }
 
@@ -208,10 +214,12 @@ export default function PrintPOPage() {
         title: "Success!",
         description: result.message || `Purchase Order ${poData.poNumber} approved.`,
       });
+      // Refresh PO data to show updated status
       await fetchPODataForPrint();
 
     } catch (err: any) {
       console.error(`Error approving PO (client-side catch):`, err); 
+      // Ensure err.message is used, which contains the server's detailed error if thrown correctly
       let errorMessage = 'Could not approve the PO.';
       if (err instanceof Error && err.message) {
         errorMessage = err.message;
@@ -225,6 +233,7 @@ export default function PrintPOPage() {
       setIsApproving(false);
     }
   };
+
 
   if (loading) {
     return (

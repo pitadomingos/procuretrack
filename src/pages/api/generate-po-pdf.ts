@@ -64,7 +64,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       };
     });
     
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; // Assumes signatures are in public/signatures
 
     return {
       ...headerData,
@@ -96,67 +96,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let logoDataUri = '';
     try {
-      // Path relative to the project root where 'public' folder is.
       const logoPath = path.resolve(process.cwd(), 'public', 'jachris-logo.png');
       const logoBuffer = await fs.readFile(logoPath);
       logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
     } catch (logoError) {
       console.warn('Logo file not found or could not be read for PDF generation:', logoError);
-      // PDF can still be generated without the logo, or with a placeholder.
     }
 
+    // Render the React component to an HTML string
     const htmlContent = ReactDOMServer.renderToString(
       React.createElement(PrintablePO, { poData, logoDataUri })
     );
     
+    // Launch Puppeteer
     const browser = await puppeteer.launch({ 
         headless: true, 
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] // Common args for server environments
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
     const page = await browser.newPage();
     
-    // Set content for Puppeteer
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    // Set content for Puppeteer. We must provide the full HTML structure.
+    await page.setContent(`
+      <html>
+        <head>
+          <meta charSet="UTF-8" />
+          <title>Purchase Order ${poData.poNumber}</title>
+          <style>
+            body, html { margin: 0; padding: 0; background-color: #fff; color: #000; font-family: 'Arial', sans-serif; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .printable-po-content-wrapper { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; background-color: #ffffff !important; }
+            table, th, td { border: 1px solid #000000 !important; padding: 4pt !important; }
+            *, *::before, *::after { transition: none !important; transform: none !important; box-shadow: none !important; }
+            img { max-width: 100%; height: auto; }
+            /* Include other critical print styles from globals.css or PrintablePO if necessary */
+          </style>
+        </head>
+        <body>
+          <div class="printable-po-content-wrapper">
+            ${htmlContent}
+          </div>
+        </body>
+      </html>
+    `, { waitUntil: 'networkidle0' });
 
-    // Emulate print media type and apply print-specific styles
+    // Emulate print media type
     await page.emulateMediaType('print');
-    await page.addStyleTag({ content: `
-        body, html {
-          background-color: #ffffff !important;
-          color: #000000 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          width: 100%;
-          font-size: 10pt; /* Consistent font size for PDF */
-          font-family: 'Arial', sans-serif; /* Generic font for PDF */
-        }
-        .printable-po-content-wrapper { /* Assuming this class wraps PrintablePO component content */
-          box-shadow: none !important;
-          border: none !important;
-          margin: 0 !important;
-          padding: 0 !important; 
-          width: 100% !important;
-          max-width: 100% !important;
-          background-color: #ffffff !important;
-        }
-        table, th, td {
-            border: 1px solid #000000 !important; /* Basic black borders */
-            padding: 4pt !important; /* Reduced padding */
-        }
-        *, *::before, *::after {
-            transition: none !important;
-            transform: none !important;
-            box-shadow: none !important; /* Remove all shadows */
-        }
-        img { max-width: 100%; height: auto; } /* Ensure images are responsive */
-    ` });
-
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      printBackground: true, // Important for backgrounds and colors
+      printBackground: true,
       margin: {
         top: '10mm',
         right: '10mm',
