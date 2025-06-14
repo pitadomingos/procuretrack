@@ -1,12 +1,12 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import ReactDOMServer from 'react-dom/server';
-import puppeteer from 'puppeteer';
+import { chromium, type Browser } from 'playwright'; // Using Playwright
 import fs from 'fs/promises';
 import path from 'path';
-import React from 'react'; // Required for JSX
+import React from 'react';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import { pool } from '../../../backend/db.js'; // Corrected path for pages/api
+import { pool } from '../../../backend/db.js'; // Corrected path
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, Approver, POItemForPrint } from '@/types';
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
@@ -77,7 +77,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     });
     console.log(`[PDF API][getPODataForPdf] PO Items processed for printing: ${itemsForPrint.length} items.`);
     
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; // This path needs to be web-accessible if used in HTML
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; 
 
     console.log(`[PDF API][getPODataForPdf] END - Successfully processed data for PO ID: ${numericPoId}`);
     return {
@@ -90,13 +90,14 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     };
   } catch (dbError: any) {
     console.error(`[PDF API][getPODataForPdf][CRITICAL DB ERROR] PO ID ${poId}: ${dbError.message}`, dbError.stack);
+    // Re-throw the error to be caught by the main handler's catch block
     throw new Error(`Database error in getPODataForPdf for PO ID ${poId}: ${dbError.message}`);
   }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { poId } = req.query;
-  console.log(`[PDF API][Handler] START - Received request for PO ID: ${poId}`);
+  console.log(`[PDF API][Handler] START - Received request for PO ID: ${poId} (Using Playwright)`);
 
   if (typeof poId !== 'string' || !poId) {
     console.error('[PDF API][Handler] Invalid PO ID in query parameters.');
@@ -107,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  let browser: puppeteer.Browser | null = null;
+  let browser: Browser | null = null;
 
   try {
     console.log(`[PDF API][Handler] Fetching PO data for PO ID: ${poId}`);
@@ -138,35 +139,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const htmlContent = ReactDOMServer.renderToString(reactElement);
     console.log(`[PDF API][Handler] HTML content rendered. Length: ${htmlContent.length}`);
 
-    const puppeteerArgs = [
+    // Playwright launch arguments
+    const playwrightArgs = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process',
-      '--disable-gpu',
+      '--single-process', // Useful for some environments
+      '--disable-gpu', // Often needed in headless environments
     ];
-    console.log(`[PDF API][Handler] Attempting to launch Puppeteer with args: ${puppeteerArgs.join(' ')} for PO ID: ${poId}`);
+    console.log(`[PDF API][Handler] Attempting to launch Playwright Chromium with args: ${playwrightArgs.join(' ')} for PO ID: ${poId}`);
     
-    browser = await puppeteer.launch({
+    browser = await chromium.launch({
+      args: playwrightArgs,
       headless: true,
-      args: puppeteerArgs,
-      dumpio: process.env.NODE_ENV === 'development', // Log browser console
     });
-    console.log(`[PDF API][Handler] Puppeteer launched successfully. Creating new page for PO ID: ${poId}`);
-    const page = await browser.newPage();
+    console.log(`[PDF API][Handler] Playwright browser launched successfully. Creating new page for PO ID: ${poId}`);
+    const context = await browser.newContext();
+    const page = await context.newPage();
     
+    // Log page console messages (useful for debugging client-side issues in the headless browser)
     if (process.env.NODE_ENV === 'development') {
-        page.on('console', msg => console.log('[PDF API][Puppeteer Page Console]', msg.type().toUpperCase(), msg.text()));
-        page.on('pageerror', pageError => console.error('[PDF API][Puppeteer Page Error]', pageError.message, pageError.stack));
-        page.on('requestfailed', request => console.warn('[PDF API][Puppeteer Request Failed]', request.url(), request.failure()?.errorText));
+        page.on('console', msg => console.log('[PDF API][Playwright Page Console]', msg.type().toUpperCase(), msg.text()));
+        page.on('pageerror', pageError => console.error('[PDF API][Playwright Page Error]', pageError.message, pageError.stack));
+        page.on('requestfailed', request => console.warn('[PDF API][Playwright Request Failed]', request.url(), request.failure()?.errorText));
     }
 
     console.log(`[PDF API][Handler] Setting page content for PO ID: ${poId}`);
-    // Basic CSS for print, assuming PrintablePO uses inline styles or simple CSS.
-    // For Tailwind, a more complex setup (like linking a stylesheet or inlining Tailwind styles) would be needed for Puppeteer.
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -175,19 +176,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <title>Purchase Order ${poData.poNumber}</title>
           <style>
             body { margin: 0; padding: 0; font-family: 'Arial', sans-serif; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            /* Add any essential print CSS here if not handled by PrintablePO's inline styles */
-            /* For example, to ensure Tailwind classes that might be stripped by renderToString are handled: */
-            /* You would need to include your compiled Tailwind CSS here or ensure PrintablePO is fully self-contained with inline styles. */
-            /* This example assumes PrintablePO is mostly self-contained or uses very basic styling. */
+            /* You might need to include Tailwind CSS or ensure PrintablePO uses inline styles for Playwright to render correctly */
           </style>
         </head>
         <body>
           ${htmlContent}
         </body>
       </html>`;
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0' }); // networkidle0 waits for network activity to cease
+    await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' }); // 'domcontentloaded' or 'load' might be sufficient
     console.log(`[PDF API][Handler] Page content set. Emulating print media for PO ID: ${poId}`);
-    await page.emulateMediaType('print');
+    // No direct equivalent for page.emulateMediaType('print') in Playwright for pdf generation.
+    // PDF options control print rendering.
 
     console.log(`[PDF API][Handler] Generating PDF with 30s timeout for PO ID: ${poId}`);
     const pdfBuffer = await page.pdf({
@@ -198,10 +197,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
-    console.log(`[PDF API][Handler] Attempting to close Puppeteer browser BEFORE sending response for PO ID: ${poId}`);
+    console.log(`[PDF API][Handler] Attempting to close Playwright browser BEFORE sending response for PO ID: ${poId}`);
     await browser.close(); 
     browser = null; // Mark as closed
-    console.log(`[PDF API][Handler] Puppeteer browser closed successfully.`);
+    console.log(`[PDF API][Handler] Playwright browser closed successfully.`);
 
     const poNumberForFile = poData.poNumber || `PO-${poId}`;
     console.log(`[PDF API][Handler] Setting response headers for PDF download: ${poNumberForFile}.pdf`);
@@ -217,7 +216,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!res.headersSent) {
       res.status(500).json({
           source: 'api-handler-main-catch',
-          error: 'Server error during PDF generation.',
+          error: `Server error during PDF generation with Playwright: ${error.message || 'Unknown error'}`,
           details: error.message || 'An unknown critical error occurred during PDF generation.',
           poIdProcessed: poId,
           stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
@@ -229,14 +228,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`[PDF API][Handler][FINALLY BLOCK] Entered finally block for PO ID: ${poId}. Browser instance: ${browser ? 'exists' : 'null'}`);
     if (browser) {
       try {
-        console.log(`[PDF API][Handler][FINALLY BLOCK] Attempting to close Puppeteer browser for PO ID: ${poId} (might be redundant if already closed in try)`);
+        console.log(`[PDF API][Handler][FINALLY BLOCK] Attempting to close Playwright browser for PO ID: ${poId} (might be redundant if already closed in try)`);
         await browser.close();
-        console.log(`[PDF API][Handler][FINALLY BLOCK] Puppeteer browser closed successfully in finally block for PO ID: ${poId}`);
+        console.log(`[PDF API][Handler][FINALLY BLOCK] Playwright browser closed successfully in finally block for PO ID: ${poId}`);
       } catch (closeError: any) {
-        console.error(`[PDF API][Handler][FINALLY BLOCK] Error closing Puppeteer browser in finally for PO ID ${poId}: ${closeError.message}`, closeError.stack);
+        console.error(`[PDF API][Handler][FINALLY BLOCK] Error closing Playwright browser in finally for PO ID ${poId}: ${closeError.message}`, closeError.stack);
       }
     }
     console.log(`[PDF API][Handler][FINALLY BLOCK] Exiting finally block for PO ID: ${poId}`);
   }
 }
-    
