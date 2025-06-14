@@ -11,12 +11,15 @@ import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as C
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
   const numericPoId = Number(poId);
-  if (isNaN(numericPoId)) return null;
+  if (isNaN(numericPoId)) {
+    console.error(`[PDF API] Invalid PO ID format for PDF: ${poId}`);
+    return null;
+  }
 
   try {
     const [poHeaderRows]: any[] = await pool.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [numericPoId]);
     if (poHeaderRows.length === 0) {
-      console.error(`Purchase Order with ID ${numericPoId} not found for PDF generation.`);
+      console.error(`[PDF API] Purchase Order with ID ${numericPoId} not found for PDF generation.`);
       return null;
     }
     const rawHeaderData = poHeaderRows[0];
@@ -28,7 +31,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       grandTotal: Number(rawHeaderData.grandTotal || 0),
       pricesIncludeVat: Boolean(rawHeaderData.pricesIncludeVat),
       siteId: rawHeaderData.siteId ? Number(rawHeaderData.siteId) : null,
-      items: [], // Will be populated next
+      items: [], 
     };
 
     const [poItemRows]: any[] = await pool.execute('SELECT * FROM POItem WHERE poId = ?', [numericPoId]);
@@ -64,7 +67,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       };
     });
     
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; // Assumes signatures are in public/signatures
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
 
     return {
       ...headerData,
@@ -74,48 +77,77 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       approverSignatureUrl: approverSignatureUrl,
       quoteNo: headerData.quoteNo || '',
     };
-  } catch (error) {
-    console.error(`Error fetching PO data for PDF (PO ID: ${poId}):`, error);
+  } catch (error: any) {
+    console.error(`[PDF API] Error in getPODataForPdf for PO ID ${poId}:`, error.message);
+    if (error.stack) {
+        console.error("[PDF API] Stack trace for getPODataForPdf:", error.stack);
+    }
     return null;
   }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { poId } = req.query;
+  console.log(`[PDF API] Received request for PO ID: ${poId}`);
 
   if (typeof poId !== 'string' || !poId) {
-    return res.status(400).json({ error: 'Valid Purchase Order ID is required in query parameters.' });
+    console.error('[PDF API] Invalid PO ID in query parameters.');
+    return res.status(400).json({ 
+      source: 'api-generate-po-pdf-validation',
+      error: 'Valid Purchase Order ID is required in query parameters.' 
+    });
   }
 
+  let browser; 
+
   try {
+    console.log(`[PDF API] Fetching PO data for PO ID: ${poId}`);
     const poData = await getPODataForPdf(poId);
 
     if (!poData) {
-      return res.status(404).json({ error: `Purchase Order ${poId} not found or data incomplete.` });
+      console.error(`[PDF API] PO Data not found or incomplete for PO ID: ${poId}`);
+      return res.status(404).json({ 
+        source: 'api-generate-po-pdf-data-fetch',
+        error: `Purchase Order ${poId} not found or data incomplete.` 
+      });
     }
+    console.log(`[PDF API] PO data fetched successfully for PO ID: ${poId}`);
 
     let logoDataUri = '';
     try {
       const logoPath = path.resolve(process.cwd(), 'public', 'jachris-logo.png');
+      console.log(`[PDF API] Attempting to read logo from: ${logoPath}`);
       const logoBuffer = await fs.readFile(logoPath);
       logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-    } catch (logoError) {
-      console.warn('Logo file not found or could not be read for PDF generation:', logoError);
+      console.log(`[PDF API] Logo read successfully.`);
+    } catch (logoError: any) {
+      console.warn(`[PDF API] Logo file not found or could not be read: ${logoError.message}. Proceeding without custom logo.`);
     }
 
-    // Render the React component to an HTML string
+    console.log(`[PDF API] Rendering PrintablePO component to HTML string for PO ID: ${poId}`);
     const htmlContent = ReactDOMServer.renderToString(
       React.createElement(PrintablePO, { poData, logoDataUri })
     );
+    console.log(`[PDF API] HTML content rendered successfully for PO ID: ${poId}`);
     
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({ 
+    console.log(`[PDF API] Launching Puppeteer for PO ID: ${poId}`);
+    browser = await puppeteer.launch({ 
         headless: true, 
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        args: [
+          '--no-sandbox', 
+          '--disable-setuid-sandbox', 
+          '--disable-dev-shm-usage', 
+          '--disable-gpu', // Often necessary in server environments
+          '--single-process', // Can help in resource-constrained environments
+          '--no-zygote', // Another common flag for compatibility
+          // '--font-render-hinting=none' // May help with font rendering issues if they occur
+        ],
+        dumpio: process.env.NODE_ENV === 'development' // Log puppeteer browser console output in dev
     });
+    console.log(`[PDF API] Puppeteer launched. Creating new page for PO ID: ${poId}`);
     const page = await browser.newPage();
     
-    // Set content for Puppeteer. We must provide the full HTML structure.
+    console.log(`[PDF API] Setting page content for PO ID: ${poId}`);
     await page.setContent(`
       <html>
         <head>
@@ -127,7 +159,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             table, th, td { border: 1px solid #000000 !important; padding: 4pt !important; }
             *, *::before, *::after { transition: none !important; transform: none !important; box-shadow: none !important; }
             img { max-width: 100%; height: auto; }
-            /* Include other critical print styles from globals.css or PrintablePO if necessary */
           </style>
         </head>
         <body>
@@ -137,10 +168,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         </body>
       </html>
     `, { waitUntil: 'networkidle0' });
+    console.log(`[PDF API] Page content set. Emulating print media for PO ID: ${poId}`);
 
-    // Emulate print media type
     await page.emulateMediaType('print');
 
+    console.log(`[PDF API] Generating PDF buffer for PO ID: ${poId}`);
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -151,21 +183,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         left: '10mm',
       },
     });
-
-    await browser.close();
+    console.log(`[PDF API] PDF buffer generated successfully for PO ID: ${poId}. Size: ${pdfBuffer.length} bytes.`);
 
     const poNumberForFile = poData.poNumber || `PO-${poId}`;
 
+    console.log(`[PDF API] Setting response headers for PDF download: ${poNumberForFile}.pdf`);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${poNumberForFile}.pdf"`);
+    console.log(`[PDF API] Sending PDF response for PO ID: ${poId}`);
     res.send(pdfBuffer);
 
   } catch (error: any) {
-    console.error(`Error generating PDF for PO ${poId}:`, error);
-    res.status(500).json({ 
-        error: 'Failed to generate PDF.', 
-        details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error(`[PDF API] Critical error in handler for PO ID ${poId}:`, error.message);
+    if (error.stack) {
+        console.error("[PDF API] Stack trace for handler error:", error.stack);
+    }
+    if (!res.headersSent) {
+      res.status(500).json({ 
+          source: 'api-generate-po-pdf-catch-block',
+          error: 'Failed to generate PDF due to a critical server-side issue.', 
+          details: error.message,
+          errorStack: process.env.NODE_ENV === 'development' ? error.stack : 'Stack trace hidden in production',
+      });
+    } else {
+      console.error("[PDF API] Headers already sent, cannot send JSON error response.");
+    }
+  } finally {
+      if (browser) {
+          try {
+            console.log(`[PDF API] Closing Puppeteer browser for PO ID: ${poId}`);
+            await browser.close();
+            console.log(`[PDF API] Puppeteer browser closed successfully for PO ID: ${poId}`);
+          } catch (closeError: any) {
+            console.error(`[PDF API] Error closing Puppeteer browser for PO ID ${poId}:`, closeError.message);
+          }
+      }
   }
 }
+    
