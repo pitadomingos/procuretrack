@@ -119,7 +119,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
     // Emulate print media type and apply print-specific styles
-    // (These styles are a subset of what's in globals.css for print, focusing on essentials)
     await page.emulateMediaType('print');
     await page.addStyleTag({ content: `
         body, html {
@@ -158,7 +157,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true, // Important for backgrounds and colors
-      margin: { // Control margins for the PDF page
+      margin: {
         top: '10mm',
         right: '10mm',
         bottom: '10mm',
@@ -179,7 +178,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ 
         error: 'Failed to generate PDF.', 
         details: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined // Include stack in dev
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
