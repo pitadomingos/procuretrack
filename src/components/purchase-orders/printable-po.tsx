@@ -1,9 +1,10 @@
 
-import type { PurchaseOrderPayload, POItemForPrint, Supplier } from '@/types';
+import React from 'react'; // Ensured React is imported
+import type { PurchaseOrderPayload, POItemForPrint } from '@/types';
 
 interface PrintablePOProps {
   poData: PurchaseOrderPayload;
-  logoDataUri?: string; // Optional prop for base64 logo
+  logoDataUri?: string; 
 }
 
 const JACHRIS_COMPANY_DETAILS = {
@@ -11,7 +12,7 @@ const JACHRIS_COMPANY_DETAILS = {
   contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
-  logoUrl: '/jachris-logo.png', // Default logo path
+  logoUrl: '/jachris-logo.png', 
   nuit: '400 415 954',
 };
 
@@ -22,11 +23,12 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
   const poCreationDate = poData.creationDate ? new Date(poData.creationDate).toLocaleDateString('en-GB') : 'N/A';
   const approvalDate = poData.approvalDate ? new Date(poData.approvalDate).toLocaleDateString('en-GB') : 'N/A';
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined | null) => {
+    if (value === undefined || value === null) return '0.00';
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const printableItems = items as POItemForPrint[];
+  const printableItems = (items || []) as POItemForPrint[]; // Ensure items is an array
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
   return (
@@ -122,7 +124,7 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
           <div className="flex justify-between border-b border-black py-0.5">
             <span>IVA (16%)</span>
             <span>
-              {poData.currency === 'MZN' ? formatCurrency(poData.vatAmount) : (poData.pricesIncludeVat ? 'IVA Incl.' : 'N/A')}
+              {poData.currency === 'MZN' && !poData.pricesIncludeVat ? formatCurrency(poData.vatAmount) : (poData.pricesIncludeVat ? 'IVA Incl.' : 'N/A')}
             </span>
           </div>
           <div className="flex justify-between font-bold pt-0.5">
@@ -153,11 +155,11 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
                   <img
                     src={poData.approverSignatureUrl}
                     alt={`Signature of ${poData.approverName || 'Approver'}`}
-                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]"
+                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]" // Adjusted signature size and placement
                     data-ai-hint="signature image"
                   />
                 ) : (
-                  <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div>
+                  <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div> // Placeholder for signature
                 )}
                 <p className="mr-[70px]">Signature</p>
             </div>
