@@ -63,21 +63,21 @@ export const monthlyStatusData: ChartDataPoint[] = [
 ];
 
 export const allocationsData: ChartDataPoint[] = [
-  { name: 'Site A', Completed: 120, PartiallyCompleted: 60, Closed: 200 },
-  { name: 'Site B', Completed: 90, PartiallyCompleted: 40, Closed: 150 },
-  { name: 'Site C', Completed: 150, PartiallyCompleted: 80, Closed: 220 },
-  { name: 'Site D', Completed: 70, PartiallyCompleted: 30, Closed: 100 },
+  { name: 'TMW', Completed: 120, PartiallyCompleted: 60, Closed: 200 },
+  { name: 'MEM', Completed: 90, PartiallyCompleted: 40, Closed: 150 },
+  { name: 'FMS', Completed: 150, PartiallyCompleted: 80, Closed: 220 },
+  { name: 'CHW', Completed: 70, PartiallyCompleted: 30, Closed: 100 },
 ];
 
 export const activityLogData: ActivityLogEntry[] = [
-  { id: '1', user: 'Alice Smith', action: 'Created PO #PO12345', timestamp: '2024-07-28 10:30 AM', details: 'Vendor: Acme Corp, Total: $1500' },
-  { id: '2', user: 'Bob Johnson', action: 'Approved PO #PO12344', timestamp: '2024-07-28 09:15 AM' },
+  { id: '1', user: 'Gil Lunguze', action: 'Created PO #PO12345', timestamp: '2024-07-28 10:30 AM', details: 'Vendor: Acme Corp, Total: $1500' },
+  { id: '2', user: 'Cherinne de Klerk', action: 'Approved PO #PO12344', timestamp: '2024-07-28 09:15 AM' },
   { id: '3', user: 'System', action: 'GRN #GRN007 received for PO #PO12300', timestamp: '2024-07-27 03:45 PM', details: 'Items: 5/10 received' },
-  { id: '4', user: 'Carol White', action: 'Updated user permissions for David Lee', timestamp: '2024-07-27 01:20 PM' },
-  { id: '5', user: 'Alice Smith', action: 'Generated Back Order Report', timestamp: '2024-07-27 11:00 AM', details: 'Date Range: 2024-07-01 to 2024-07-27' },
-  { id: '6', user: 'Eve Green', action: 'Added new supplier: MozTech Solutions', timestamp: '2024-07-29 11:00 AM' },
+  { id: '4', user: 'Pita Domingos', action: 'Updated user permissions for David Lee', timestamp: '2024-07-27 01:20 PM' },
+  { id: '5', user: 'Tamara Moore', action: 'Generated Back Order Report', timestamp: '2024-07-27 11:00 AM', details: 'Date Range: 2024-07-01 to 2024-07-27' },
+  { id: '6', user: 'Portia Mbuva', action: 'Added new supplier: MozTech Solutions', timestamp: '2024-07-29 11:00 AM' },
   { id: '7', user: 'System', action: 'User Frank Black logged in', timestamp: '2024-07-29 11:05 AM' },
-  { id: '8', user: 'Grace Hall', action: 'Modified PO #PO12340 quantities', timestamp: '2024-07-29 11:15 AM', details: 'Item ID 2, new quantity 15' },
+  { id: '8', user: 'Portia Mbuva', action: 'Modified PO #PO12340 quantities', timestamp: '2024-07-29 11:15 AM', details: 'Item ID 2, new quantity 15' },
 ];
 
 export const managementTables = [
@@ -102,9 +102,10 @@ export const years = Array.from({ length: 5 }, (_, i) => ({
 }));
 
 export const sites = [
-  { value: 'site_a', label: 'Site A' },
-  { value: 'site_b', label: 'Site B' },
-  { value: 'site_c', label: 'Site C' },
+  { value: 'site_a', label: 'TMW' },
+  { value: 'site_b', label: 'MEM' },
+  { value: 'site_c', label: 'FMS' },
+  { value: 'site_d', label: 'CHW' },
   { value: 'all', label: 'All Sites' },
 ];
 
@@ -134,29 +135,28 @@ export const mockSuppliers: Supplier[] = [
 ];
 
 export const mockApproversData: Approver[] = [
-  { id: 'APP001', name: 'Alice Wonderland', email: 'alice.w@example.com', department: 'Finance', isActive: true },
-  { id: 'APP002', name: 'Bob The Builder', email: 'bob.b@example.com', department: 'Operations', isActive: true },
-  { id: 'APP003', name: 'Charles Xavier', email: 'charles.x@example.com', department: 'Management', isActive: false },
-  { id: 'APP004', name: 'Diana Prince', email: 'diana.p@example.com', department: 'HR', isActive: true },
-  { id: 'APP005', name: 'Edward Scissorhands', email: 'edward.s@example.com', department: 'Procurement', isActive: true },
-];
+  { id: 'APP001', name: 'Cherinne de Klerk', email: 'cherinne.deklerk@jachris.com', department: 'Administration', isActive: true },
+  { id: 'APP002', name: 'Cobus de Klerk', email: 'cobus.deklerk.jachris.com', department: 'Operations', isActive: true },
+  { id: 'APP003', name: 'Pita Domingos', email: 'pita.domingos@jachris.com', department: 'Management', isActive: false },
+  { id: 'APP004', name: 'John Enem', email: 'john.enem@jachris.com', department: 'HR', isActive: true },
+  ];
 
 export const mockUsersData: User[] = [
-  { id: 'USR001', name: 'John Doe', email: 'john.doe@example.com', role: 'Admin', siteAccess: ['SITE001', 'SITE002'], isActive: true },
-  { id: 'USR002', name: 'Jane Smith', email: 'jane.smith@example.com', role: 'Manager', siteAccess: ['SITE001'], isActive: true },
-  { id: 'USR003', name: 'Peter Pan', email: 'peter.pan@example.com', role: 'User', siteAccess: ['SITE002'], isActive: false },
-  { id: 'USR004', name: 'Clark Kent', email: 'clark.kent@example.com', role: 'Viewer', siteAccess: ['all'], isActive: true },
-  { id: 'USR005', name: 'Bruce Wayne', email: 'bruce.wayne@example.com', role: 'Manager', siteAccess: ['SITE003'], isActive: true },
-  { id: 'USR006', name: 'Selina Kyle', email: 'selina.kyle@example.com', role: 'User', siteAccess: ['SITE001'], isActive: true },
-  { id: 'USR007', name: 'Tony Stark', email: 'tony.stark@example.com', role: 'Admin', siteAccess: ['all'], isActive: false },
-  { id: 'USR008', name: 'Steve Rogers', email: 'steve.rogers@example.com', role: 'User', siteAccess: ['SITE003', 'SITE004'], isActive: true },
+  { id: 'USR001', name: 'Cobus de Klerk', email: 'cobus.deklerk@jachris.com', role: 'Admin', siteAccess: ['SITE001', 'SITE002'], isActive: true },
+  { id: 'USR002', name: 'Cherinne de Klerk', email: 'cherinne.deklerk@jachris.com', role: 'Manager', siteAccess: ['SITE001'], isActive: true },
+  { id: 'USR003', name: 'Pita Domingos', email: 'pita.domingos@jachris.com', role: 'User', siteAccess: ['SITE002'], isActive: false },
+  { id: 'USR004', name: 'John Enem', email: 'john.enem@jachris.com', role: 'Viewer', siteAccess: ['all'], isActive: true },
+  { id: 'USR005', name: 'Gil Lunguzi', email: 'gil.lunguze@jachris.com', role: 'Manager', siteAccess: ['SITE003'], isActive: true },
+  { id: 'USR006', name: 'Portia Mbuva', email: 'portia.mbuva@jachris.com', role: 'User', siteAccess: ['SITE001'], isActive: true },
+  { id: 'USR007', name: 'Tamara Moore', email: 'tamara.moore@jachris.com', role: 'Admin', siteAccess: ['all'], isActive: false },
+  { id: 'USR008', name: 'Donvale de Rita', email: 'donvale.derita@jachris.com', role: 'User', siteAccess: ['SITE003', 'SITE004'], isActive: true },
 ];
 
 export const mockSitesData: Site[] = [
-  { id: 1, name: 'Head Office - Maputo', location: 'Maputo, Mozambique', siteCode: 'HQ-MPM' },
-  { id: 2, name: 'Tete Operations Base', location: 'Tete, Mozambique', siteCode: 'OPS-TET' },
-  { id: 3, name: 'Beira Warehouse', location: 'Beira, Mozambique', siteCode: 'WH-BEW' },
-  { id: 4, name: 'Nampula Branch', location: 'Nampula, Mozambique', siteCode: 'BR-NPL' },
+  { id: 1, name: 'Tete Main Warehouse', location: 'Moatize - DC, Mozambique', siteCode: 'TMW-TET' },
+  { id: 2, name: 'Mota Engil Mozambique', location: 'Moatize - Vulcan, Mozambique', siteCode: 'MEM-TET' },
+  { id: 3, name: 'Fuel Management System', location: 'Moatize - Vulcan, Mozambique', siteCode: 'FMS-TET' },
+  { id: 4, name: 'Container Hose Warehouse', location: 'Moatize - Vulcan, Mozambique', siteCode: 'CHW-TET' },
 ];
 
 export const mockAllocationsData: Allocation[] = [
