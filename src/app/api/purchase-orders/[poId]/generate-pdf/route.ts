@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
-// Removed: ReactDOMServer, PrintablePO, fs, path, React, pool, type imports (if only used for direct render)
+// Ensure no imports of ReactDOMServer, PrintablePO, React, fs, or path here.
 
 export async function GET(
   request: Request,
@@ -16,12 +16,12 @@ export async function GET(
 
   try {
     // Determine the base URL for fetching the internal print page.
-    // This might need to be more robust in production (e.g., from environment variables).
+    // This should come from an environment variable in production.
     const internalPageUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/internal-print-po/${poId}`;
     
     console.log(`Fetching HTML for PDF generation from: ${internalPageUrl}`);
 
-    const response = await fetch(internalPageUrl, { cache: 'no-store' }); // Fetch the internal page
+    const response = await fetch(internalPageUrl, { cache: 'no-store' }); // Fetch the internal page's HTML
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -37,13 +37,11 @@ export async function GET(
     
     const browser = await puppeteer.launch({ 
       headless: true, 
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] // Added --disable-dev-shm-usage
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] // Common args for server environments
     });
     const page = await browser.newPage();
     
     // Set content and emulate print media type.
-    // This allows CSS media queries for print to apply.
-    // We are injecting the full HTML, so it should contain its own styles or link to them.
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' }); 
     await page.emulateMediaType('print');
 
@@ -51,7 +49,7 @@ export async function GET(
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '10mm', // Reduced margins slightly
+        top: '10mm',
         right: '10mm',
         bottom: '10mm',
         left: '10mm',
@@ -66,7 +64,6 @@ export async function GET(
     if (titleMatch && titleMatch[1]) {
         poNumberForFile = titleMatch[1];
     }
-
 
     return new Response(pdfBuffer, {
       status: 200,
