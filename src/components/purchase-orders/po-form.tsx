@@ -27,7 +27,6 @@ import { format } from 'date-fns';
 
 interface POFormProps {
   poIdToEditProp?: string | null;
-  initialData?: PurchaseOrderPayload | null;
 }
 
 const defaultItem: POFormItemStructure = { id: crypto.randomUUID(), partNumber: '', description: '', categoryId: null, siteId: null, uom: '', quantity: 1, unitPrice: 0.00 };
@@ -51,7 +50,7 @@ interface POFormValues {
 }
 
 
-export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POFormProps) {
+export function POForm({ poIdToEditProp }: POFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [subTotal, setSubTotal] = useState(0);
@@ -86,6 +85,48 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
     name: 'items',
   });
 
+  const loadPODataIntoForm = useCallback((data: PurchaseOrderPayload, currentSuppliers: Supplier[]) => {
+    form.reset({
+      vendorName: data.supplierId,
+      vendorEmail: data.supplierDetails?.emailAddress || '',
+      salesPerson: data.supplierDetails?.salesPerson || '',
+      supplierContactNumber: data.supplierDetails?.cellNumber || '',
+      nuit: data.supplierDetails?.nuitNumber || '',
+      billingAddress: data.supplierDetails?.physicalAddress || '',
+      quoteNo: data.quoteNo || '',
+      poDate: format(new Date(data.creationDate), 'yyyy-MM-dd'),
+      poNumberDisplay: data.poNumber,
+      currency: data.currency,
+      requestedByName: data.requestedByName || '',
+      approverId: data.approverId,
+      pricesIncludeVat: data.pricesIncludeVat,
+      notes: data.notes || '',
+      items: (data.items || []).map(item => ({
+        id: crypto.randomUUID(), 
+        partNumber: item.partNumber || '', 
+        description: item.description,
+        categoryId: item.categoryId, 
+        siteId: item.siteId, 
+        uom: item.uom,
+        quantity: item.quantity, 
+        unitPrice: item.unitPrice,
+      })),
+    });
+
+    if (data.supplierId) {
+      const selectedSupplier = currentSuppliers.find(s => s.supplierCode === data.supplierId);
+      if (selectedSupplier) {
+        form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
+        form.setValue('salesPerson', selectedSupplier.salesPerson || '');
+        form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
+        form.setValue('nuit', selectedSupplier.nuitNumber || '');
+        form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
+      }
+    }
+    setIsEditingLoadedPO(true);
+    setLoadedPOId(String(data.id));
+  }, [form]);
+
   const resetFormForNew = useCallback(async () => {
     form.reset({
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
@@ -106,43 +147,6 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
     }
   }, [form, toast]);
 
-
-  const loadPODataIntoForm = useCallback((data: PurchaseOrderPayload, currentSuppliers: Supplier[]) => {
-    form.reset({
-      vendorName: data.supplierId,
-      vendorEmail: data.supplierDetails?.emailAddress || '',
-      salesPerson: data.supplierDetails?.salesPerson || '',
-      supplierContactNumber: data.supplierDetails?.cellNumber || '',
-      nuit: data.supplierDetails?.nuitNumber || '',
-      billingAddress: data.supplierDetails?.physicalAddress || '',
-      quoteNo: data.quoteNo || '',
-      poDate: format(new Date(data.creationDate), 'yyyy-MM-dd'),
-      poNumberDisplay: data.poNumber,
-      currency: data.currency,
-      requestedByName: data.requestedByName || '',
-      approverId: data.approverId,
-      pricesIncludeVat: data.pricesIncludeVat,
-      notes: data.notes || '',
-      items: (data.items || []).map(item => ({
-        id: crypto.randomUUID(), partNumber: item.partNumber || '', description: item.description,
-        categoryId: item.categoryId, siteId: item.siteId, uom: item.uom,
-        quantity: item.quantity, unitPrice: item.unitPrice,
-      })),
-    });
-
-    if (data.supplierId) {
-      const selectedSupplier = currentSuppliers.find(s => s.supplierCode === data.supplierId);
-      if (selectedSupplier) {
-        form.setValue('vendorEmail', selectedSupplier.emailAddress || '');
-        form.setValue('salesPerson', selectedSupplier.salesPerson || '');
-        form.setValue('supplierContactNumber', selectedSupplier.cellNumber || '');
-        form.setValue('nuit', selectedSupplier.nuitNumber || '');
-        form.setValue('billingAddress', selectedSupplier.physicalAddress || '');
-      }
-    }
-    setIsEditingLoadedPO(true);
-    setLoadedPOId(String(data.id));
-  }, [form]);
 
   useEffect(() => {
     const fetchCoreDataAndInitializeForm = async () => {
@@ -167,14 +171,17 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
         setCategories(fetchedCategories);
         setApproversData(fetchedApprovers);
 
-        if (initialDataFromProp) {
-          loadPODataIntoForm(initialDataFromProp, fetchedSuppliers);
-        } else if (poIdToEditProp) {
+        if (poIdToEditProp) {
           setIsLoadingPOForEdit(true);
-          const poRes = await fetch(`/api/purchase-orders/${poIdToEditProp}`);
-          if (!poRes.ok) throw new Error(`Failed to fetch PO ${poIdToEditProp}`);
-          const poDataToEdit: PurchaseOrderPayload = await poRes.json();
+          const poHeaderRes = await fetch(`/api/purchase-orders/${poIdToEditProp}`);
+          if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header ${poIdToEditProp}`);
+          const poDataToEdit: PurchaseOrderPayload = await poHeaderRes.json();
           
+          const poItemsRes = await fetch(`/api/purchase-orders/${poIdToEditProp}/items`);
+          if (!poItemsRes.ok) throw new Error(`Failed to fetch PO Items for ${poIdToEditProp}`);
+          const poItemsData: POItemPayload[] = await poItemsRes.json();
+          poDataToEdit.items = poItemsData;
+
           if (poDataToEdit.supplierId && !poDataToEdit.supplierDetails) {
              poDataToEdit.supplierDetails = fetchedSuppliers.find(s => s.supplierCode === poDataToEdit.supplierId);
           }
@@ -185,14 +192,14 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
         }
       } catch (error) {
         toast({ title: "Error Loading Data", description: `Failed to load initial form data: ${error instanceof Error ? error.message : String(error)}`, variant: "destructive" });
-        if (!poIdToEditProp && !initialDataFromProp) form.setValue('poNumberDisplay', 'PO-ERROR');
+        if (!poIdToEditProp) form.setValue('poNumberDisplay', 'PO-ERROR');
       } finally {
         setIsLoadingInitialData(false);
       }
     };
     fetchCoreDataAndInitializeForm();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poIdToEditProp, initialDataFromProp, toast, loadPODataIntoForm, resetFormForNew]);
+  }, [poIdToEditProp, toast, loadPODataIntoForm, resetFormForNew]);
 
 
   const watchedItems = form.watch('items');
@@ -234,19 +241,28 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
 
       if (!foundPoId) throw new Error(`PO Number ${poNumberToLoad} not found.`);
 
-      const poRes = await fetch(`/api/purchase-orders/${foundPoId}`);
-      if (!poRes.ok) throw new Error(`Failed to fetch details for PO ID ${foundPoId}.`);
-      const poDataToLoad: PurchaseOrderPayload = await poRes.json();
+      const poHeaderRes = await fetch(`/api/purchase-orders/${foundPoId}`);
+      if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header for PO ID ${foundPoId}.`);
+      const poDataToLoad: PurchaseOrderPayload = await poHeaderRes.json();
+
+      const poItemsRes = await fetch(`/api/purchase-orders/${foundPoId}/items`);
+      if (!poItemsRes.ok) throw new Error(`Failed to fetch PO Items for ID ${foundPoId}`);
+      const poItemsData: POItemPayload[] = await poItemsRes.json();
+      poDataToLoad.items = poItemsData;
 
       if (poDataToLoad.status !== 'Pending Approval') {
         toast({ title: "Cannot Edit", description: `PO ${poNumberToLoad} is in '${poDataToLoad.status}' status and cannot be edited.`, variant: "destructive"});
         setIsLoadingPOForEdit(false);
+        // Optionally, still load data but keep form disabled or revert to new PO state
+        // For now, just preventing edit mode:
+        // loadPODataIntoForm(poDataToLoad, suppliers); // Load data but don't set isEditingLoadedPO
         return;
       }
+
        if (poDataToLoad.supplierId && !poDataToLoad.supplierDetails) {
          poDataToLoad.supplierDetails = suppliers.find(s => s.supplierCode === poDataToLoad.supplierId);
        }
-      loadPODataIntoForm(poDataToLoad, suppliers); // Pass current suppliers state
+      loadPODataIntoForm(poDataToLoad, suppliers); 
       toast({title: "PO Loaded", description: `PO ${poNumberToLoad} loaded for editing.`});
     } catch (error) {
       toast({ title: "Error Loading PO", description: `${error instanceof Error ? error.message : String(error)}`, variant: "destructive"});
@@ -353,7 +369,7 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
   
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; 
 
-  if (isLoadingInitialData && !poIdToEditProp && !initialDataFromProp) {
+  if (isLoadingInitialData && !poIdToEditProp) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
   }
   if (isLoadingPOForEdit && poIdToEditProp) { 
@@ -461,7 +477,7 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedPO ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
                 {isSubmitting ? (isEditingLoadedPO ? 'Updating...' : 'Submitting...') : (isEditingLoadedPO ? 'Update PO' : 'Submit PO')}
               </Button>
-              <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" onClick={handleViewPrintPO} disabled={isPrintingLoading}>
+              <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" onClick={handleViewPrintPO} disabled={isPrintingLoading || (!isEditingLoadedPO && !form.getValues('poNumberDisplay'))}>
                 {isPrintingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
                 {isPrintingLoading ? 'Loading...' : 'View/Print PO'}
               </Button>
@@ -476,11 +492,10 @@ export function POForm({ poIdToEditProp, initialData: initialDataFromProp }: POF
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          {isEditingLoadedPO ? `Editing PO: ${form.getValues('poNumberDisplay')}. PO Number is read-only.` : "Enter PO details. Use 'Load' for existing POs."}
+          {isEditingLoadedPO ? `Editing PO: ${form.getValues('poNumberDisplay')}. PO Number is read-only.` : "Enter PO details. Use 'Load' for existing POs or create a new one."}
         </p>
       </CardFooter>
     </Card>
   );
 }
-
     
