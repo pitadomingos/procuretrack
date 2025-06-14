@@ -70,14 +70,14 @@ export const allocationsData: ChartDataPoint[] = [
 ];
 
 export const activityLogData: ActivityLogEntry[] = [
-  { id: '1', user: 'Gil Lunguze', action: 'Created PO #PO12345', timestamp: '2024-07-28 10:30 AM', details: 'Vendor: Acme Corp, Total: $1500' },
-  { id: '2', user: 'Cherinne de Klerk', action: 'Approved PO #PO12344', timestamp: '2024-07-28 09:15 AM' },
-  { id: '3', user: 'System', action: 'GRN #GRN007 received for PO #PO12300', timestamp: '2024-07-27 03:45 PM', details: 'Items: 5/10 received' },
+  { id: '1', user: 'Gil Lunguze', action: 'Created PO #PO12345', timestamp: '2025-06-11 10:30 AM', details: 'Vendor: Acme Corp, Total: $1500' },
+  { id: '2', user: 'Cherinne de Klerk', action: 'Approved PO #PO12344', timestamp: '2025-06-11 09:15 AM' },
+  { id: '3', user: 'System', action: 'GRN #GRN007 received for PO #PO12300', timestamp: '2025-06-11 03:45 PM', details: 'Items: 5/10 received' },
   { id: '4', user: 'Pita Domingos', action: 'Updated user permissions for Portia Mbuva', timestamp: '2024-07-27 01:20 PM' },
-  { id: '5', user: 'Tamara Moore', action: 'Generated Back Order Report', timestamp: '2024-07-27 11:00 AM', details: 'Date Range: 2024-07-01 to 2024-07-27' },
-  { id: '6', user: 'Portia Mbuva', action: 'Added new supplier: MozTech Solutions', timestamp: '2024-07-29 11:00 AM' },
-  { id: '7', user: 'System', action: 'User Frank Black logged in', timestamp: '2024-07-29 11:05 AM' },
-  { id: '8', user: 'Portia Mbuva', action: 'Modified PO #PO12340 quantities', timestamp: '2024-07-29 11:15 AM', details: 'Item ID 2, new quantity 15' },
+  { id: '5', user: 'Tamara Moore', action: 'Generated Back Order Report', timestamp: '2025-06-11 11:00 AM', details: 'Date Range: 2025-05-01 to 2025-06-10' },
+  { id: '6', user: 'Portia Mbuva', action: 'Added new supplier: MozTech Solutions', timestamp: '2025-06-10 11:00 AM' },
+  { id: '7', user: 'System', action: 'User Cobus de Klerk logged in', timestamp: '2025-06-10 11:05 AM' },
+  { id: '8', user: 'Portia Mbuva', action: 'Modified PO #PO12340 quantities', timestamp: '2025-06-10 11:15 AM', details: 'Item ID 2, new quantity 15' },
 ];
 
 export const managementTables = [

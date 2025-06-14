@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import React from 'react'; // Required for JSX
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import { pool } from '../../../backend/db.js'; // Corrected path
+import { pool } from '../../../backend/db.js'; // Corrected path for pages/api
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, Approver, POItemForPrint } from '@/types';
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
@@ -77,7 +77,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     });
     console.log(`[PDF API][getPODataForPdf] PO Items processed for printing: ${itemsForPrint.length} items.`);
     
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; // This path needs to be web-accessible if used in HTML
 
     console.log(`[PDF API][getPODataForPdf] END - Successfully processed data for PO ID: ${numericPoId}`);
     return {
@@ -88,12 +88,9 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       approverSignatureUrl: approverSignatureUrl,
       quoteNo: headerData.quoteNo || '',
     };
-  } catch (error: any) {
-    console.error(`[PDF API][getPODataForPdf] CRITICAL ERROR during data fetching/processing for PO ID ${poId} (numeric ${numericPoId}). Message: ${error.message}`);
-    if (error.stack) {
-        console.error("[PDF API][getPODataForPdf] Stack trace:", error.stack);
-    }
-    throw error; // Re-throw to be caught by the main handler
+  } catch (dbError: any) {
+    console.error(`[PDF API][getPODataForPdf][CRITICAL DB ERROR] PO ID ${poId}: ${dbError.message}`, dbError.stack);
+    throw new Error(`Database error in getPODataForPdf for PO ID ${poId}: ${dbError.message}`);
   }
 }
 
@@ -133,8 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
       console.log(`[PDF API][Handler] Logo read successfully. Length: ${logoDataUri.length}`);
     } catch (logoError: any) {
-      console.warn(`[PDF API][Handler] Logo file error: ${logoError.message}. Proceeding without custom logo data URI.`);
-      // Not returning error, proceed without logo. PrintablePO should handle undefined logoDataUri.
+      console.warn(`[PDF API][Handler] Logo file error: ${logoError.message}. Proceeding without custom logo data URI. Path tried: ${path.resolve(process.cwd(), 'public', 'jachris-logo.png')}`);
     }
 
     console.log(`[PDF API][Handler] Rendering PrintablePO component to HTML string for PO ID: ${poId}`);
@@ -145,30 +141,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const puppeteerArgs = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage', // Important for constrained environments
+      '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process', 
-      '--disable-gpu', // Often not needed for headless PDF generation
+      '--single-process',
+      '--disable-gpu',
     ];
-    console.log(`[PDF API][Handler] Launching Puppeteer with args: ${puppeteerArgs.join(' ')}`);
+    console.log(`[PDF API][Handler] Attempting to launch Puppeteer with args: ${puppeteerArgs.join(' ')} for PO ID: ${poId}`);
     
     browser = await puppeteer.launch({
       headless: true,
       args: puppeteerArgs,
-      dumpio: process.env.NODE_ENV === 'development', // Logs browser console output
+      dumpio: process.env.NODE_ENV === 'development', // Log browser console
     });
-    console.log(`[PDF API][Handler] Puppeteer launched. Creating new page for PO ID: ${poId}`);
+    console.log(`[PDF API][Handler] Puppeteer launched successfully. Creating new page for PO ID: ${poId}`);
     const page = await browser.newPage();
     
     if (process.env.NODE_ENV === 'development') {
         page.on('console', msg => console.log('[PDF API][Puppeteer Page Console]', msg.type().toUpperCase(), msg.text()));
-        page.on('pageerror', error => console.error('[PDF API][Puppeteer Page Error]', error.message));
+        page.on('pageerror', pageError => console.error('[PDF API][Puppeteer Page Error]', pageError.message, pageError.stack));
         page.on('requestfailed', request => console.warn('[PDF API][Puppeteer Request Failed]', request.url(), request.failure()?.errorText));
     }
 
     console.log(`[PDF API][Handler] Setting page content for PO ID: ${poId}`);
+    // Basic CSS for print, assuming PrintablePO uses inline styles or simple CSS.
+    // For Tailwind, a more complex setup (like linking a stylesheet or inlining Tailwind styles) would be needed for Puppeteer.
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -176,31 +174,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <meta charSet="UTF-8" />
           <title>Purchase Order ${poData.poNumber}</title>
           <style>
-            body { margin: 20px; font-family: 'Arial', sans-serif; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            /* Minimal styling, assuming PrintablePO uses inline styles or basic CSS that renderToString includes */
-            /* For Tailwind, you'd typically need to inline styles or link to a stylesheet that Puppeteer can access */
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid black; padding: 5px; text-align: left; }
+            body { margin: 0; padding: 0; font-family: 'Arial', sans-serif; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            /* Add any essential print CSS here if not handled by PrintablePO's inline styles */
+            /* For example, to ensure Tailwind classes that might be stripped by renderToString are handled: */
+            /* You would need to include your compiled Tailwind CSS here or ensure PrintablePO is fully self-contained with inline styles. */
+            /* This example assumes PrintablePO is mostly self-contained or uses very basic styling. */
           </style>
         </head>
         <body>
           ${htmlContent}
         </body>
       </html>`;
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0' }); // networkidle0 waits for network activity to cease
     console.log(`[PDF API][Handler] Page content set. Emulating print media for PO ID: ${poId}`);
     await page.emulateMediaType('print');
 
-    console.log(`[PDF API][Handler] Generating PDF buffer for PO ID: ${poId}`);
+    console.log(`[PDF API][Handler] Generating PDF with 30s timeout for PO ID: ${poId}`);
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
-      margin: { top: '20mm', right: '10mm', bottom: '20mm', left: '10mm' }, // Standard margins
+      margin: { top: '20mm', right: '10mm', bottom: '20mm', left: '10mm' },
+      timeout: 30000, // 30 seconds timeout for PDF generation
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
+    console.log(`[PDF API][Handler] Attempting to close Puppeteer browser BEFORE sending response for PO ID: ${poId}`);
     await browser.close(); 
-    browser = null;
+    browser = null; // Mark as closed
     console.log(`[PDF API][Handler] Puppeteer browser closed successfully.`);
 
     const poNumberForFile = poData.poNumber || `PO-${poId}`;
@@ -212,37 +212,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.send(pdfBuffer);
 
   } catch (error: any) {
-    console.error(`[PDF API][Handler] CRITICAL ERROR for PO ID ${poId}. Message: ${error.message}`);
-    if (error.stack) {
-        console.error("[PDF API][Handler] Stack trace:", error.stack);
-    }
+    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] CRITICAL ERROR for PO ID ${poId}: ${error.message}`, error.stack);
     
-    // Attempt to close browser if it was opened and an error occurred
-    if (browser) {
-      try {
-        console.log(`[PDF API][Handler][Error Catch] Attempting to close Puppeteer browser.`);
-        await browser.close();
-        browser = null; // Ensure it's marked as closed
-        console.log(`[PDF API][Handler][Error Catch] Puppeteer browser closed.`);
-      } catch (closeError: any) {
-        console.error(`[PDF API][Handler][Error Catch] Error closing Puppeteer browser:`, closeError.message);
-      }
-    }
-
-    // Send a structured JSON error response if headers haven't been sent
     if (!res.headersSent) {
       res.status(500).json({
           source: 'api-handler-main-catch',
-          error: 'Failed to generate PDF due to a server-side critical issue.',
-          details: error.message || 'An unknown error occurred during PDF generation.',
+          error: 'Server error during PDF generation.',
+          details: error.message || 'An unknown critical error occurred during PDF generation.',
           poIdProcessed: poId,
-          // Only include stack in development for security
-          stack: process.env.NODE_ENV === 'development' ? error.stack : 'Stack trace hidden for security.',
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       });
     } else {
-      // This case should ideally not happen if browser.close() is before res.send()
-      console.error("[PDF API][Handler][Error Catch] Headers already sent, cannot send JSON error response. This indicates a problem with response flow.");
+      console.error("[PDF API][Handler][MAIN CATCH BLOCK] Headers already sent, cannot send JSON error response. This usually means the response was partially sent before the error.");
     }
+  } finally {
+    console.log(`[PDF API][Handler][FINALLY BLOCK] Entered finally block for PO ID: ${poId}. Browser instance: ${browser ? 'exists' : 'null'}`);
+    if (browser) {
+      try {
+        console.log(`[PDF API][Handler][FINALLY BLOCK] Attempting to close Puppeteer browser for PO ID: ${poId} (might be redundant if already closed in try)`);
+        await browser.close();
+        console.log(`[PDF API][Handler][FINALLY BLOCK] Puppeteer browser closed successfully in finally block for PO ID: ${poId}`);
+      } catch (closeError: any) {
+        console.error(`[PDF API][Handler][FINALLY BLOCK] Error closing Puppeteer browser in finally for PO ID ${poId}: ${closeError.message}`, closeError.stack);
+      }
+    }
+    console.log(`[PDF API][Handler][FINALLY BLOCK] Exiting finally block for PO ID: ${poId}`);
   }
 }
     
