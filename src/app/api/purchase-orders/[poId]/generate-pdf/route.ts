@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
-// Ensure no imports of ReactDOMServer, PrintablePO, React, fs, or path here.
+// Ensure NO imports of ReactDOMServer, PrintablePO, React, fs, or path here.
 
 export async function GET(
   request: Request,
