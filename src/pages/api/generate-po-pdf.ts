@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import React from 'react'; // Required for JSX
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import { pool } from '../../backend/db'; // Adjusted path for pages/api
+import { pool } from '../../../backend/db.js'; // Corrected path
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, Approver, POItemForPrint } from '@/types';
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
@@ -137,12 +137,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           '--no-sandbox', 
           '--disable-setuid-sandbox', 
           '--disable-dev-shm-usage', 
-          '--disable-gpu', // Often necessary in server environments
-          '--single-process', // Can help in resource-constrained environments
-          '--no-zygote', // Another common flag for compatibility
-          // '--font-render-hinting=none' // May help with font rendering issues if they occur
+          '--disable-gpu', 
+          '--single-process', 
+          '--no-zygote',
         ],
-        dumpio: process.env.NODE_ENV === 'development' // Log puppeteer browser console output in dev
+        dumpio: process.env.NODE_ENV === 'development' 
     });
     console.log(`[PDF API] Puppeteer launched. Creating new page for PO ID: ${poId}`);
     const page = await browser.newPage();
@@ -156,9 +155,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <style>
             body, html { margin: 0; padding: 0; background-color: #fff; color: #000; font-family: 'Arial', sans-serif; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .printable-po-content-wrapper { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; background-color: #ffffff !important; }
-            table, th, td { border: 1px solid #000000 !important; padding: 4pt !important; }
+            table, th, td { border: 1px solid #000000 !important; padding: 4pt !important; page-break-inside: avoid; }
+            tr, td, th { page-break-inside: avoid; } 
+            thead { display: table-header-group; } 
+            tfoot { display: table-footer-group; } 
             *, *::before, *::after { transition: none !important; transform: none !important; box-shadow: none !important; }
             img { max-width: 100%; height: auto; }
+            .grid { display: grid; }
+            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .gap-x-4 { column-gap: 1rem; }
+            .justify-between { justify-content: space-between; }
+            .items-start { align-items: flex-start; }
+            .items-center { align-items: center; }
+            .mb-4 { margin-bottom: 1rem; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .mb-1 { margin-bottom: 0.25rem; }
+            .pb-1 { padding-bottom: 0.25rem; }
+            .border-b-2 { border-bottom-width: 2px; }
+            .border-black { border-color: #000; }
+            .text-lg { font-size: 1.125rem; }
+            .text-xl { font-size: 1.25rem; }
+            .text-xs { font-size: 0.75rem; }
+            .text-sm { font-size: 0.875rem; }
+            .font-bold { font-weight: 700; }
+            .text-red-700 { color: #b91c1c; } 
+            .text-right { text-align: right; }
+            .text-left { text-align: left; }
+            .text-center { text-align: center; }
+            .w-full { width: 100%; }
+            .bg-gray-100 { background-color: #f3f4f6; } 
+            .p-1 { padding: 0.25rem; }
+            .p-4 { padding: 1rem; }
+            .align-top { vertical-align: top; }
+            .min-h-\\[300px\\] { min-height: 300px; }
+            .border-collapse { border-collapse: collapse; }
+            .flex { display: flex; }
+            .justify-end { justify-content: flex-end; }
+            .w-\\[250px\\] { width: 250px; }
+            .py-0.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+            .pt-0.5 { padding-top: 0.125rem; }
+            .pt-2 { padding-top: 0.5rem; }
+            .border-t-2 { border-top-width: 2px; }
+            .w-28 { width: 7rem; }
+            .items-end { align-items: flex-end; }
+            .flex-col { flex-direction: column; }
+            .mt-4 { margin-top: 1rem; }
+            .mt-8 { margin-top: 2rem; }
+            .max-w-\\[12rem\\] { max-width: 12rem; }
+            .ml-auto { margin-left: auto; }
+            .h-12 { height: 3rem; }
           </style>
         </head>
         <body>
@@ -167,7 +212,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           </div>
         </body>
       </html>
-    `, { waitUntil: 'networkidle0' });
+    `, { waitUntil: 'networkidle0' }); 
     console.log(`[PDF API] Page content set. Emulating print media for PO ID: ${poId}`);
 
     await page.emulateMediaType('print');
@@ -220,4 +265,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
   }
 }
+
     
