@@ -51,8 +51,8 @@ export interface Approver {
   email?: string | null;
   department?: string | null;
   isActive?: boolean | null;
-  value?: string; 
-  label?: string; 
+  value?: string;
+  label?: string;
 }
 
 export interface User {
@@ -71,8 +71,8 @@ export interface Site {
   name: string;
   location?: string | null;
   siteCode?: string | null;
-  value?: string | number; 
-  label?: string; 
+  value?: string | number;
+  label?: string;
 }
 
 export interface Allocation {
@@ -166,7 +166,7 @@ export interface Client {
 }
 
 export interface QuoteItem {
-  id: string; 
+  id: string;
   partNumber?: string;
   customerRef?: string;
   description: string;
@@ -175,21 +175,21 @@ export interface QuoteItem {
 }
 
 export interface QuotePayload {
-  id?: string; 
+  id?: string;
   quoteNumber: string;
-  quoteDate: string; 
+  quoteDate: string;
   clientId: string;
-  creatorEmail?: string; 
-  clientName?: string; 
-  clientEmail?: string; 
+  creatorEmail?: string;
+  clientName?: string;
+  clientEmail?: string;
   subTotal: number;
-  vatAmount: number; 
+  vatAmount: number;
   grandTotal: number;
   currency: string;
   termsAndConditions?: string;
   notes?: string;
   items: QuoteItem[];
-  status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived'; 
+  status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived';
 }
 
 // --- REQUISITION ---
@@ -220,6 +220,42 @@ export interface RequisitionPayload {
   categoryName?: string; // (Maybe not needed here, item specific)
 }
 
+// --- TAG (Vehicle/Equipment) ---
+export interface Tag {
+  id: string; // Unique ID for the tag/equipment
+  tagNumber: string; // The "TAG" field from fuel record, e.g., vehicle plate or equipment ID
+  registration?: string;
+  make?: string;
+  model?: string;
+  tankCapacity?: number;
+  year?: number;
+  chassisNo?: string;
+  type?: string; // E.g., "Truck", "Generator", "LDV"
+  siteId?: number | null; // Site where it's primarily located
+  siteName?: string; // Denormalized for display
+}
+
+// --- FUEL RECORD ---
+export interface FuelRecord {
+  id?: string; // Mock ID from backend
+  fuelDate: string; // ISO String
+  reqNo?: string;
+  invNo?: string;
+  driver?: string;
+  odometer?: number;
+  tagId: string; // Foreign key to Tag.id
+  siteId: number | null;
+  description?: string;
+  uom?: string;
+  quantity: number;
+  unitCost: number;
+  totalCost?: number; // Calculated: quantity * unitCost
+
+  // For display in lists
+  tagName?: string; // Denormalized from Tag table
+  siteName?: string; // Denormalized from Site table
+}
+
 
 // For FilterBar options
 export interface FilterOption {
@@ -227,3 +263,4 @@ export interface FilterOption {
   label: string;
 }
 
+    

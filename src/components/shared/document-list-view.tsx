@@ -6,7 +6,7 @@ import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { Button } from '@/components/ui/button';
 import { Download, Eye, Loader2, AlertTriangle } from 'lucide-react';
-import type { PurchaseOrderPayload, QuotePayload, RequisitionPayload } from '@/types';
+import type { PurchaseOrderPayload, QuotePayload, RequisitionPayload, FuelRecord } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ interface DocumentListViewProps {
   documentType: 'po' | 'grn' | 'quote' | 'requisition' | 'fuel';
 }
 
-type DocumentData = PurchaseOrderPayload | QuotePayload | RequisitionPayload;
+type DocumentData = PurchaseOrderPayload | QuotePayload | RequisitionPayload | FuelRecord;
 
 const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
   { accessorKey: 'poNumber', header: 'PO Number' },
@@ -26,7 +26,7 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
     cell: (item) => format(new Date(item.creationDate), 'dd MMM yyyy')
   },
   {
-    accessorKey: 'supplierName', 
+    accessorKey: 'supplierName',
     header: 'Supplier',
     cell: (item) => item.supplierName || item.supplierId || 'N/A'
   },
@@ -36,18 +36,18 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
     cell: (item) => `${item.currency} ${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   },
   { accessorKey: 'status', header: 'Status' },
-  { 
-    accessorKey: 'requestedByName', 
+  {
+    accessorKey: 'requestedByName',
     header: 'Requestor (Entered)' ,
     cell: (item) => item.requestedByName || 'N/A'
   },
-  { 
-    accessorKey: 'creatorName', 
+  {
+    accessorKey: 'creatorName',
     header: 'Creator (System User)',
     cell: (item) => item.creatorName || item.creatorUserId || 'N/A'
   },
-  { 
-    accessorKey: 'approverName', 
+  {
+    accessorKey: 'approverName',
     header: 'Approver',
     cell: (item) => item.approverName || item.approverId || 'N/A'
   },
@@ -61,7 +61,7 @@ const quoteColumns: ColumnDef<QuotePayload>[] = [
     cell: (item) => format(new Date(item.quoteDate), 'dd MMM yyyy')
   },
   {
-    accessorKey: 'clientName', 
+    accessorKey: 'clientName',
     header: 'Client',
     cell: (item) => item.clientName || item.clientId || 'N/A'
   },
@@ -75,23 +75,34 @@ const quoteColumns: ColumnDef<QuotePayload>[] = [
 
 const requisitionColumns: ColumnDef<RequisitionPayload>[] = [
   { accessorKey: 'requisitionNumber', header: 'Requisition No.'},
-  { 
-    accessorKey: 'requisitionDate', 
+  {
+    accessorKey: 'requisitionDate',
     header: 'Date',
     cell: (item) => format(new Date(item.requisitionDate), 'dd MMM yyyy')
   },
   { accessorKey: 'requestedByName', header: 'Requested By' },
-  { 
-    accessorKey: 'siteName', 
+  {
+    accessorKey: 'siteName',
     header: 'Site',
     cell: (item) => item.siteName || `Site ID: ${item.siteId}` || 'N/A'
   },
   { accessorKey: 'status', header: 'Status' },
-  { 
-    accessorKey: 'totalEstimatedValue', 
+  {
+    accessorKey: 'totalEstimatedValue',
     header: 'Est. Value',
     cell: (item) => item.totalEstimatedValue ? `${item.totalEstimatedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MZN` : 'N/A' // Assuming MZN for now
   },
+];
+
+const fuelRecordColumns: ColumnDef<FuelRecord>[] = [
+    { accessorKey: 'fuelDate', header: 'Date', cell: (item) => format(new Date(item.fuelDate), 'dd MMM yyyy') },
+    { accessorKey: 'driver', header: 'Driver' },
+    { accessorKey: 'tagName', header: 'Tag (Vehicle/Equip)' },
+    { accessorKey: 'siteName', header: 'Site' },
+    { accessorKey: 'quantity', header: 'Qty', cell: (item) => `${item.quantity} ${item.uom || ''}` },
+    { accessorKey: 'unitCost', header: 'Unit Cost (MZN)', cell: (item) => item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+    { accessorKey: 'totalCost', header: 'Total Cost (MZN)', cell: (item) => (item.totalCost || (item.quantity * item.unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+    { accessorKey: 'odometer', header: 'Odometer' },
 ];
 
 
@@ -107,22 +118,24 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     const currentYear = new Date().getFullYear().toString();
 
-    // Default to current month and year if not provided
     queryParams.append('month', filters?.month && filters.month !== 'all' ? filters.month : currentMonth);
     queryParams.append('year', filters?.year && filters.year !== 'all' ? filters.year : currentYear);
-    
-    // Append other filters only if they are not 'all'
+
     if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
     if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
     if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
+    if (filters?.tagId && filters.tagId !== 'all') queryParams.append('tagId', filters.tagId); // For fuel records
+    if (filters?.driver && filters.driver !== 'all' && filters.driver.trim() !== '') queryParams.append('driver', filters.driver); // For fuel records
 
 
     if (documentType === 'po') {
       apiUrl = '/api/purchase-orders';
     } else if (documentType === 'quote') {
-      apiUrl = '/api/quotes'; // Mocked API, date filters might not apply fully here yet
+      apiUrl = '/api/quotes'; // Mocked API
     } else if (documentType === 'requisition') {
       apiUrl = '/api/requisitions'; // Mocked API
+    } else if (documentType === 'fuel') {
+      apiUrl = '/api/fuel-records'; // Mocked API
     } else {
       setDocuments([]);
       setError(`List view for ${documentType.toUpperCase()}s is not yet implemented.`);
@@ -164,6 +177,8 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       siteId: 'all',
       approverId: 'all',
       creatorUserId: 'all',
+      tagId: 'all',
+      driver: '',
     };
     fetchDocuments(defaultFilters);
   }, [fetchDocuments]);
@@ -171,14 +186,15 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const handleFilterApply = (filters: any) => {
     const apiFilters = {
         ...filters,
-        creatorUserId: filters.requestor, // Map UI filter name to API param name
-        approverId: filters.approver, 
-        siteId: filters.site, 
+        creatorUserId: filters.requestor,
+        approverId: filters.approver,
+        siteId: filters.site,
+        tagId: filters.tag, // Map UI filter name for fuel
     };
-    // Clean up UI-specific names if they were passed
     delete apiFilters.requestor;
-    delete apiFilters.approver; 
-    delete apiFilters.site; 
+    delete apiFilters.approver;
+    delete apiFilters.site;
+    delete apiFilters.tag;
     fetchDocuments(apiFilters);
   };
 
@@ -188,7 +204,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
         description: `Download to Excel for ${documentType.toUpperCase()} list is not yet available.`,
     });
   };
-  
+
   const renderRowActions = (doc: DocumentData) => {
     if (documentType === 'po' && doc.id) {
       return (
@@ -217,26 +233,44 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
         </Link>
       );
     }
+    if (documentType === 'fuel' && doc.id) {
+        // Placeholder for fuel record view/edit action
+        return (
+            <Button variant="outline" size="sm" title="View Fuel Record Details (Not Implemented)" disabled>
+                <Eye className="mr-1 h-4 w-4" /> View
+            </Button>
+        );
+    }
     return null;
   };
 
   let columnsToUse: ColumnDef<any>[] = [];
   let listTitle = '';
-  let showApprover = false;
-  let showRequestor = true; // Usually shown for internal docs
-  let showSite = true; // Often relevant
+  let showApproverFilter = false;
+  let showRequestorFilter = true;
+  let showSiteFilter = true;
+  let showTagFilter = false;
+  let showDriverFilter = false;
+
 
   if (documentType === 'po') {
     columnsToUse = poColumns as ColumnDef<any>[];
     listTitle = 'Purchase Orders';
-    showApprover = true;
+    showApproverFilter = true;
   } else if (documentType === 'quote') {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';
-    showSite = false; // Site might not be relevant for client quotes
+    showSiteFilter = false;
+    showRequestorFilter = false; // Or based on creatorEmail if available
   } else if (documentType === 'requisition') {
     columnsToUse = requisitionColumns as ColumnDef<any>[];
     listTitle = 'Purchase Requisitions';
+  } else if (documentType === 'fuel') {
+    columnsToUse = fuelRecordColumns as ColumnDef<any>[];
+    listTitle = 'Fuel Records';
+    showRequestorFilter = false; // Requestor not typical for fuel
+    showTagFilter = true;
+    showDriverFilter = true;
   } else {
      columnsToUse = [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
      listTitle = `${documentType.toUpperCase()}s`;
@@ -252,9 +286,11 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       <CardContent>
         <FilterBar
           onFilterApply={handleFilterApply}
-          showApproverFilter={showApprover}
-          showRequestorFilter={showRequestor}
-          showSiteFilter={showSite}
+          showApproverFilter={showApproverFilter}
+          showRequestorFilter={showRequestorFilter}
+          showSiteFilter={showSiteFilter}
+          showTagFilter={showTagFilter}
+          showDriverFilter={showDriverFilter}
         />
         <div className="mt-4 flex justify-end">
           <Button onClick={handleDownloadExcel} variant="outline">
@@ -288,3 +324,5 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     </Card>
   );
 }
+
+    

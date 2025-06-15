@@ -45,7 +45,7 @@ export default function ManagementPage() {
             ))}
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            Full CRUD operations for these tables will require backend integration. 
+            Full CRUD operations for these tables will require backend integration.
             Currently, "Add", "Edit", and "Delete" functionalities are placeholders.
           </p>
         </CardContent>
@@ -53,3 +53,5 @@ export default function ManagementPage() {
     </div>
   );
 }
+
+    

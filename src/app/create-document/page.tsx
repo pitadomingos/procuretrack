@@ -7,6 +7,7 @@ import { POForm } from '@/components/purchase-orders/po-form';
 import { GRNInterface } from '@/components/receiving/grn-interface';
 import { QuoteForm } from '@/components/quotes/quote-form';
 import { RequisitionForm } from '@/components/requisitions/requisition-form';
+import { FuelRecordForm } from '@/components/fuel/fuel-record-form';
 import { DocumentListView } from '@/components/shared/document-list-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,11 +16,12 @@ import { Loader2 } from 'lucide-react';
 function CreateDocumentContent() {
   const searchParams = useSearchParams();
   const poIdToEditFromUrl = searchParams.get('editPoId');
-  
+
   const defaultMainTab = "create-po";
   const defaultPOTab = poIdToEditFromUrl ? "create-po-form" : "create-po-form";
   const defaultQuoteTab = "create-quote-form";
   const defaultRequisitionTab = "create-requisition-form";
+  const defaultFuelTab = "create-fuel-form";
 
 
   return (
@@ -80,7 +82,7 @@ function CreateDocumentContent() {
           </TabsContent>
         </Tabs>
       </TabsContent>
-      
+
       <TabsContent value="create-requisition">
         <Tabs defaultValue={defaultRequisitionTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
@@ -97,19 +99,18 @@ function CreateDocumentContent() {
       </TabsContent>
 
       <TabsContent value="record-fuel">
-        {/* Future: Implement nested tabs for Fuel Record create/list */}
-        <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Record Fuel Consumption</CardTitle>
-            <CardDescription>This functionality will be implemented in an upcoming version.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              This section will allow you to record fuel dispensed, track vehicle mileage,
-              and manage fuel inventory for your fleet or equipment.
-            </p>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue={defaultFuelTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
+            <TabsTrigger value="create-fuel-form">Record New Fuel Entry</TabsTrigger>
+            <TabsTrigger value="list-fuel-records">List of Fuel Records</TabsTrigger>
+          </TabsList>
+          <TabsContent value="create-fuel-form">
+             <FuelRecordForm />
+          </TabsContent>
+          <TabsContent value="list-fuel-records">
+            <DocumentListView documentType="fuel" />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
     </Tabs>
   );
@@ -122,3 +123,5 @@ export default function CreateDocumentPage() {
     </Suspense>
   );
 }
+
+    
