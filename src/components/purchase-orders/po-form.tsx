@@ -371,6 +371,8 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; 
 
+  const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
   if (isLoadingInitialData && !poIdToEditProp) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
   }
@@ -455,7 +457,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
             {fields.map((itemField, index) => {
               const itemQuantity = form.watch(`items.${index}.quantity`) || 0;
               const itemUnitPrice = form.watch(`items.${index}.unitPrice`) || 0;
-              const itemTotal = (Number(itemQuantity) * Number(itemUnitPrice)).toFixed(2);
+              const itemTotal = (Number(itemQuantity) * Number(itemUnitPrice));
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
                   {/* Item fields now in a responsive grid aiming for single row on large screens */}
@@ -516,7 +518,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                     )} />
                     <FormItem className="lg:col-span-2"> 
                       <FormLabel>Item Total ({currencySymbol})</FormLabel> 
-                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{itemTotal}</div> 
+                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotal)}</div> 
                     </FormItem>
                   </div>
                   {fields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2" title="Remove Item"><Trash2 className="h-4 w-4" /></Button>)}
@@ -526,17 +528,33 @@ export function POForm({ poIdToEditProp }: POFormProps) {
             <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID() })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
             
             <Separator className="my-6"/>
-            <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem> <FormLabel>Notes</FormLabel> <FormControl><Textarea placeholder="Add any relevant notes..." className="resize-none" {...field} /></FormControl> </FormItem> )} />
 
-            <div className="grid md:grid-cols-2 gap-6 mt-8 items-start">
-              <div className="space-y-2 text-left border p-4 rounded-md bg-muted/20 md:sticky md:top-20">
-                <div className="text-md">Subtotal ({currencySymbol}): <span className="font-semibold">{subTotal.toFixed(2)}</span></div>
-                {watchedCurrency === 'MZN' && !watchedPricesIncludeVat && (<div className="text-md">VAT (16%) ({currencySymbol}): <span className="font-semibold">{vatAmount.toFixed(2)}</span></div>)}
+            <div className="grid md:grid-cols-3 gap-6 mt-8 items-start">
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-1">
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Add any relevant notes..."
+                          className="resize-none h-40" // Adjust height as needed
+                          {...field}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+              <div className="md:col-span-1 space-y-2 text-left border p-4 rounded-md bg-muted/20">
+                <div className="text-md">Subtotal ({currencySymbol}): <span className="font-semibold">{formatValue(subTotal)}</span></div>
+                {watchedCurrency === 'MZN' && !watchedPricesIncludeVat && (<div className="text-md">VAT (16%) ({currencySymbol}): <span className="font-semibold">{formatValue(vatAmount)}</span></div>)}
                  {watchedPricesIncludeVat && (<div className="text-sm text-muted-foreground">VAT is included in item prices.</div>)}
-                <div className="text-xl font-bold font-headline">Grand Total ({currencySymbol}): <span className="font-semibold">{grandTotal.toFixed(2)}</span></div>
+                <div className="text-xl font-bold font-headline">Grand Total ({currencySymbol}): <span className="font-semibold">{formatValue(grandTotal)}</span></div>
               </div>
 
-              <div className="flex flex-col gap-3 w-full">
+              <div className="md:col-span-1 flex flex-col gap-3 w-full">
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isLoadingPOForEdit || (!form.formState.isValid && form.formState.isSubmitted)}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedPO ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
                   {isSubmitting ? (isEditingLoadedPO ? 'Updating PO...' : 'Submitting PO...') : (isEditingLoadedPO ? 'Update PO' : 'Submit PO')}
