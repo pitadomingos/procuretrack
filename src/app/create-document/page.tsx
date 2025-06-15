@@ -15,11 +15,9 @@ function CreateDocumentContent() {
   const searchParams = useSearchParams();
   const poIdToEditFromUrl = searchParams.get('editPoId');
   
-  // If editing a PO, default to the "Create PO" main tab,
-  // which internally will handle the edit mode in POForm.
-  // The nested tabs for "List POs" won't be automatically selected.
   const defaultMainTab = "create-po";
   const defaultPOTab = poIdToEditFromUrl ? "create-po-form" : "create-po-form";
+  const defaultQuoteTab = "create-quote-form";
 
 
   return (
@@ -67,8 +65,18 @@ function CreateDocumentContent() {
       </TabsContent>
 
       <TabsContent value="create-quote">
-        {/* Future: Implement nested tabs for Quote create/list */}
-        <QuoteForm />
+        <Tabs defaultValue={defaultQuoteTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
+            <TabsTrigger value="create-quote-form">Create New Quote</TabsTrigger>
+            <TabsTrigger value="list-quotes">List of Quotes</TabsTrigger>
+          </TabsList>
+          <TabsContent value="create-quote-form">
+            <QuoteForm />
+          </TabsContent>
+          <TabsContent value="list-quotes">
+            <DocumentListView documentType="quote" />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
       
       <TabsContent value="create-requisition">

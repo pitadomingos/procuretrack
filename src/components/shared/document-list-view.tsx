@@ -6,7 +6,7 @@ import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { Button } from '@/components/ui/button';
 import { Download, Eye, Loader2, AlertTriangle } from 'lucide-react';
-import type { PurchaseOrderPayload } from '@/types';
+import type { PurchaseOrderPayload, QuotePayload } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -16,6 +16,8 @@ interface DocumentListViewProps {
   documentType: 'po' | 'grn' | 'quote' | 'requisition' | 'fuel';
 }
 
+type DocumentData = PurchaseOrderPayload | QuotePayload; // Add other types as needed
+
 const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
   { accessorKey: 'poNumber', header: 'PO Number' },
   {
@@ -24,7 +26,7 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
     cell: (item) => format(new Date(item.creationDate), 'dd MMM yyyy')
   },
   {
-    accessorKey: 'supplierName', // API should return this flattened
+    accessorKey: 'supplierName', 
     header: 'Supplier',
     cell: (item) => item.supplierName || item.supplierId || 'N/A'
   },
@@ -35,31 +37,66 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
   },
   { accessorKey: 'status', header: 'Status' },
   { 
-    accessorKey: 'requestedByName', // User-entered name
+    accessorKey: 'requestedByName', 
     header: 'Requestor (Entered)' ,
     cell: (item) => item.requestedByName || 'N/A'
   },
   { 
-    accessorKey: 'creatorName', // Name from User table
+    accessorKey: 'creatorName', 
     header: 'Creator (System User)',
     cell: (item) => item.creatorName || item.creatorUserId || 'N/A'
   },
   { 
-    accessorKey: 'approverName', // Name from Approver table
+    accessorKey: 'approverName', 
     header: 'Approver',
     cell: (item) => item.approverName || item.approverId || 'N/A'
   },
 ];
 
+const quoteColumns: ColumnDef<QuotePayload>[] = [
+  { accessorKey: 'quoteNumber', header: 'Quote Number' },
+  {
+    accessorKey: 'quoteDate',
+    header: 'Date',
+    cell: (item) => format(new Date(item.quoteDate), 'dd MMM yyyy')
+  },
+  {
+    accessorKey: 'clientName', 
+    header: 'Client',
+    cell: (item) => item.clientName || item.clientId || 'N/A'
+  },
+  {
+    accessorKey: 'grandTotal',
+    header: 'Total',
+    cell: (item) => `${item.currency} ${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  },
+  { accessorKey: 'status', header: 'Status' },
+];
+
 
 export function DocumentListView({ documentType }: DocumentListViewProps) {
-  const [documents, setDocuments] = useState<PurchaseOrderPayload[]>([]);
+  const [documents, setDocuments] = useState<DocumentData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchDocuments = useCallback(async (filters?: any) => {
-    if (documentType !== 'po') {
+    let apiUrl = '';
+    const queryParams = new URLSearchParams();
+    const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const currentYear = new Date().getFullYear().toString();
+
+    queryParams.append('month', filters?.month || currentMonth);
+    queryParams.append('year', filters?.year || currentYear);
+
+    if (documentType === 'po') {
+      apiUrl = '/api/purchase-orders';
+      if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
+      if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
+      if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
+    } else if (documentType === 'quote') {
+      apiUrl = '/api/quotes'; // Mocked API, doesn't use date filters yet
+    } else {
       setDocuments([]);
       setError(`List view for ${documentType.toUpperCase()}s is not yet implemented.`);
       toast({
@@ -72,24 +109,13 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     setIsLoading(true);
     setError(null);
 
-    const queryParams = new URLSearchParams();
-    const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    const currentYear = new Date().getFullYear().toString();
-
-    queryParams.append('month', filters?.month || currentMonth);
-    queryParams.append('year', filters?.year || currentYear);
-    if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
-    if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
-    // Use creatorUserId for requestor filter as it maps to User.id
-    if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
-
     try {
-      const response = await fetch(`/api/purchase-orders?${queryParams.toString()}`);
+      const response = await fetch(`${apiUrl}?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Failed to fetch ${documentType.toUpperCase()}s.`);
       }
-      const data: PurchaseOrderPayload[] = await response.json();
+      const data: DocumentData[] = await response.json();
       setDocuments(data);
     } catch (err: any) {
       console.error(`Error fetching ${documentType}s:`, err);
@@ -105,7 +131,6 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   }, [documentType, toast]);
 
   useEffect(() => {
-    // Fetch with default filters (current month and year) on initial load
     const defaultFilters = {
       month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
       year: new Date().getFullYear().toString(),
@@ -117,14 +142,13 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   }, [fetchDocuments]);
 
   const handleFilterApply = (filters: any) => {
-    // The filter bar component might pass 'requestor' for the label, but we need 'creatorUserId' for the API
     const apiFilters = {
         ...filters,
-        creatorUserId: filters.requestor, // Map 'requestor' (from filter bar state) to 'creatorUserId'
-        approverId: filters.approver, // Map 'approver' (from filter bar state) to 'approverId'
-        siteId: filters.site, // Map 'site' (from filter bar state) to 'siteId'
+        creatorUserId: filters.requestor,
+        approverId: filters.approver,
+        siteId: filters.site,
     };
-    delete apiFilters.requestor; // remove original requestor key
+    delete apiFilters.requestor;
     delete apiFilters.approver; 
     delete apiFilters.site; 
     fetchDocuments(apiFilters);
@@ -137,21 +161,39 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     });
   };
   
-  const renderPOActions = (po: PurchaseOrderPayload) => (
-    <Link href={`/purchase-orders/${po.id}/print`} passHref legacyBehavior={false}>
-      <Button variant="outline" size="sm" title="View PO Details">
-        <Eye className="mr-1 h-4 w-4" /> View
-      </Button>
-    </Link>
-  );
+  const renderRowActions = (doc: DocumentData) => {
+    if (documentType === 'po' && doc.id) {
+      return (
+        <Link href={`/purchase-orders/${doc.id}/print`} passHref legacyBehavior={false}>
+          <Button variant="outline" size="sm" title="View PO Details">
+            <Eye className="mr-1 h-4 w-4" /> View
+          </Button>
+        </Link>
+      );
+    }
+    if (documentType === 'quote' && doc.id) {
+      return (
+        <Link href={`/quotes/${doc.id}/print`} passHref legacyBehavior={false}>
+          <Button variant="outline" size="sm" title="View Quote Details">
+            <Eye className="mr-1 h-4 w-4" /> View
+          </Button>
+        </Link>
+      );
+    }
+    return null;
+  };
 
-  const columnsToUse = documentType === 'po' ? poColumns : [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
+  const columnsToUse = documentType === 'po' ? poColumns : (documentType === 'quote' ? quoteColumns : [{ accessorKey: 'name', header: 'Name (Placeholder)' }]) as ColumnDef<DocumentData>[];
+  const listTitle = documentType === 'po' ? 'Purchase Orders' : 
+                    documentType === 'quote' ? 'Client Quotations' : 
+                    documentType.toUpperCase() + 's';
+
 
   return (
     <Card className="shadow-lg mt-6">
       <CardHeader>
-        <CardTitle className="font-headline text-xl capitalize">List of {documentType === 'po' ? 'Purchase Orders' : documentType.toUpperCase() + 's'}</CardTitle>
-        <CardDescription>View, filter, and manage existing {documentType === 'po' ? 'purchase order' : documentType} documents.</CardDescription>
+        <CardTitle className="font-headline text-xl capitalize">List of {listTitle}</CardTitle>
+        <CardDescription>View, filter, and manage existing {listTitle.toLowerCase()} documents.</CardDescription>
       </CardHeader>
       <CardContent>
         <FilterBar
@@ -184,7 +226,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
             <DataTable
               columns={columnsToUse}
               data={documents}
-              renderRowActions={documentType === 'po' ? renderPOActions : undefined}
+              renderRowActions={renderRowActions}
             />
           )}
         </div>
