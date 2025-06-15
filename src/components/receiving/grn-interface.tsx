@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -10,9 +11,9 @@ import { CheckSquare, PackageSearch } from 'lucide-react';
 import type { POItem } from '@/types';
 
 const mockPOItems: POItem[] = [
-  { id: 'item1', description: 'Heavy Duty Wrench Set', quantity: 10, unitPrice: 55.00, category: 'Tools', allocation: 'Workshop', uom: 'Set' },
-  { id: 'item2', description: 'Industrial Grade Solvent (5L)', quantity: 5, unitPrice: 25.50, category: 'Consumables', allocation: 'Maintenance', uom: 'Can' },
-  { id: 'item3', description: 'Safety Goggles (Pack of 10)', quantity: 2, unitPrice: 30.00, category: 'Safety', allocation: 'All Sites', uom: 'Pack' },
+  { id: 'item1', description: 'Heavy Duty Wrench Set', quantity: 10, unitPrice: 55.00, categoryId: null, siteId: null, uom: 'Set' },
+  { id: 'item2', description: 'Industrial Grade Solvent (5L)', quantity: 5, unitPrice: 25.50, categoryId: null, siteId: null, uom: 'Can' },
+  { id: 'item3', description: 'Safety Goggles (Pack of 10)', quantity: 2, unitPrice: 30.00, categoryId: null, siteId: null, uom: 'Pack' },
 ];
 
 
@@ -105,21 +106,7 @@ export function GRNInterface() {
               </TableHeader>
               <TableBody>
                 {searchedPOItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell className="text-right">{item.quantity}</TableCell>
-                    <TableCell className="text-right">0</TableCell> {/* Mocked */}
-                    <TableCell className="text-right">
-                      <Input
-                        type="number"
-                        min="0"
-                        max={item.quantity}
-                        value={item.quantityReceived}
-                        onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 0)}
-                        className="h-8 text-right"
-                      />
-                    </TableCell>
-                  </TableRow>
+                  <TableRow key={item.id}><TableCell>{item.description}</TableCell><TableCell className="text-right">{item.quantity}</TableCell><TableCell className="text-right">0</TableCell><TableCell className="text-right"><Input type="number" min="0" max={item.quantity} value={item.quantityReceived} onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 0)} className="h-8 text-right" /></TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
