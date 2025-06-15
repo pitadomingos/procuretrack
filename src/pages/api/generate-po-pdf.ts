@@ -95,7 +95,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
   } catch (dbError: any) {
     console.error(`[PDF API][getPODataForPdf][DB_ERROR] PO ID ${poId}: ${dbError.message}`);
     console.error(`[PDF API][getPODataForPdf][DB_ERROR_STACK]: ${dbError.stack || 'No stack available'}`);
-    throw dbError; 
+    throw dbError;
   } finally {
     if (connection) {
       try {
@@ -139,16 +139,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let logoDataUri = '';
     const logoFileName = 'jachris-logo.png';
     const logoPath = path.join(process.cwd(), 'public', logoFileName);
-    console.log(`[PDF API][Handler] Intending to read logo from: ${logoPath}`);
+    console.log(`[PDF API][Handler] Intending to access logo from: ${logoPath}`);
     
     try {
       await fs.access(logoPath); 
-      console.log(`[PDF API][Handler] Logo file found at: ${logoPath}`);
+      console.log(`[PDF API][Handler] Logo file found at: ${logoPath}. Reading file.`);
       const logoBuffer = await fs.readFile(logoPath);
       logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
       console.log(`[PDF API][Handler] Logo read successfully. Data URI length: ${logoDataUri.length}`);
     } catch (logoError: any) {
-      console.warn(`[PDF API][Handler] Logo file error for path "${logoPath}": ${logoError.message}. Proceeding without custom logo data URI.`);
+      console.warn(`[PDF API][Handler] Logo file error for path "${logoPath}": ${logoError.code} - ${logoError.message}. Proceeding without custom logo data URI.`);
     }
 
     console.log(`[PDF API][Handler] Rendering PrintablePO component to HTML string for PO ID: ${poId}`);
@@ -163,23 +163,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process', 
+      '--single-process',
       '--disable-gpu',
       '--disable-features=IsolateOrigins,site-per-process',
-      '--disable-web-security',
+      '--disable-web-security', // Added this for potential cross-origin issues with data URIs if any
     ];
     console.log(`[PDF API][Handler] Launching Playwright Chromium with args: ${playwrightArgs.join(' ')} for PO ID: ${poId}`);
     
     browser = await chromium.launch({
       args: playwrightArgs,
       headless: true,
-      timeout: 60000, // Added timeout for launch
-      // dumpio: process.env.NODE_ENV === 'development', 
+      timeout: 60000, // Timeout for launch
+      // dumpio: process.env.NODE_ENV === 'development', // Log browser console to Node.js console
     });
     console.log(`[PDF API][Handler] Playwright browser launched. Version: ${browser.version()}`);
 
     const context = await browser.newContext({
-        acceptDownloads: false, // We are not downloading through the browser UI
+        acceptDownloads: false,
+        // Consider reducing viewport if memory is an issue, though default is usually fine
+        // viewport: { width: 1280, height: 1024 }, 
     });
     console.log(`[PDF API][Handler] Playwright context created.`);
     const page = await context.newPage();
@@ -192,6 +194,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log(`[PDF API][Handler] Setting page content for PO ID: ${poId}`);
+    // Using a simple wrapper to ensure basic CSS (like font) can be applied by Playwright.
+    // The PrintablePO component itself should handle its internal styling.
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -217,6 +221,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
+    // Attempt to close browser resources *before* sending the response
     console.log(`[PDF API][Handler] Attempting to close Playwright page for PO ID: ${poId}`);
     await page.close();
     console.log(`[PDF API][Handler] Playwright page closed.`);
@@ -238,15 +243,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error: any) {
     const errorMessage = error.message || 'An unknown error occurred during PDF generation.';
-    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] CRITICAL ERROR for PO ID ${poId}: ${errorMessage}`);
-    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] STACK TRACE: ${error.stack || 'No stack trace available'}`);
+    const errorName = error.name || 'Error';
+    const errorStack = error.stack || 'No stack trace available';
+
+    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] CRITICAL ERROR for PO ID ${poId}: [${errorName}] ${errorMessage}`);
+    console.error(`[PDF API][Handler][MAIN CATCH BLOCK] STACK TRACE: ${errorStack}`);
 
     if (!res.headersSent) {
       res.status(500).json({
         source: 'api-handler-main-catch',
         error: `Server error during PDF generation for PO ID ${poId}.`,
         details: errorMessage,
-        stack: process.env.NODE_ENV === 'development' ? (error.stack || 'No stack trace available') : 'Stack trace hidden in production',
+        errorName: errorName,
+        stack: process.env.NODE_ENV === 'development' ? errorStack : 'Stack trace hidden in production',
       });
     } else {
       console.error("[PDF API][Handler][MAIN CATCH BLOCK] Headers already sent, cannot send JSON error response.");
