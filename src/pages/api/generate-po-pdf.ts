@@ -95,7 +95,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
   } catch (dbError: any) {
     console.error(`[PDF API][getPODataForPdf][DB_ERROR] PO ID ${poId}: ${dbError.message}`);
     console.error(`[PDF API][getPODataForPdf][DB_ERROR_STACK]: ${dbError.stack || 'No stack available'}`);
-    throw dbError; // Re-throw to be caught by the main handler
+    throw dbError; 
   } finally {
     if (connection) {
       try {
@@ -140,6 +140,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const logoFileName = 'jachris-logo.png';
     const logoPath = path.join(process.cwd(), 'public', logoFileName);
     console.log(`[PDF API][Handler] Intending to read logo from: ${logoPath}`);
+    
     try {
       await fs.access(logoPath); 
       console.log(`[PDF API][Handler] Logo file found at: ${logoPath}`);
@@ -162,7 +163,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process',
+      '--single-process', 
       '--disable-gpu',
       '--disable-features=IsolateOrigins,site-per-process',
       '--disable-web-security',
@@ -172,11 +173,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     browser = await chromium.launch({
       args: playwrightArgs,
       headless: true,
+      timeout: 60000, // Added timeout for launch
       // dumpio: process.env.NODE_ENV === 'development', 
     });
     console.log(`[PDF API][Handler] Playwright browser launched. Version: ${browser.version()}`);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+        acceptDownloads: false, // We are not downloading through the browser UI
+    });
     console.log(`[PDF API][Handler] Playwright context created.`);
     const page = await context.newPage();
     console.log(`[PDF API][Handler] Playwright page created.`);
@@ -209,10 +213,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       format: 'A4',
       printBackground: true,
       margin: { top: '20mm', right: '10mm', bottom: '20mm', left: '10mm' },
-      timeout: 60000,
+      timeout: 60000, // Timeout for PDF generation
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
+    console.log(`[PDF API][Handler] Attempting to close Playwright page for PO ID: ${poId}`);
+    await page.close();
+    console.log(`[PDF API][Handler] Playwright page closed.`);
+    console.log(`[PDF API][Handler] Attempting to close Playwright context for PO ID: ${poId}`);
+    await context.close();
+    console.log(`[PDF API][Handler] Playwright context closed.`);
     console.log(`[PDF API][Handler] Attempting to close Playwright browser for PO ID: ${poId}`);
     await browser.close();
     browser = null; 
