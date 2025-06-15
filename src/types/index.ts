@@ -167,6 +167,8 @@ export interface Client {
 
 export interface QuoteItem {
   id: string; 
+  partNumber?: string;
+  customerRef?: string;
   description: string;
   quantity: number;
   unitPrice: number;

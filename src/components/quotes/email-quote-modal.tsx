@@ -27,7 +27,6 @@ interface EmailQuoteModalProps {
 
 // Placeholder for current user's email - replace with actual auth context later
 const MOCK_SENDER_EMAIL = 'sales.moz@jachris.com'; // Jachris sales email
-// MOCK_CREATOR_EMAIL_FOR_CC will be derived inside the component now
 
 const DEFAULT_EMAIL_SUBJECT_PREFIX = "Quotation from Jachris Mozambique - Ref:";
 
@@ -43,7 +42,7 @@ const generateDefaultEmailBody = (quoteDataForBody: QuotePayload) => `Dear ${quo
 Please find attached our quotation ${quoteDataForBody.quoteNumber} for your review.
 
 This quotation includes:
-${(quoteDataForBody.items || []).map(item => `- ${item.description} (Qty: ${item.quantity})`).join('\n')}
+${(quoteDataForBody.items || []).map(item => `- ${item.description} (Part No: ${item.partNumber || 'N/A'}, Cust Ref: ${item.customerRef || 'N/A'}, Qty: ${item.quantity})`).join('\n')}
 
 Total Amount: ${quoteDataForBody.currency} ${quoteDataForBody.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 

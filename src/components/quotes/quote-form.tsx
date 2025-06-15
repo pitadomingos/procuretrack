@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
-const defaultItem: QuoteItem = { id: crypto.randomUUID(), description: '', quantity: 1, unitPrice: 0.00 };
+const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
 interface QuoteFormValues {
   clientId: string | null;
@@ -163,6 +163,8 @@ export function QuoteForm() {
       notes: formData.notes,
       items: formData.items.map(item => ({
         id: item.id, // Keep client-side ID for now
+        partNumber: item.partNumber,
+        customerRef: item.customerRef,
         description: item.description,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
@@ -251,15 +253,27 @@ export function QuoteForm() {
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-sm">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-end">
+                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-2"> 
+                        <FormLabel>Part Number</FormLabel> 
+                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                      </FormItem> 
+                    )} />
+                     <FormField control={form.control} name={`items.${index}.customerRef`} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-2"> 
+                        <FormLabel>Customer Ref</FormLabel> 
+                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                      </FormItem> 
+                    )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-6"> 
+                      <FormItem className="lg:col-span-3"> 
                         <FormLabel>Description</FormLabel> 
                         <FormControl><Input placeholder="Service or item description" {...field} /></FormControl> 
                         <FormMessage /> 
                       </FormItem> 
                     )} />
                     <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2"> 
+                      <FormItem className="lg:col-span-1"> 
                         <FormLabel>Quantity</FormLabel> 
                         <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> 
                         <FormMessage /> 

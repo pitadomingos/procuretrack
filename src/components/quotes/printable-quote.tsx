@@ -68,6 +68,8 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
         <table className="w-full border-collapse border border-gray-400 text-xs">
           <thead>
             <tr className="bg-gray-100 text-gray-600">
+              <th className="border border-gray-400 p-2 text-left">PART NUMBER</th>
+              <th className="border border-gray-400 p-2 text-left">CUSTOMER REF</th>
               <th className="border border-gray-400 p-2 text-left">ITEM / SERVICE DESCRIPTION</th>
               <th className="border border-gray-400 p-2 text-center">QTY</th>
               <th className="border border-gray-400 p-2 text-right">UNIT PRICE</th>
@@ -77,6 +79,8 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
           <tbody>
             {printableItems.map((item, index) => (
               <tr key={item.id || index}>
+                <td className="border border-gray-400 p-2 align-top">{item.partNumber || ''}</td>
+                <td className="border border-gray-400 p-2 align-top">{item.customerRef || ''}</td>
                 <td className="border border-gray-400 p-2 align-top">{item.description}</td>
                 <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
                 <td className="border border-gray-400 p-2 text-right align-top">{formatCurrency(item.unitPrice)}</td>
@@ -87,6 +91,8 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
             {Array.from({ length: Math.max(0, 8 - printableItems.length) }).map((_, i) => (
                 <tr key={`empty-${i}`}>
                     <td className="border border-gray-400 p-2 h-7">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
