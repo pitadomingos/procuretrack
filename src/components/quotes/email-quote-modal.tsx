@@ -27,20 +27,28 @@ interface EmailQuoteModalProps {
 
 // Placeholder for current user's email - replace with actual auth context later
 const MOCK_SENDER_EMAIL = 'sales.moz@jachris.com'; // Jachris sales email
-const MOCK_CREATOR_EMAIL_FOR_CC = quoteData?.creatorEmail || 'my.email@jachris.com'; // Creator's email from quote or a fallback
+// MOCK_CREATOR_EMAIL_FOR_CC will be derived inside the component now
 
 const DEFAULT_EMAIL_SUBJECT_PREFIX = "Quotation from Jachris Mozambique - Ref:";
-const DEFAULT_EMAIL_BODY = (quoteNumber: string, clientName: string | undefined) => `Dear ${clientName || 'Valued Client'},
 
-Please find attached our quotation ${quoteNumber} for your review.
+const JACHRIS_COMPANY_DETAILS = { // Duplicated for simplicity, ideally from a shared config
+  name: 'JACHRIS MOZAMBIQUE (LTD)',
+  contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
+  website: 'www.jachris.com',
+};
+
+// Refactored DEFAULT_EMAIL_BODY to accept quoteData
+const generateDefaultEmailBody = (quoteDataForBody: QuotePayload) => `Dear ${quoteDataForBody.clientName || 'Valued Client'},
+
+Please find attached our quotation ${quoteDataForBody.quoteNumber} for your review.
 
 This quotation includes:
-${quoteData.items.map(item => `- ${item.description} (Qty: ${item.quantity})`).join('\n')}
+${(quoteDataForBody.items || []).map(item => `- ${item.description} (Qty: ${item.quantity})`).join('\n')}
 
-Total Amount: ${quoteData.currency} ${quoteData.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+Total Amount: ${quoteDataForBody.currency} ${quoteDataForBody.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 
-${quoteData.termsAndConditions ? `Terms & Conditions:\n${quoteData.termsAndConditions}\n` : ''}
-${quoteData.notes ? `Additional Notes:\n${quoteData.notes}\n` : ''}
+${quoteDataForBody.termsAndConditions ? `Terms & Conditions:\n${quoteDataForBody.termsAndConditions}\n` : ''}
+${quoteDataForBody.notes ? `Additional Notes:\n${quoteDataForBody.notes}\n` : ''}
 
 We trust this meets your approval and look forward to your confirmation.
 
@@ -50,12 +58,6 @@ The Jachris Mozambique Sales Team
 ${JACHRIS_COMPANY_DETAILS.website}
 ${JACHRIS_COMPANY_DETAILS.contactLine1}
 `;
-
-const JACHRIS_COMPANY_DETAILS = { // Duplicated for simplicity, ideally from a shared config
-  name: 'JACHRIS MOZAMBIQUE (LTD)',
-  contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
-  website: 'www.jachris.com',
-};
 
 
 export function EmailQuoteModal({ quoteData, open, onOpenChange }: EmailQuoteModalProps) {
@@ -69,10 +71,12 @@ export function EmailQuoteModal({ quoteData, open, onOpenChange }: EmailQuoteMod
   useEffect(() => {
     if (quoteData) {
       setToEmail(quoteData.clientEmail || '');
-      const creatorCC = quoteData.creatorEmail || MOCK_CREATOR_EMAIL_FOR_CC;
-      setCcEmails(creatorCC); // Default CC to creator
+      // Determine CC email using quoteData within the effect
+      const creatorCC = quoteData.creatorEmail || 'my.email@jachris.com'; // Fallback if quoteData.creatorEmail is not set
+      setCcEmails(creatorCC);
       setSubject(`${DEFAULT_EMAIL_SUBJECT_PREFIX} ${quoteData.quoteNumber} for ${quoteData.clientName || 'Your Company'}`);
-      setBody(DEFAULT_EMAIL_BODY(quoteData.quoteNumber, quoteData.clientName));
+      // Generate email body using the new function and current quoteData
+      setBody(generateDefaultEmailBody(quoteData));
     }
   }, [quoteData, open]); // Re-populate when modal opens or quoteData changes
 
@@ -154,8 +158,3 @@ export function EmailQuoteModal({ quoteData, open, onOpenChange }: EmailQuoteMod
     </Dialog>
   );
 }
-
-// Need to redefine JACHRIS_COMPANY_DETAILS and DEFAULT_EMAIL_BODY within the component or pass them if they depend on quoteData for now.
-// For this structure, putting them inside the file is simpler.
-// Re-defining quoteData inside DEFAULT_EMAIL_BODY (global scope) leads to reference error.
-// The solution is to make DEFAULT_EMAIL_BODY a function that takes quoteData.
