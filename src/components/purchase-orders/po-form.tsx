@@ -414,24 +414,24 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <FormField control={form.control} name="poDate" rules={{ required: 'PO Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
 
-              {/* Row 2: Supplier Name, Email, Sales Person */}
+              {/* Supplier Row 1: Name, Email, Sales Person */}
               <div className="grid md:grid-cols-3 gap-4 mt-4">
                 <FormField
-                    control={form.control} name="vendorName" rules={{ required: 'Supplier is required' }}
-                    render={({ field }) => (
-                      <FormItem> <FormLabel>Supplier Name</FormLabel>
-                        <Select onValueChange={(value) => { field.onChange(value); handleSupplierChange(value); }} value={field.value || ''}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select a supplier" /></SelectTrigger></FormControl>
-                          <SelectContent>{suppliers.map(s => (<SelectItem key={s.supplierCode} value={s.supplierCode}>{s.supplierName} ({s.supplierCode})</SelectItem>))}</SelectContent>
-                        </Select> <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  control={form.control} name="vendorName" rules={{ required: 'Supplier is required' }}
+                  render={({ field }) => (
+                    <FormItem> <FormLabel>Supplier Name</FormLabel>
+                      <Select onValueChange={(value) => { field.onChange(value); handleSupplierChange(value); }} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select a supplier" /></SelectTrigger></FormControl>
+                        <SelectContent>{suppliers.map(s => (<SelectItem key={s.supplierCode} value={s.supplierCode}>{s.supplierName} ({s.supplierCode})</SelectItem>))}</SelectContent>
+                      </Select> <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. supplier@example.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr. Sales" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
               
-              {/* Row 3: Supplier Contact, NUIT, Supplier Address */}
+              {/* Supplier Row 2: Contact, NUIT, Address */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
                 <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
@@ -439,7 +439,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               </div>
             </div>
 
-            {/* Row 4: PO Configuration */}
+            {/* PO Configuration Row */}
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
@@ -458,15 +458,66 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               const itemTotal = (Number(itemQuantity) * Number(itemUnitPrice)).toFixed(2);
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
-                  <div className="grid md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
-                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( <FormItem> <FormLabel>Part Number</FormLabel> <FormControl><Input placeholder="Optional" {...field} className="w-36" /></FormControl> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( <FormItem className="lg:col-span-2"> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="Item description" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => ( <FormItem> <FormLabel>Category</FormLabel> <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl> <SelectContent>{categories.map(cat => (<SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Site is required' }} render={({ field }) => ( <FormItem> <FormLabel>Site</FormLabel> <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger></FormControl> <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.uom`} rules={{ required: 'UOM is required' }} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., EA" {...field} className="w-24"/></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => ( <FormItem> <FormLabel>Unit Price ({currencySymbol})</FormLabel> <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage /> </FormItem> )} />
-                    <FormItem className="w-full"> <FormLabel>Item Total ({currencySymbol})</FormLabel> <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{itemTotal}</div> </FormItem>
+                  {/* Item fields now in a responsive grid aiming for single row on large screens */}
+                  <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-x-4 gap-y-2 items-end">
+                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-2"> 
+                        <FormLabel>Part Number</FormLabel> 
+                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                      </FormItem> 
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-3"> 
+                        <FormLabel>Description</FormLabel> 
+                        <FormControl><Input placeholder="Item description" {...field} /></FormControl> 
+                        <FormMessage /> 
+                      </FormItem> 
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-1"> 
+                        <FormLabel>Category</FormLabel> 
+                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}> 
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl> 
+                          <SelectContent>{categories.map(cat => (<SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>))}</SelectContent> 
+                        </Select> 
+                        <FormMessage /> 
+                      </FormItem> 
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Site is required' }} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-1"> 
+                        <FormLabel>Site</FormLabel> 
+                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}> 
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl> 
+                          <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent> 
+                        </Select> 
+                        <FormMessage /> 
+                      </FormItem> 
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.uom`} rules={{ required: 'UOM is required' }} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-1"> 
+                        <FormLabel>UOM</FormLabel> 
+                        <FormControl><Input placeholder="e.g., EA" {...field} /></FormControl> 
+                        <FormMessage /> 
+                      </FormItem> 
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-1"> 
+                        <FormLabel>Quantity</FormLabel> 
+                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> 
+                        <FormMessage /> 
+                      </FormItem> 
+                    )} />
+                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-1"> 
+                        <FormLabel>Unit Price ({currencySymbol})</FormLabel> 
+                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> 
+                        <FormMessage /> 
+                      </FormItem> 
+                    )} />
+                    <FormItem className="lg:col-span-2"> 
+                      <FormLabel>Item Total ({currencySymbol})</FormLabel> 
+                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{itemTotal}</div> 
+                    </FormItem>
                   </div>
                   {fields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2" title="Remove Item"><Trash2 className="h-4 w-4" /></Button>)}
                 </Card>
@@ -485,7 +536,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <div className="text-xl font-bold font-headline">Grand Total ({currencySymbol}): <span className="font-semibold">{grandTotal.toFixed(2)}</span></div>
               </div>
 
-              <div className="flex flex-col gap-3 md:pt-0">
+              <div className="flex flex-col gap-3 w-full">
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isLoadingPOForEdit || (!form.formState.isValid && form.formState.isSubmitted)}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedPO ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
                   {isSubmitting ? (isEditingLoadedPO ? 'Updating PO...' : 'Submitting PO...') : (isEditingLoadedPO ? 'Update PO' : 'Submit PO')}
@@ -512,6 +563,4 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     </Card>
   );
 }
-    
-
     
