@@ -389,6 +389,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
             
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">Supplier & PO Information</h3>
+              {/* Row 1: PO Number, Load Button, Quote No, Date */}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField
                   control={form.control} name="poNumberDisplay" rules={{ required: 'PO Number is required' }}
@@ -413,11 +414,12 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <FormField control={form.control} name="poDate" rules={{ required: 'PO Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
 
+              {/* Row 2: Supplier Name, Email, Sales Person */}
               <div className="grid md:grid-cols-3 gap-4 mt-4">
                 <FormField
                     control={form.control} name="vendorName" rules={{ required: 'Supplier is required' }}
                     render={({ field }) => (
-                      <FormItem className="md:col-span-3"> <FormLabel>Supplier Name</FormLabel>
+                      <FormItem> <FormLabel>Supplier Name</FormLabel>
                         <Select onValueChange={(value) => { field.onChange(value); handleSupplierChange(value); }} value={field.value || ''}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select a supplier" /></SelectTrigger></FormControl>
                           <SelectContent>{suppliers.map(s => (<SelectItem key={s.supplierCode} value={s.supplierCode}>{s.supplierName} ({s.supplierCode})</SelectItem>))}</SelectContent>
@@ -429,15 +431,17 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr. Sales" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
               
-              <div className="grid md:grid-cols-3 gap-4 mt-4">
-                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's billing address..." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              {/* Row 3: Supplier Contact, NUIT, Supplier Address */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
+                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem className="md:col-span-3"> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's billing address..." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
             </div>
 
+            {/* Row 4: PO Configuration */}
             <div>
-              <h3 className="text-lg font-medium font-headline mb-2">PO Configuration</h3>
+              <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester's name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
@@ -482,16 +486,16 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               </div>
 
               <div className="flex flex-col gap-3 md:pt-0">
-                <Button type="submit" size="lg" disabled={isSubmitting || isLoadingPOForEdit || (!form.formState.isValid && form.formState.isSubmitted)}>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isLoadingPOForEdit || (!form.formState.isValid && form.formState.isSubmitted)}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedPO ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
                   {isSubmitting ? (isEditingLoadedPO ? 'Updating PO...' : 'Submitting PO...') : (isEditingLoadedPO ? 'Update PO' : 'Submit PO')}
                 </Button>
-                <Button type="button" variant="outline" size="lg" onClick={handleViewPrintPO} disabled={isPrintingLoading || (!isEditingLoadedPO && !form.getValues('poNumberDisplay'))}>
+                <Button type="button" variant="outline" size="lg" className="w-full" onClick={handleViewPrintPO} disabled={isPrintingLoading || (!isEditingLoadedPO && !form.getValues('poNumberDisplay'))}>
                   {isPrintingLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" /> }
                   {isPrintingLoading ? 'Loading Preview...' : 'View/Print PO'}
                 </Button>
                  {!isEditingLoadedPO && (
-                  <Button type="button" variant="ghost" size="lg" onClick={() => resetFormForNew()} disabled={isSubmitting || isLoadingPOForEdit}>
+                  <Button type="button" variant="ghost" size="lg" className="w-full" onClick={() => resetFormForNew()} disabled={isSubmitting || isLoadingPOForEdit}>
                     Clear / New PO
                   </Button>
                 )}
@@ -508,4 +512,6 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     </Card>
   );
 }
+    
+
     
