@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category, POItemForPrint, Approver, User as UserType } from '@/types';
-import { ArrowLeft, Printer, Download, Loader2, Edit, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Loader2, Edit, CheckCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,6 +14,7 @@ interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
   items: POItemForPrint[];
   supplierDetails?: Supplier;
   approverName?: string;
+  creatorName?: string; // Added creatorName
 }
 
 function PrintPOPageContent() {
@@ -22,7 +23,7 @@ function PrintPOPageContent() {
   const poId = params.id as string;
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const viewContext = searchParams.get('context');
+  const viewContext = searchParams.get('context'); // e.g., 'creator'
 
   const [poData, setPoData] = useState<FullPODataForPrint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,13 +36,14 @@ function PrintPOPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const [poHeaderRes, poItemsRes, suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
+      const [poHeaderRes, poItemsRes, suppliersRes, sitesRes, categoriesRes, approversRes, usersRes] = await Promise.all([
         fetch(`/api/purchase-orders/${poId}`),
         fetch(`/api/purchase-orders/${poId}/items`),
         fetch('/api/suppliers'),
         fetch('/api/sites'),
         fetch('/api/categories'),
         fetch('/api/approvers'),
+        fetch('/api/users'), // Fetch all users to find creator name
       ]);
 
       if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header: ${poHeaderRes.statusText}`);
@@ -65,9 +67,11 @@ function PrintPOPageContent() {
       const allSites: Site[] = sitesRes.ok ? await sitesRes.json() : [];
       const allCategories: Category[] = categoriesRes.ok ? await categoriesRes.json() : [];
       const allApprovers: Approver[] = approversRes.ok ? await approversRes.json() : [];
+      const allUsers: UserType[] = usersRes.ok ? await usersRes.json() : [];
 
       const supplierDetails = allSuppliers.find(s => s.supplierCode === headerData.supplierId);
       const approverDetails = allApprovers.find(a => a.id === headerData.approverId);
+      const creatorDetails = allUsers.find(u => u.id === headerData.creatorUserId);
 
       const itemsForPrint: POItemForPrint[] = itemsDataRaw.map(item => {
         const site = allSites.find(s => s.id === (item.siteId ? Number(item.siteId) : null));
@@ -108,6 +112,7 @@ function PrintPOPageContent() {
         ...headerData, 
         items: itemsForPrint,
         supplierDetails: supplierDetails,
+        creatorName: creatorDetails?.name, // Set creator name
         approverName: approverDetails?.name,
         approverSignatureUrl: approverSignatureUrl,
         poNumber: headerData.poNumber || `PO-${poId}`, 
@@ -185,16 +190,13 @@ function PrintPOPageContent() {
     try {
       const response = await fetch(`/api/purchase-orders/${poId}/approve`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
             error: 'Approval failed.', 
             details: `Server responded with status: ${response.status} ${response.statusText}`,
-            stack: '' 
         }));
         
         let clientErrorMessage = errorData.error || `Approval failed for PO ${poId}.`;
@@ -209,7 +211,7 @@ function PrintPOPageContent() {
         title: "Success!",
         description: result.message || `Purchase Order ${poData.poNumber} approved.`,
       });
-      await fetchPODataForPrint();
+      await fetchPODataForPrint(); // Refresh data to show new status
 
     } catch (err: any) {
       console.error(`Error approving PO (client-side catch):`, err); 
@@ -260,21 +262,35 @@ function PrintPOPageContent() {
     );
   }
 
-  const canEditPO = poData.status === 'Pending Approval';
-  // Updated logic for canApprovePO
+  // PO can be edited only if 'Pending Approval' AND not viewed by creator in initial post-submission preview
+  const canEditPO = poData.status === 'Pending Approval' && viewContext !== 'creator';
+  // PO can be approved only if 'Pending Approval' AND not viewed by creator in initial post-submission preview
   const canApprovePO = poData.status === 'Pending Approval' && viewContext !== 'creator';
+  const isRejected = poData.status === 'Rejected';
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
       <div className="print-page-inner-container container mx-auto max-w-4xl print:max-w-full print:p-0">
         <Card className="mb-6 print:hidden shadow-lg">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">PO: {poData.poNumber} ({poData.status})</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">PO: {poData.poNumber}</h1>
+              {isRejected && (
+                <span className="text-sm font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-md flex items-center">
+                  <AlertTriangle className="h-4 w-4 mr-1" /> REJECTED
+                </span>
+              )}
+              {!isRejected && (
+                 <span className={`text-sm font-semibold px-2 py-1 rounded-md ${poData.status === 'Approved' ? 'text-green-600 bg-green-100' : 'text-orange-600 bg-orange-100'}`}>
+                    {poData.status}
+                 </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
               <Button onClick={() => router.back()} variant="outline" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Close
               </Button>
-              {canEditPO && (
+              {canEditPO && !isRejected && (
                 <Button 
                   onClick={handleEditPO} 
                   variant="outline" 
@@ -284,7 +300,7 @@ function PrintPOPageContent() {
                   <Edit className="mr-2 h-4 w-4" /> Edit PO
                 </Button>
               )}
-              {canApprovePO && (
+              {canApprovePO && !isRejected && (
                 <Button
                   onClick={handleApprovePO}
                   disabled={isApproving}

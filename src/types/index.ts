@@ -116,8 +116,10 @@ export interface PurchaseOrderPayload {
   notes?: string | null;
   items: POItemPayload[] | POItemForPrint[]; 
   approvalDate?: string | null; 
+  rejectionReason?: string | null; // For future use with DB schema change
+  rejectionDate?: string | null;   // For future use with DB schema change
   supplierDetails?: Supplier;
-  creatorName?: string;
+  creatorName?: string; // Name of the user from User table via creatorUserId
   approverName?: string;
   approverSignatureUrl?: string; 
   quoteNo?: string; 
@@ -128,8 +130,16 @@ export interface ApprovalQueueItem {
   poNumber: string;
   creationDate: string;
   supplierName: string | null;
-  requestedByName: string | null;
+  requestedByName: string | null; // This is the free-text field from PO form
+  creatorUserId?: string | null;  // ID of the actual system user who created it
+  creatorName?: string | null;    // Name of the system user (fetched via creatorUserId)
   grandTotal: number;
   currency: string;
   status: string;
+}
+
+export interface POReviewItem extends POItemPayload {
+  isChecked: boolean;
+  reviewComment: string;
+  totalPrice: number;
 }

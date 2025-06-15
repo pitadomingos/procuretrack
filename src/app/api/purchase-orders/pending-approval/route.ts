@@ -28,18 +28,22 @@ export async function GET(request: Request) {
 
     // 2. Fetch Purchase Orders assigned to this approver that are 'Pending Approval'
     //    and join with Supplier table to get supplierName
+    //    and join with User table to get creatorName
     const query = `
       SELECT
         po.id,
         po.poNumber,
         po.creationDate,
-        po.requestedByName,
+        po.requestedByName, -- This is the manually entered requester name
+        po.creatorUserId,   -- This is the ID of the system user who created the PO
+        u.name as creatorName, -- Fetched from User table
         po.grandTotal,
         po.currency,
         po.status,
         s.supplierName
       FROM PurchaseOrder po
       LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
+      LEFT JOIN User u ON po.creatorUserId = u.id 
       WHERE po.approverId = ? AND po.status = 'Pending Approval'
       ORDER BY po.creationDate DESC;
     `;
@@ -48,9 +52,11 @@ export async function GET(request: Request) {
     const results: ApprovalQueueItem[] = poRows.map((row: any) => ({
       id: row.id,
       poNumber: row.poNumber,
-      creationDate: row.creationDate, // Assuming it's already a string or Date object
+      creationDate: row.creationDate, 
       supplierName: row.supplierName || 'N/A',
-      requestedByName: row.requestedByName || 'N/A',
+      requestedByName: row.requestedByName || 'N/A', 
+      creatorUserId: row.creatorUserId,
+      creatorName: row.creatorName || (row.creatorUserId ? 'Unknown User' : 'System'), // Display creator name
       grandTotal: parseFloat(row.grandTotal || 0),
       currency: row.currency,
       status: row.status,

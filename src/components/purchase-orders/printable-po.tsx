@@ -1,5 +1,5 @@
 
-import React from 'react'; // Ensured React is imported
+import React from 'react'; 
 import type { PurchaseOrderPayload, POItemForPrint } from '@/types';
 
 interface PrintablePOProps {
@@ -28,8 +28,12 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const printableItems = (items || []) as POItemForPrint[]; // Ensure items is an array
+  const printableItems = (items || []) as POItemForPrint[]; 
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
+
+  // Determine Prepared By name
+  const preparedByName = poData.creatorName || poData.requestedByName || "System User (JMS)";
+
 
   return (
     <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}>
@@ -138,7 +142,7 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
         <div className="grid grid-cols-2 gap-x-4">
             <div>
                 <div className="flex mb-1">
-                    <span className="w-28">Prepared By</span><span>: {poData.creatorName || "System User (JMS)"}</span>
+                    <span className="w-28">Prepared By</span><span>: {preparedByName}</span>
                 </div>
                 <div className="flex mb-1">
                     <span className="w-28">Requested By</span><span>: {poData.requestedByName || 'N/A'}</span>
@@ -147,7 +151,7 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
                     <span className="w-28">Approved By</span><span>: {poData.approverName || (poData.approverId ? `Approver ID: ${poData.approverId}`: 'Pending')}</span>
                 </div>
                  <div className="flex">
-                    <span className="w-28">Date</span><span>: {poData.status === 'Approved' && approvalDate !== 'N/A' ? approvalDate : 'Pending Approval'}</span>
+                    <span className="w-28">Date</span><span>: {poData.status === 'Approved' && approvalDate !== 'N/A' ? approvalDate : (poData.status === 'Rejected' ? 'N/A' : 'Pending Approval')}</span>
                 </div>
             </div>
             <div className="flex flex-col items-end">
@@ -155,11 +159,11 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
                   <img
                     src={poData.approverSignatureUrl}
                     alt={`Signature of ${poData.approverName || 'Approver'}`}
-                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]" // Adjusted signature size and placement
+                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]" 
                     data-ai-hint="signature image"
                   />
                 ) : (
-                  <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div> // Placeholder for signature
+                  <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div> 
                 )}
                 <p className="mr-[70px]">Signature</p>
             </div>
