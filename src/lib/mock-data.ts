@@ -1,6 +1,6 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord } from '@/types';
-import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag as TagIcon, ClipboardList, Fuel, Truck } from 'lucide-react';
+import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck } from 'lucide-react'; // Renamed TagIcon to TagLucideIcon
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -81,13 +81,13 @@ export const activityLogData: ActivityLogEntry[] = [
 ];
 
 export const managementTables = [
-  { name: 'Approvers', href: '/management/approvers', icon: Users, count: 3, description: "Manage PO approvers" }, // Updated count
-  { name: 'Users', href: '/management/users', icon: Users, count: 5, description: "Manage system users and roles" }, // Updated count
-  { name: 'Sites', href: '/management/sites', icon: Building, count: 5, description: "Manage company sites/locations" }, // Updated count
-  { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations/departments" },
-  { name: 'Categories', href: '/management/categories', icon: TagIcon, count: 15, description: "Manage item and service categories" }, // Updated count
-  { name: 'Tags', href: '/management/tags', icon: Fuel, count: 5, description: "Manage tagged vehicles & equipment" }, // Updated count
-  { name: 'Clients', href: '/management/clients', icon: Briefcase, count: 4, description: "Manage client information"}, // Added Clients
+  { name: 'Approvers', href: '/management/approvers', icon: Users, count: 3, description: "Manage PO approvers" },
+  { name: 'Users', href: '/management/users', icon: Users, count: 5, description: "Manage system users and roles" },
+  { name: 'Sites', href: '/management/sites', icon: Building, count: 5, description: "Manage company sites/locations" },
+  { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations/departments (Legacy - Use Sites)" },
+  { name: 'Categories', href: '/management/categories', icon: TagLucideIcon, count: 15, description: "Manage item and service categories" },
+  { name: 'Tags', href: '/management/tags', icon: Fuel, count: 5, description: "Manage tagged vehicles & equipment" },
+  { name: 'Clients', href: '/management/clients', icon: Briefcase, count: 4, description: "Manage client information"},
 ];
 
 export const months: FilterOption[] = [
@@ -114,9 +114,11 @@ export const mockSitesData: Site[] = [
 
 export const monthsWithAll: FilterOption[] = [{ value: 'all', label: 'All Months' }, ...months];
 export const yearsWithAll: FilterOption[] = [{ value: 'all', label: 'All Years' }, ...years];
+
+// For FilterBar: Use actual Site IDs as values
 export const sitesWithAll: FilterOption[] = [
     { value: 'all', label: 'All Sites' },
-    ...mockSitesData.map(s => ({value: s.id.toString(), label: s.siteCode || s.name}))
+    ...mockSitesData.map(s => ({value: s.id.toString(), label: `${s.siteCode || s.name} (${s.name})`}))
 ];
 
 
@@ -201,16 +203,18 @@ export const mockPurchaseOrders: PurchaseOrderPayload[] = [
   },
 ];
 
+// For FilterBar: Use Approver IDs as values
 export const mockApproversFilter: FilterOption[] = [
   { value: 'all', label: 'All Approvers' },
   ...mockApproversData.map(app => ({ value: app.id, label: app.name })),
 ];
 
+// For FilterBar: Use User IDs as values for requestors
 export const mockRequestorsFilter: FilterOption[] = [
   { value: 'all', label: 'All Requestors' },
-  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'User')
+  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'User') // Adjust roles as needed
                  .map(u => ({ value: u.id, label: u.name })),
-].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value)));
+].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value))); // Ensure unique values
 
 
 export const mockAllocationsData: Allocation[] = [
@@ -241,11 +245,11 @@ export const mockRequisitionsData: RequisitionPayload[] = [
         status: 'Submitted for Approval',
         justification: 'Restock office stationery for Q3.',
         items: [
-            { id: 'reqi-1-1', partNumber: 'A4REAM-W', description: 'A4 Reams', categoryId: 1, quantity: 10 },
-            { id: 'reqi-1-2', partNumber: 'PEN-BL-BX', description: 'Blue Pens', categoryId: 1, quantity: 50 },
+            { id: 'reqi-1-1', partNumber: 'A4REAM-W', description: 'A4 Reams', categoryId: 1, quantity: 10, estimatedUnitPrice: 200, notes: 'White A4 paper, 80gsm' },
+            { id: 'reqi-1-2', partNumber: 'PEN-BL-BX', description: 'Blue Pens', categoryId: 1, quantity: 50, estimatedUnitPrice: 10, notes: 'Box of 50' },
         ],
         totalEstimatedValue: 2500,
-        siteName: 'TMW',
+        siteName: 'TMW', // Site Code for display
     },
     {
         id: 'REQ-MOCK-002',
@@ -256,10 +260,10 @@ export const mockRequisitionsData: RequisitionPayload[] = [
         status: 'Draft',
         justification: 'Need new safety helmets for Site B personnel.',
         items: [
-            { id: 'reqi-2-1', partNumber: 'SAF-HAT-YEL', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5 },
+            { id: 'reqi-2-1', partNumber: 'SAF-HAT-YEL', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5, estimatedUnitPrice: 1000, notes: 'Standard safety helmets' },
         ],
         totalEstimatedValue: 5000,
-        siteName: 'TML',
+        siteName: 'TML', // Site Code for display
     },
 ];
 

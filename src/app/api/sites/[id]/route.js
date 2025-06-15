@@ -1,0 +1,91 @@
+
+import { pool } from '../../../../../backend/db.js'; // Adjust path
+import { NextResponse } from 'next/server';
+
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
+  const numericId = Number(id);
+
+  if (isNaN(numericId)) {
+    return NextResponse.json({ error: 'Invalid site ID format' }, { status: 400 });
+  }
+
+  try {
+    const [rows] = await pool.execute('SELECT * FROM Site WHERE id = ?', [numericId]);
+    if (Array.isArray(rows) && rows.length > 0) {
+      return NextResponse.json(rows[0]);
+    } else {
+      return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+    }
+  } catch (error: any) {
+    console.error(`Error fetching site with ID ${id}:`, error);
+    return NextResponse.json({ error: 'Failed to fetch site', details: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
+  const numericId = Number(id);
+
+  if (isNaN(numericId)) {
+    return NextResponse.json({ error: 'Invalid site ID format' }, { status: 400 });
+  }
+
+  try {
+    const { name, location, siteCode } = await request.json();
+
+    if (!name) {
+      return NextResponse.json({ error: 'Site name is required' }, { status: 400 });
+    }
+
+    const [result] = await pool.execute(
+      'UPDATE Site SET name = ?, location = ?, siteCode = ? WHERE id = ?',
+      [name, location || null, siteCode || null, numericId]
+    );
+
+    if ((result as any).affectedRows === 0) {
+      return NextResponse.json({ error: 'Site not found or no changes made' }, { status: 404 });
+    }
+
+    const [updatedSiteRows] = await pool.execute('SELECT * FROM Site WHERE id = ?', [numericId]);
+    
+    if (Array.isArray(updatedSiteRows) && updatedSiteRows.length > 0) {
+        return NextResponse.json(updatedSiteRows[0]);
+    } else {
+         return NextResponse.json({ error: 'Site updated but failed to retrieve it.' }, { status: 500 });
+    }
+
+  } catch (error: any) {
+    console.error(`Error updating site with ID ${id}:`, error);
+     if (error.code === 'ER_DUP_ENTRY') {
+        return NextResponse.json({ error: 'A site with this name or code may already exist.' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Failed to update site', details: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const { id } = params;
+  const numericId = Number(id);
+
+  if (isNaN(numericId)) {
+    return NextResponse.json({ error: 'Invalid site ID format' }, { status: 400 });
+  }
+
+  try {
+    const [result] = await pool.execute('DELETE FROM Site WHERE id = ?', [numericId]);
+
+    if ((result as any).affectedRows === 0) {
+      return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Site deleted successfully' }, { status: 200 }); // Or 204 No Content
+  } catch (error: any) {
+    console.error(`Error deleting site with ID ${id}:`, error);
+    // Check for foreign key constraint errors (e.g., ER_ROW_IS_REFERENCED_2)
+    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+        return NextResponse.json({ error: 'Cannot delete site. It is currently referenced by other records (e.g., Purchase Orders, Users, Tags). Please remove those references first.' }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Failed to delete site', details: error.message }, { status: 500 });
+  }
+}
