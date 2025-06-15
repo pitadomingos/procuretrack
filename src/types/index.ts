@@ -46,11 +46,14 @@ export interface Supplier {
 }
 
 export interface Approver {
-  id: string; 
+  id: string;
   name: string;
   email?: string | null;
   department?: string | null;
   isActive?: boolean | null;
+  // For filter "All" option
+  value?: string; // Can be 'all'
+  label?: string; // Can be 'All Approvers'
 }
 
 export interface User {
@@ -60,6 +63,9 @@ export interface User {
   role: 'Admin' | 'Manager' | 'User' | 'Viewer' | string;
   siteAccess?: string[];
   isActive: boolean;
+  // For filter "All" option
+  value?: string;
+  label?: string;
 }
 
 export interface Site {
@@ -67,6 +73,9 @@ export interface Site {
   name: string;
   location?: string | null;
   siteCode?: string | null;
+  // For filter "All" option
+  value?: string | number; // Can be 'all' or site.id
+  label?: string; // Can be 'All Sites' or site.name
 }
 
 export interface Allocation {
@@ -82,31 +91,31 @@ export interface Category {
 }
 
 export interface POItemPayload {
-  id?: number; 
-  poId?: number; 
+  id?: number;
+  poId?: number;
   partNumber?: string | null;
   description: string;
-  categoryId: number | null; 
-  siteId?: number | null;    
+  categoryId: number | null;
+  siteId?: number | null;
   uom: string;
   quantity: number;
   unitPrice: number;
 }
 
 export interface POItemForPrint extends POItemPayload {
-  siteDisplay?: string; 
-  categoryDisplay?: string; 
+  siteDisplay?: string;
+  categoryDisplay?: string;
 }
 
 export interface PurchaseOrderPayload {
-  id?: number; 
+  id?: number;
   poNumber: string;
-  creationDate: string; 
-  creatorUserId: string | null; 
+  creationDate: string;
+  creatorUserId: string | null;
   requestedByName?: string | null;
-  supplierId: string | null; 
-  approverId: string | null; 
-  siteId?: number | null; 
+  supplierId: string | null;
+  approverId: string | null;
+  siteId?: number | null;
   status: string;
   subTotal: number;
   vatAmount: number;
@@ -114,25 +123,25 @@ export interface PurchaseOrderPayload {
   currency: string;
   pricesIncludeVat: boolean;
   notes?: string | null;
-  items: POItemPayload[] | POItemForPrint[]; 
-  approvalDate?: string | null; 
-  rejectionReason?: string | null; 
-  rejectionDate?: string | null;   
+  items: POItemPayload[] | POItemForPrint[];
+  approvalDate?: string | null;
+  rejectionReason?: string | null;
+  rejectionDate?: string | null;
   supplierDetails?: Supplier;
-  creatorName?: string; 
+  creatorName?: string;
   approverName?: string;
-  approverSignatureUrl?: string; 
-  quoteNo?: string; 
+  approverSignatureUrl?: string;
+  quoteNo?: string;
 }
 
 export interface ApprovalQueueItem {
-  id: number; 
+  id: number;
   poNumber: string;
   creationDate: string;
   supplierName: string | null;
-  requestedByName: string | null; 
-  creatorUserId?: string | null;  
-  creatorName?: string | null;    
+  requestedByName: string | null;
+  creatorUserId?: string | null;
+  creatorName?: string | null;
   grandTotal: number;
   currency: string;
   status: string;
@@ -177,4 +186,10 @@ export interface QuotePayload {
   notes?: string;
   items: QuoteItem[];
   status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived'; // Example statuses
+}
+
+// For FilterBar options
+export interface FilterOption {
+  value: string;
+  label: string;
 }

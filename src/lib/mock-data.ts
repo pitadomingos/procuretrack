@@ -1,5 +1,5 @@
 
-import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client } from '@/types';
+import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption } from '@/types';
 import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag, ClipboardList, Fuel, Truck } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
@@ -36,7 +36,7 @@ export const dashboardStats: StatCardItem[] = [
   {
     title: 'Client Quotes',
     value: 'N/A',
-    icon: FileText, 
+    icon: FileText,
     description: 'Overview of quotes issued to Jachris Mining Services clients.',
   },
   {
@@ -88,7 +88,7 @@ export const managementTables = [
   { name: 'Categories', href: '/management/categories', icon: Tag, count: 12, description: "Manage item and service categories" },
 ];
 
-export const months = [
+export const months: FilterOption[] = [
   { value: '01', label: 'January' }, { value: '02', label: 'February' }, { value: '03', label: 'March' },
   { value: '04', label: 'April' }, { value: '05', label: 'May' }, { value: '06', label: 'June' },
   { value: '07', label: 'July' }, { value: '08', label: 'August' }, { value: '09', label: 'September' },
@@ -96,18 +96,22 @@ export const months = [
 ];
 
 export const currentYear = new Date().getFullYear();
-export const years = Array.from({ length: 5 }, (_, i) => ({
+export const years: FilterOption[] = Array.from({ length: 5 }, (_, i) => ({
   value: (currentYear - i).toString(),
   label: (currentYear - i).toString(),
 }));
 
-export const sites = [
-  { value: 'site_a', label: 'TMW' },
-  { value: 'site_b', label: 'MEM' },
-  { value: 'site_c', label: 'FMS' },
-  { value: 'site_d', label: 'CHW' },
-  { value: 'all', label: 'All Sites' },
+export const sites: Site[] = [ // Now conforms to Site type
+  { id: 1, name: 'TMW', location: 'Tete Main Warehouse', value: 'site_a', label: 'TMW' },
+  { id: 2, name: 'MEM', location: 'Mota Engil Mozambique', value: 'site_b', label: 'MEM' },
+  { id: 3, name: 'FMS', location: 'Fuel Management System', value: 'site_c', label: 'FMS' },
+  { id: 4, name: 'CHW', location: 'Container Hose Warehouse', value: 'site_d', label: 'CHW' },
 ];
+
+export const monthsWithAll: FilterOption[] = [{ value: 'all', label: 'All Months' }, ...months];
+export const yearsWithAll: FilterOption[] = [{ value: 'all', label: 'All Years' }, ...years];
+export const sitesWithAll: FilterOption[] = [{ value: 'all', label: 'All Sites' }, ...sites.map(s => ({value: s.value as string, label: s.label as string}))];
+
 
 export const spendByVendorData: ChartDataPoint[] = [
   { name: 'Lebreya Lda', Spend: 125000 },
@@ -139,7 +143,7 @@ export const mockApproversData: Approver[] = [
   { id: 'APP002', name: 'Cobus de Klerk', email: 'cobus.deklerk.jachris.com', department: 'Operations', isActive: true },
   { id: 'APP003', name: 'Pita Domingos', email: 'pita.domingos@jachris.com', department: 'Management', isActive: false },
   { id: 'APP004', name: 'John Enem', email: 'john.enem@jachris.com', department: 'HR', isActive: true },
-  ];
+];
 
 export const mockUsersData: User[] = [
   { id: 'USR001', name: 'Cobus de Klerk', email: 'cobus.deklerk@jachris.com', role: 'Admin', siteAccess: ['SITE001', 'SITE002'], isActive: true },
@@ -194,3 +198,43 @@ export const mockClients: Client[] = [
   { id: 'client-003', name: 'WBHO', email: 'tenders.mz@wbho.co.za', contactPerson: 'Mr. Botha', address: 'WBHO Camp, Nacala Corridor' },
   { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City' },
 ];
+
+// For PO List View
+export const mockPurchaseOrders: PurchaseOrderPayload[] = [
+  {
+    id: 101, poNumber: 'PO-00101', creationDate: '2024-07-01T10:00:00Z', status: 'Approved',
+    supplierId: 'supplier1', grandTotal: 1500, currency: 'MZN', requestedByName: 'Alice Smith', approverId: 'APP001',
+    items: [{id:1, description: 'Item A', quantity:10, unitPrice:100, categoryId:1, uom:'EA'}], subTotal: 1293.10, vatAmount: 206.90, pricesIncludeVat: false, creatorUserId: 'USR002',
+    approverName: 'Cherinne de Klerk', supplierDetails: { supplierCode: 'supplier1', supplierName: 'Lebreya Limitada' }
+  },
+  {
+    id: 102, poNumber: 'PO-00102', creationDate: '2024-06-15T14:30:00Z', status: 'Pending Approval',
+    supplierId: 'supplier2', grandTotal: 800, currency: 'USD', requestedByName: 'Bob Johnson', approverId: 'APP002',
+    items: [{id:2, description: 'Service B', quantity:1, unitPrice:800, categoryId:5, uom:'SVC'}], subTotal: 800, vatAmount: 0, pricesIncludeVat: false, creatorUserId: 'USR005',
+    approverName: 'Cobus de Klerk', supplierDetails: { supplierCode: 'supplier2', supplierName: 'Global Office Solutions' }
+  },
+   {
+    id: 103, poNumber: 'PO-00103', creationDate: '2023-12-05T11:20:00Z', status: 'Completed',
+    supplierId: 'supplier3', grandTotal: 25000, currency: 'MZN', requestedByName: 'Carol White', approverId: 'APP001',
+    items: [{id:3, description: 'Hardware C', quantity:50, unitPrice:431.03, categoryId:4, uom:'BOX'}], subTotal: 21551.72, vatAmount: 3448.28, pricesIncludeVat: false, creatorUserId: 'USR002',
+    approverName: 'Cherinne de Klerk', supplierDetails: { supplierCode: 'supplier3', supplierName: 'Tete Hardware Store' }
+  },
+];
+
+// For FilterBar
+export const mockApproversFilter: FilterOption[] = [
+  { value: 'all', label: 'All Approvers' },
+  ...mockApproversData.map(app => ({ value: app.id, label: app.name })),
+];
+
+export const mockRequestorsFilter: FilterOption[] = [
+  { value: 'all', label: 'All Requestors' },
+  // Populate from actual users or a distinct list of requestor names if available
+  // For now, using some from mock POs:
+  { value: 'alice_smith', label: 'Alice Smith' },
+  { value: 'bob_johnson', label: 'Bob Johnson' },
+  { value: 'carol_white', label: 'Carol White' },
+  // Add more or generate from User table if applicable
+  ...mockUsersData.filter(u => u.role === 'User' || u.role === 'Manager').map(u => ({ value: u.id, label: u.name })),
+].filter((value, index, self) => index === self.findIndex((t) => (t.label === value.label))); // Deduplicate by label
+
