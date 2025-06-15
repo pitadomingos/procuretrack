@@ -84,7 +84,9 @@ export interface Allocation {
 
 export interface Category {
   id: number;
-  category: string;
+  category: string; // Changed from 'name' to 'category' to match DB script
+  description?: string; // Optional description
+  parentCategory?: number | null; // Optional parent category ID
 }
 
 export interface POItemPayload {
@@ -159,29 +161,30 @@ export interface POReviewItem extends POItemPayload {
 export interface Client {
   id: string;
   name: string;
-  email: string;
-  contactPerson?: string;
-  contactNumber?: string;
-  address?: string;
+  email?: string | null;
+  contactPerson?: string | null;
+  contactNumber?: string | null;
+  address?: string | null;
 }
 
 export interface QuoteItem {
-  id: string;
+  id: string; // Client-side or DB ID
   partNumber?: string;
   customerRef?: string;
   description: string;
   quantity: number;
   unitPrice: number;
+  quoteId?: string; // Foreign key to Quote table
 }
 
 export interface QuotePayload {
-  id?: string;
+  id?: string; // DB ID
   quoteNumber: string;
-  quoteDate: string;
-  clientId: string;
-  creatorEmail?: string;
-  clientName?: string;
-  clientEmail?: string;
+  quoteDate: string; // ISO String
+  clientId: string; // Foreign key to Client table
+  creatorEmail?: string; // Email of the user who created the quote
+  clientName?: string; // Denormalized for display
+  clientEmail?: string; // Denormalized for display
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
@@ -194,68 +197,68 @@ export interface QuotePayload {
 
 // --- REQUISITION ---
 export interface RequisitionItem {
-  id: string; // Client-side ID for react-hook-form field array
+  id: string; // Client-side or DB ID
   partNumber?: string;
   description: string;
   categoryId: number | null;
   quantity: number;
-  estimatedUnitPrice?: number | null; // Optional
-  notes?: string; // Optional item-specific notes
+  estimatedUnitPrice?: number | null;
+  notes?: string;
+  requisitionId?: string; // Foreign key to Requisition table
 }
 
 export interface RequisitionPayload {
-  id?: string; // Mock ID from backend
+  id?: string; // DB ID
   requisitionNumber: string;
   requisitionDate: string; // ISO String
-  requestedByUserId?: string | null; // Could be a user ID from an auth system
-  requestedByName: string; // For display or if no user system
+  requestedByUserId?: string | null;
+  requestedByName: string;
   siteId: number | null;
   status: 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
   justification?: string;
   items: RequisitionItem[];
-  totalEstimatedValue?: number; // Calculated or entered
+  totalEstimatedValue?: number;
 
   // For display in lists
   siteName?: string; // Will hold siteCode for display
-  categoryName?: string; // (Maybe not needed here, item specific)
 }
 
 // --- TAG (Vehicle/Equipment) ---
 export interface Tag {
-  id: string; // Unique ID for the tag/equipment
-  tagNumber: string; // The "TAG" field from fuel record, e.g., vehicle plate or equipment ID
+  id: string;
+  tagNumber: string;
   registration?: string;
   make?: string;
   model?: string;
   tankCapacity?: number;
   year?: number;
   chassisNo?: string;
-  type?: string; // E.g., "Truck", "Generator", "LDV"
-  siteId?: number | null; // Site where it's primarily located
+  type?: string;
+  siteId?: number | null;
   siteName?: string; // Will hold siteCode for display
 }
 
 // --- FUEL RECORD ---
 export interface FuelRecord {
-  id?: string; // Mock ID from backend
+  id?: string;
   fuelDate: string; // ISO String
   reqNo?: string;
   invNo?: string;
   driver?: string;
   odometer?: number;
-  tagId: string; // Foreign key to Tag.id
+  tagId: string;
   siteId: number | null;
   description?: string;
   uom?: string;
   quantity: number;
   unitCost: number;
-  totalCost?: number; // Calculated: quantity * unitCost
-  distanceTravelled?: number | null; // Calculated: currentOdometer - previousOdometer for same tag
+  totalCost?: number;
+  distanceTravelled?: number | null;
+  recorderUserId?: string;
 
   // For display in lists
-  tagName?: string; // Denormalized from Tag table
+  tagName?: string;
   siteName?: string; // Will hold siteCode for display
-  recorderUserId?: string; // ID of user who recorded the entry
 }
 
 
@@ -264,5 +267,3 @@ export interface FilterOption {
   value: string;
   label: string;
 }
-
-    

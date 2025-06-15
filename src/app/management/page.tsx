@@ -17,14 +17,14 @@ export default function ManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {managementTables.map((table) => (
-              <Card key={table.name} className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out">
+              <Card key={table.name} className="shadow-md hover:shadow-lg hover:scale-[1.03] transition-all duration-300 ease-in-out flex flex-col">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-lg font-medium">{table.name}</CardTitle>
                   <table.icon className="h-6 w-6 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-grow">
                   <div className="text-2xl font-bold">{table.count}</div>
                   <p className="text-xs text-muted-foreground pt-1">{table.description}</p>
                 </CardContent>
@@ -53,5 +53,3 @@ export default function ManagementPage() {
     </div>
   );
 }
-
-    

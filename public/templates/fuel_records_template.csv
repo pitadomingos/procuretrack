@@ -1,0 +1,3 @@
+FuelDate (YYYY-MM-DD),ReqNo,InvNo,Driver,Odometer,TagID,SiteCode,Description,UOM,Quantity,UnitCost
+2024-08-01,REQ001,INV001,John Smith,150250,TAG001,TMW-TET,Diesel,Liters,50.75,85.50
+2024-08-01,REQ002,,Jane Doe,27500,TAG002,MEM-TET,Petrol,Liters,30.00,92.10

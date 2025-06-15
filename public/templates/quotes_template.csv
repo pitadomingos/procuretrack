@@ -1,0 +1,3 @@
+QuoteDate (YYYY-MM-DD),ClientID,Currency,TermsAndConditions,Notes
+2024-08-01,client-001,MZN,"Payment due in 30 days. Prices valid for 15 days.","Initial consultation quote."
+2024-08-02,client-002,USD,"50% upfront, 50% on completion.","Project Alpha hardware supply."
