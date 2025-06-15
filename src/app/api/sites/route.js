@@ -12,7 +12,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request) {
+export async function POST(request) { // Removed ": Request" type annotation
   try {
     const { name, location, siteCode } = await request.json();
 
@@ -25,7 +25,8 @@ export async function POST(request) {
       [name, location || null, siteCode || null]
     );
 
-    // MySQL insertId is part of the OkPacket, which is the first element of the array returned by execute
+    // In JavaScript, result from execute might not directly have insertId in the first element
+    // For mysql2/promise, insertId is on the result object itself.
     const insertId = result.insertId;
 
     if (!insertId) {
@@ -43,9 +44,11 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error creating site:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
+    // Check if error is an object and has a code property before accessing it
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'A site with this name or code may already exist.' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Failed to create site', details: error.message }, { status: 500 });
+    const errorMessage = (error instanceof Error) ? error.message : String(error);
+    return NextResponse.json({ error: 'Failed to create site', details: errorMessage }, { status: 500 });
   }
 }
