@@ -119,8 +119,20 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
         </table>
       </div>
 
-      <div className="flex justify-end mb-4">
-        <div className="w-[250px] text-xs">
+      <div className="flex justify-between mb-4 items-start">
+        <div className="w-2/3 pr-4">
+            <h4 className="font-bold mb-1">NOTES:</h4>
+            {poData.notes ? (
+              <p className="text-xs border border-black p-2 min-h-[60px] whitespace-pre-wrap break-words">
+                {poData.notes}
+              </p>
+            ) : (
+              <p className="text-xs border border-black p-2 min-h-[60px] text-gray-500 italic">
+                No notes provided.
+              </p>
+            )}
+        </div>
+        <div className="w-1/3 text-xs">
           <div className="flex justify-between border-b border-black py-0.5">
             <span>SUBTOTAL</span>
             <span>{formatCurrency(poData.subTotal)}</span>
@@ -172,3 +184,4 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
     </div>
   );
 }
+
