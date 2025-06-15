@@ -1,5 +1,5 @@
 
-import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category } from '@/types';
+import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client } from '@/types';
 import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag, ClipboardList, Fuel, Truck } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
@@ -185,4 +185,12 @@ export const mockCategoriesData: Category[] = [
   { id: 10, category: 'Fleet Management' },
   { id: 11, category: 'Software Licenses' },
   { id: 12, category: 'Travel & Accommodation' },
+];
+
+// MOCK CLIENT DATA
+export const mockClients: Client[] = [
+  { id: 'client-001', name: 'Vale Mozambique', email: 'procurement@vale.co.mz', contactPerson: 'Mr. Silva', address: 'Vale Office Park, Moatize' },
+  { id: 'client-002', name: 'Mota-Engil', email: 'compras@mota-engil.mz', contactPerson: 'Ms. Ferreira', address: 'Mota-Engil Site, Tete' },
+  { id: 'client-003', name: 'WBHO', email: 'tenders.mz@wbho.co.za', contactPerson: 'Mr. Botha', address: 'WBHO Camp, Nacala Corridor' },
+  { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City' },
 ];

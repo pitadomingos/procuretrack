@@ -116,10 +116,10 @@ export interface PurchaseOrderPayload {
   notes?: string | null;
   items: POItemPayload[] | POItemForPrint[]; 
   approvalDate?: string | null; 
-  rejectionReason?: string | null; // For future use with DB schema change
-  rejectionDate?: string | null;   // For future use with DB schema change
+  rejectionReason?: string | null; 
+  rejectionDate?: string | null;   
   supplierDetails?: Supplier;
-  creatorName?: string; // Name of the user from User table via creatorUserId
+  creatorName?: string; 
   approverName?: string;
   approverSignatureUrl?: string; 
   quoteNo?: string; 
@@ -130,9 +130,9 @@ export interface ApprovalQueueItem {
   poNumber: string;
   creationDate: string;
   supplierName: string | null;
-  requestedByName: string | null; // This is the free-text field from PO form
-  creatorUserId?: string | null;  // ID of the actual system user who created it
-  creatorName?: string | null;    // Name of the system user (fetched via creatorUserId)
+  requestedByName: string | null; 
+  creatorUserId?: string | null;  
+  creatorName?: string | null;    
   grandTotal: number;
   currency: string;
   status: string;
@@ -142,4 +142,39 @@ export interface POReviewItem extends POItemPayload {
   isChecked: boolean;
   reviewComment: string;
   totalPrice: number;
+}
+
+// --- QUOTATION ---
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  contactPerson?: string;
+  contactNumber?: string;
+  address?: string;
+}
+
+export interface QuoteItem {
+  id: string; // Client-side ID for react-hook-form field array
+  description: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface QuotePayload {
+  id?: string; // Can be number if DB uses int PK
+  quoteNumber: string;
+  quoteDate: string; // ISO date string
+  clientId: string;
+  creatorEmail?: string; // For CC, placeholder for now
+  clientName?: string; // Denormalized for display
+  clientEmail?: string; // Denormalized for email modal
+  subTotal: number;
+  vatAmount: number; // Or taxAmount
+  grandTotal: number;
+  currency: string;
+  termsAndConditions?: string;
+  notes?: string;
+  items: QuoteItem[];
+  status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived'; // Example statuses
 }
