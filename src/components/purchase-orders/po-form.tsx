@@ -539,7 +539,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                       <FormControl>
                         <Textarea
                           placeholder="Add any relevant notes..."
-                          className="resize-none h-40" // Adjust height as needed
+                          className="resize-none h-40" 
                           {...field}
                         />
                       </FormControl>
@@ -549,8 +549,15 @@ export function POForm({ poIdToEditProp }: POFormProps) {
 
               <div className="md:col-span-1 space-y-2 text-left border p-4 rounded-md bg-muted/20">
                 <div className="text-md">Subtotal ({currencySymbol}): <span className="font-semibold">{formatValue(subTotal)}</span></div>
-                {watchedCurrency === 'MZN' && !watchedPricesIncludeVat && (<div className="text-md">VAT (16%) ({currencySymbol}): <span className="font-semibold">{formatValue(vatAmount)}</span></div>)}
-                 {watchedPricesIncludeVat && (<div className="text-sm text-muted-foreground">VAT is included in item prices.</div>)}
+                {(() => {
+                  if (watchedCurrency === 'MZN' && !watchedPricesIncludeVat) {
+                    return <div className="text-md">VAT (16%) ({currencySymbol}): <span className="font-semibold">{formatValue(vatAmount)}</span></div>;
+                  }
+                  if (watchedPricesIncludeVat) { 
+                    return <div className="text-sm text-muted-foreground">VAT is included in item prices.</div>;
+                  }
+                  return null; 
+                })()}
                 <div className="text-xl font-bold font-headline">Grand Total ({currencySymbol}): <span className="font-semibold">{formatValue(grandTotal)}</span></div>
               </div>
 
