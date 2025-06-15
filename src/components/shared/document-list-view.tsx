@@ -82,9 +82,9 @@ const requisitionColumns: ColumnDef<RequisitionPayload>[] = [
   },
   { accessorKey: 'requestedByName', header: 'Requested By' },
   {
-    accessorKey: 'siteName',
-    header: 'Site',
-    cell: (item) => item.siteName || `Site ID: ${item.siteId}` || 'N/A'
+    accessorKey: 'siteName', // This should now hold siteCode from API
+    header: 'Site Code',
+    cell: (item) => item.siteName || (item.siteId ? `Site ID: ${item.siteId}` : 'N/A')
   },
   { accessorKey: 'status', header: 'Status' },
   {
@@ -97,12 +97,17 @@ const requisitionColumns: ColumnDef<RequisitionPayload>[] = [
 const fuelRecordColumns: ColumnDef<FuelRecord>[] = [
     { accessorKey: 'fuelDate', header: 'Date', cell: (item) => format(new Date(item.fuelDate), 'dd MMM yyyy') },
     { accessorKey: 'driver', header: 'Driver' },
-    { accessorKey: 'tagName', header: 'Tag (Vehicle/Equip)' },
-    { accessorKey: 'siteName', header: 'Site' },
+    { accessorKey: 'tagName', header: 'Tag' },
+    { accessorKey: 'siteName', header: 'Site Code' }, // API returns siteCode in siteName
     { accessorKey: 'quantity', header: 'Qty', cell: (item) => `${item.quantity} ${item.uom || ''}` },
     { accessorKey: 'unitCost', header: 'Unit Cost (MZN)', cell: (item) => item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
     { accessorKey: 'totalCost', header: 'Total Cost (MZN)', cell: (item) => (item.totalCost || (item.quantity * item.unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
-    { accessorKey: 'odometer', header: 'Odometer' },
+    { accessorKey: 'odometer', header: 'Odometer (km)' },
+    { 
+      accessorKey: 'distanceTravelled', 
+      header: 'Distance (km)',
+      cell: (item) => item.distanceTravelled !== null && item.distanceTravelled !== undefined ? item.distanceTravelled.toLocaleString() : 'N/A'
+    },
 ];
 
 
@@ -115,27 +120,30 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const fetchDocuments = useCallback(async (filters?: any) => {
     let apiUrl = '';
     const queryParams = new URLSearchParams();
-    const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    const currentYear = new Date().getFullYear().toString();
+    
+    // Default to current month and year only if not provided in filters (e.g. initial load)
+    const defaultMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const defaultYear = new Date().getFullYear().toString();
 
-    queryParams.append('month', filters?.month && filters.month !== 'all' ? filters.month : currentMonth);
-    queryParams.append('year', filters?.year && filters.year !== 'all' ? filters.year : currentYear);
+    queryParams.append('month', (filters?.month && filters.month !== 'all') ? filters.month : defaultMonth);
+    queryParams.append('year', (filters?.year && filters.year !== 'all') ? filters.year : defaultYear);
+
 
     if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
     if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
     if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
-    if (filters?.tagId && filters.tagId !== 'all') queryParams.append('tagId', filters.tagId); // For fuel records
-    if (filters?.driver && filters.driver !== 'all' && filters.driver.trim() !== '') queryParams.append('driver', filters.driver); // For fuel records
+    if (filters?.tagId && filters.tagId !== 'all') queryParams.append('tagId', filters.tagId); 
+    if (filters?.driver && filters.driver.trim() !== '') queryParams.append('driver', filters.driver);
 
 
     if (documentType === 'po') {
       apiUrl = '/api/purchase-orders';
     } else if (documentType === 'quote') {
-      apiUrl = '/api/quotes'; // Mocked API
+      apiUrl = '/api/quotes'; 
     } else if (documentType === 'requisition') {
-      apiUrl = '/api/requisitions'; // Mocked API
+      apiUrl = '/api/requisitions'; 
     } else if (documentType === 'fuel') {
-      apiUrl = '/api/fuel-records'; // Mocked API
+      apiUrl = '/api/fuel-records'; 
     } else {
       setDocuments([]);
       setError(`List view for ${documentType.toUpperCase()}s is not yet implemented.`);
@@ -171,26 +179,19 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   }, [documentType, toast]);
 
   useEffect(() => {
-    const defaultFilters = {
-      month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
-      year: new Date().getFullYear().toString(),
-      siteId: 'all',
-      approverId: 'all',
-      creatorUserId: 'all',
-      tagId: 'all',
-      driver: '',
-    };
-    fetchDocuments(defaultFilters);
+    // Initial fetch uses default (current month/year)
+    fetchDocuments();
   }, [fetchDocuments]);
 
   const handleFilterApply = (filters: any) => {
     const apiFilters = {
-        ...filters,
-        creatorUserId: filters.requestor,
-        approverId: filters.approver,
-        siteId: filters.site,
-        tagId: filters.tag, // Map UI filter name for fuel
+        ...filters, // this will include month, year from filter bar directly
+        creatorUserId: filters.requestor, // map UI name to API param
+        approverId: filters.approver,     // map UI name to API param
+        siteId: filters.site,             // map UI name to API param
+        tagId: filters.tag,               // map UI name to API param
     };
+    // Clean up mapped keys if they were not the primary ones used by FilterBar internal state
     delete apiFilters.requestor;
     delete apiFilters.approver;
     delete apiFilters.site;
@@ -234,7 +235,6 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       );
     }
     if (documentType === 'fuel' && doc.id) {
-        // Placeholder for fuel record view/edit action
         return (
             <Button variant="outline" size="sm" title="View Fuel Record Details (Not Implemented)" disabled>
                 <Eye className="mr-1 h-4 w-4" /> View
@@ -261,14 +261,14 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';
     showSiteFilter = false;
-    showRequestorFilter = false; // Or based on creatorEmail if available
+    showRequestorFilter = false; 
   } else if (documentType === 'requisition') {
     columnsToUse = requisitionColumns as ColumnDef<any>[];
     listTitle = 'Purchase Requisitions';
   } else if (documentType === 'fuel') {
     columnsToUse = fuelRecordColumns as ColumnDef<any>[];
     listTitle = 'Fuel Records';
-    showRequestorFilter = false; // Requestor not typical for fuel
+    showRequestorFilter = false; 
     showTagFilter = true;
     showDriverFilter = true;
   } else {

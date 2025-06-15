@@ -13,17 +13,17 @@ interface FilterBarProps {
   onFilterApply?: (filters: {
     month?: string;
     year?: string;
-    site?: string;
-    approver?: string;
-    requestor?: string;
-    tag?: string; // For fuel records tagId
-    driver?: string; // For fuel records driver name
+    site?: string;     // Corresponds to siteId in API
+    approver?: string; // Corresponds to approverId in API
+    requestor?: string;// Corresponds to creatorUserId in API
+    tag?: string;      // Corresponds to tagId in API
+    driver?: string;
   }) => void;
   showApproverFilter?: boolean;
   showRequestorFilter?: boolean;
   showSiteFilter?: boolean;
-  showTagFilter?: boolean; // New filter for Tags (Vehicles/Equipment)
-  showDriverFilter?: boolean; // New filter for Driver
+  showTagFilter?: boolean;
+  showDriverFilter?: boolean;
 }
 
 export function FilterBar({
@@ -36,19 +36,23 @@ export function FilterBar({
 }: FilterBarProps) {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedYear, setSelectedYear] = useState<string>('all');
-  const [selectedSite, setSelectedSite] = useState<string>('all');
-  const [selectedApprover, setSelectedApprover] = useState<string>('all');
-  const [selectedRequestor, setSelectedRequestor] = useState<string>('all');
-  const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [selectedSite, setSelectedSite] = useState<string>('all'); // Will hold siteId
+  const [selectedApprover, setSelectedApprover] = useState<string>('all'); // Will hold approverId
+  const [selectedRequestor, setSelectedRequestor] = useState<string>('all'); // Will hold creatorUserId
+  const [selectedTag, setSelectedTag] = useState<string>('all'); // Will hold tagId
   const [driverName, setDriverName] = useState<string>('');
 
 
   useEffect(() => {
-    const currentMonthValue = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    const currentYearValue = new Date().getFullYear().toString();
-    setSelectedMonth(currentMonthValue);
-    setSelectedYear(currentYearValue);
-  }, []);
+    // Set default month and year on initial load if not already set by parent
+    // This ensures filters have a sensible default when DocumentListView first loads
+    if (selectedMonth === 'all' && selectedYear === 'all') {
+      const currentMonthValue = (new Date().getMonth() + 1).toString().padStart(2, '0');
+      const currentYearValue = new Date().getFullYear().toString();
+      setSelectedMonth(currentMonthValue);
+      setSelectedYear(currentYearValue);
+    }
+  }, [selectedMonth, selectedYear]);
 
 
   const handleApplyFilters = () => {
@@ -109,7 +113,7 @@ export function FilterBar({
         )}
         {showTagFilter && (
             <div>
-                <label htmlFor="tag-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Tag (Vehicle/Equip)</label>
+                <label htmlFor="tag-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Tag</label>
                 <Select value={selectedTag} onValueChange={setSelectedTag}>
                     <SelectTrigger id="tag-filter"><SelectValue placeholder="Select Tag" /></SelectTrigger>
                     <SelectContent>{tagsWithAll.map((tag: FilterOption) => (<SelectItem key={tag.value} value={tag.value}>{tag.label}</SelectItem>))}</SelectContent>

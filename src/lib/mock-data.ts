@@ -86,7 +86,7 @@ export const managementTables = [
   { name: 'Sites', href: '/management/sites', icon: Building, count: 4, description: "Manage company sites/locations" },
   { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations/departments" },
   { name: 'Categories', href: '/management/categories', icon: TagIcon, count: 12, description: "Manage item and service categories" },
-  { name: 'Tags (Vehicles/Equip)', href: '/management/tags', icon: Fuel, count: 15, description: "Manage tagged vehicles & equipment" },
+  { name: 'Tags', href: '/management/tags', icon: Fuel, count: 15, description: "Manage tagged vehicles & equipment" },
 ];
 
 export const months: FilterOption[] = [
@@ -253,7 +253,7 @@ export const mockRequisitionsData: RequisitionPayload[] = [
             { id: 'reqi-1-2', partNumber: 'PEN-BL-BX', description: 'Blue Pens', categoryId: 1, quantity: 50 },
         ],
         totalEstimatedValue: 2500, // Example value
-        siteName: 'Tete Main Warehouse', // Denormalized for list view
+        siteName: 'TMW-TET', // Denormalized for list view
     },
     {
         id: 'REQ-MOCK-002',
@@ -267,30 +267,33 @@ export const mockRequisitionsData: RequisitionPayload[] = [
             { id: 'reqi-2-1', partNumber: 'SAF-HAT-YEL', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5 },
         ],
         totalEstimatedValue: 5000, // Example value
-        siteName: 'Mota Engil Mozambique', // Denormalized for list view
+        siteName: 'MEM-TET', // Denormalized for list view
     },
 ];
 
 // --- TAGS (Vehicle/Equipment) ---
 export const mockTagsData: Tag[] = [
-  { id: 'TAG001', tagNumber: 'LDV001', registration: 'ALL-001-MP', make: 'Toyota', model: 'Hilux D4D', tankCapacity: 80, year: 2022, chassisNo: 'XYZ123CHASSIS', type: 'LDV', siteId: 1, siteName: 'Tete Main Warehouse' },
-  { id: 'TAG002', tagNumber: 'TRK005', registration: 'ATR-005-MP', make: 'Mercedes', model: 'Actros', tankCapacity: 400, year: 2020, chassisNo: 'ABC789CHASSIS', type: 'Truck', siteId: 2, siteName: 'Mota Engil Mozambique' },
-  { id: 'TAG003', tagNumber: 'GEN002', type: 'Generator', make: 'CAT', model: 'Olympian GEP22', tankCapacity: 50, siteId: 1, siteName: 'Tete Main Warehouse' },
-  { id: 'TAG004', tagNumber: 'FORK001', type: 'Forklift', make: 'Toyota', model: '8FD30', siteId: 3, siteName: 'Fuel Management System' },
-  { id: 'TAG005', tagNumber: 'LDV002', registration: 'NTR-002-TT', make: 'Ford', model: 'Ranger', tankCapacity: 70, year: 2023, type: 'LDV', siteId: 1, siteName: 'Tete Main Warehouse' },
+  { id: 'TAG001', tagNumber: 'LDV001', registration: 'ALL-001-MP', make: 'Toyota', model: 'Hilux D4D', tankCapacity: 80, year: 2022, chassisNo: 'XYZ123CHASSIS', type: 'LDV', siteId: 1, siteName: 'TMW-TET' },
+  { id: 'TAG002', tagNumber: 'TRK005', registration: 'ATR-005-MP', make: 'Mercedes', model: 'Actros', tankCapacity: 400, year: 2020, chassisNo: 'ABC789CHASSIS', type: 'Truck', siteId: 2, siteName: 'MEM-TET' },
+  { id: 'TAG003', tagNumber: 'GEN002', type: 'Generator', make: 'CAT', model: 'Olympian GEP22', tankCapacity: 50, siteId: 1, siteName: 'TMW-TET' },
+  { id: 'TAG004', tagNumber: 'FORK001', type: 'Forklift', make: 'Toyota', model: '8FD30', siteId: 3, siteName: 'FMS-TET' },
+  { id: 'TAG005', tagNumber: 'LDV002', registration: 'NTR-002-TT', make: 'Ford', model: 'Ranger', tankCapacity: 70, year: 2023, type: 'LDV', siteId: 1, siteName: 'TMW-TET' },
 ];
 
 export const tagsWithAll: FilterOption[] = [
   { value: 'all', label: 'All Tags' },
-  ...mockTagsData.map(tag => ({ value: tag.id, label: `${tag.tagNumber} (${tag.make || ''} ${tag.model || ''})`}))
+  ...mockTagsData.map(tag => ({ value: tag.id, label: `${tag.tagNumber} (${tag.make || ''} ${tag.model || tag.type || ''})`}))
 ];
 
 
 // --- FUEL RECORDS ---
+// Ensure siteName is the siteCode for consistency
 export const mockFuelRecordsData: FuelRecord[] = [
-  { id: 'FUEL001', fuelDate: '2024-07-28T08:00:00Z', driver: 'John Doe', odometer: 125000, tagId: 'TAG001', siteId: 1, description: 'Diesel Top-up', uom: 'Liters', quantity: 75, unitCost: 85.50, totalCost: 6412.50, tagName: 'LDV001', siteName: 'Tete Main Warehouse' },
-  { id: 'FUEL002', fuelDate: '2024-07-28T09:30:00Z', driver: 'Jane Smith', odometer: 250000, tagId: 'TAG002', siteId: 2, description: 'Diesel Full Tank', uom: 'Liters', quantity: 380, unitCost: 85.00, totalCost: 32300.00, tagName: 'TRK005', siteName: 'Mota Engil Mozambique' },
-  { id: 'FUEL003', fuelDate: '2024-07-27T15:00:00Z', driver: 'System', tagId: 'GEN002', siteId: 1, description: 'Generator Refuel', uom: 'Liters', quantity: 45, unitCost: 86.00, totalCost: 3870.00, tagName: 'GEN002', siteName: 'Tete Main Warehouse' },
+  { id: 'FUEL001', fuelDate: '2024-07-28T08:00:00Z', driver: 'John Doe', odometer: 125000, tagId: 'TAG001', siteId: 1, description: 'Diesel Top-up', uom: 'Liters', quantity: 75, unitCost: 85.50, totalCost: 6412.50, tagName: 'LDV001', siteName: 'TMW-TET' },
+  { id: 'FUEL002', fuelDate: '2024-07-28T09:30:00Z', driver: 'Jane Smith', odometer: 250000, tagId: 'TAG002', siteId: 2, description: 'Diesel Full Tank', uom: 'Liters', quantity: 380, unitCost: 85.00, totalCost: 32300.00, tagName: 'TRK005', siteName: 'MEM-TET' },
+  { id: 'FUEL003', fuelDate: '2024-07-27T15:00:00Z', driver: 'System', tagId: 'GEN002', siteId: 1, description: 'Generator Refuel', uom: 'Liters', quantity: 45, unitCost: 86.00, totalCost: 3870.00, tagName: 'GEN002', siteName: 'TMW-TET' },
+  { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW-TET' },
+  { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'FMS-TET' },
 ];
 
     

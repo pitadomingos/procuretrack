@@ -4,22 +4,25 @@ import type { FuelRecord } from '@/types';
 import { mockFuelRecordsData, mockTagsData, mockSitesData } from '@/lib/mock-data'; // Using mock data
 
 // Mock database for fuel records
-const MOCK_FUEL_RECORDS_DB: FuelRecord[] = [...mockFuelRecordsData];
+let MOCK_FUEL_RECORDS_DB: FuelRecord[] = [...mockFuelRecordsData];
 
 export async function POST(request: Request) {
   try {
-    const fuelData = await request.json() as Omit<FuelRecord, 'id' | 'totalCost' | 'tagName' | 'siteName'>;
+    const fuelData = await request.json() as Omit<FuelRecord, 'id' | 'totalCost' | 'tagName' | 'siteName' | 'distanceTravelled'>;
 
     const newFuelRecordId = `MOCK-FUELID-${Date.now()}`;
     const newFuelRecord: FuelRecord = {
       ...fuelData,
       id: newFuelRecordId,
       totalCost: (fuelData.quantity || 0) * (fuelData.unitCost || 0),
-      // Denormalized fields would ideally be joined or handled by a proper DB query
       tagName: mockTagsData.find(t => t.id === fuelData.tagId)?.tagNumber || 'N/A',
-      siteName: mockSitesData.find(s => s.id === fuelData.siteId)?.name || 'N/A',
+      siteName: mockSitesData.find(s => s.id === fuelData.siteId)?.siteCode || 'N/A', // Use siteCode
+      distanceTravelled: null, // Calculated on GET
     };
     MOCK_FUEL_RECORDS_DB.push(newFuelRecord);
+    // Re-sort by date for distance calculation logic if needed immediately, though GET does this.
+    MOCK_FUEL_RECORDS_DB.sort((a, b) => new Date(b.fuelDate).getTime() - new Date(a.fuelDate).getTime());
+
 
     console.log('Mocked saving fuel record:', newFuelRecord);
 
@@ -35,11 +38,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
-  const siteId = searchParams.get('siteId');
-  const tagId = searchParams.get('tagId');
+  const siteIdParam = searchParams.get('siteId');
+  const tagIdParam = searchParams.get('tagId');
   const driver = searchParams.get('driver');
 
-  let filteredRecords = MOCK_FUEL_RECORDS_DB;
+  let filteredRecords = [...MOCK_FUEL_RECORDS_DB]; // Work with a copy
 
   if (month && month !== 'all') {
     filteredRecords = filteredRecords.filter(rec => {
@@ -53,29 +56,55 @@ export async function GET(request: Request) {
       return recYear.toString() === year;
     });
   }
-  if (siteId && siteId !== 'all') {
-    filteredRecords = filteredRecords.filter(rec => rec.siteId?.toString() === siteId);
+  if (siteIdParam && siteIdParam !== 'all') {
+    filteredRecords = filteredRecords.filter(rec => rec.siteId?.toString() === siteIdParam);
   }
-  if (tagId && tagId !== 'all') {
-    filteredRecords = filteredRecords.filter(rec => rec.tagId === tagId);
+  if (tagIdParam && tagIdParam !== 'all') {
+    filteredRecords = filteredRecords.filter(rec => rec.tagId === tagIdParam);
   }
   if (driver && driver.trim() !== '') {
     filteredRecords = filteredRecords.filter(rec => rec.driver?.toLowerCase().includes(driver.toLowerCase()));
   }
 
+  // Calculate distance travelled
+  const recordsByTag: { [key: string]: FuelRecord[] } = {};
+  filteredRecords.forEach(rec => {
+    if (!recordsByTag[rec.tagId]) {
+      recordsByTag[rec.tagId] = [];
+    }
+    recordsByTag[rec.tagId].push(rec);
+  });
+
+  const recordsWithDistance: FuelRecord[] = [];
+  for (const tagId in recordsByTag) {
+    const tagRecords = recordsByTag[tagId].sort((a, b) => {
+      const dateDiff = new Date(a.fuelDate).getTime() - new Date(b.fuelDate).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return (a.odometer || 0) - (b.odometer || 0); // Secondary sort by odometer
+    });
+
+    for (let i = 0; i < tagRecords.length; i++) {
+      const currentRecord = { ...tagRecords[i] }; // Clone record
+      if (i > 0 && currentRecord.odometer && tagRecords[i-1].odometer) {
+        currentRecord.distanceTravelled = currentRecord.odometer - tagRecords[i-1].odometer!;
+      } else {
+        currentRecord.distanceTravelled = null; // Or 0, or N/A - first record or missing odometer
+      }
+      // Ensure denormalized fields are present
+      currentRecord.tagName = mockTagsData.find(t => t.id === currentRecord.tagId)?.tagNumber || currentRecord.tagId || 'N/A';
+      currentRecord.siteName = mockSitesData.find(s => s.id === currentRecord.siteId)?.siteCode || (currentRecord.siteId ? `Site ID ${currentRecord.siteId}` : 'N/A');
+      recordsWithDistance.push(currentRecord);
+    }
+  }
+  
+  // Sort final list by date descending as it was before distance calculation
+  recordsWithDistance.sort((a, b) => new Date(b.fuelDate).getTime() - new Date(a.fuelDate).getTime());
 
   try {
-    // Add tagName and siteName for display
-    const recordsWithDetails = filteredRecords.map(rec => ({
-        ...rec,
-        tagName: mockTagsData.find(t => t.id === rec.tagId)?.tagNumber || rec.tagId || 'N/A',
-        siteName: mockSitesData.find(s => s.id === rec.siteId)?.name || (rec.siteId ? `Site ID ${rec.siteId}` : 'N/A'),
-    }));
-    return NextResponse.json(recordsWithDetails);
+    return NextResponse.json(recordsWithDistance);
   } catch (error) {
     console.error('Error fetching fuel records (mock):', error);
     return NextResponse.json({ error: 'Failed to fetch fuel records' }, { status: 500 });
   }
 }
-
     

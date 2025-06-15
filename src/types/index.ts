@@ -216,7 +216,7 @@ export interface RequisitionPayload {
   totalEstimatedValue?: number; // Calculated or entered
 
   // For display in lists
-  siteName?: string;
+  siteName?: string; // Will hold siteCode for display
   categoryName?: string; // (Maybe not needed here, item specific)
 }
 
@@ -232,7 +232,7 @@ export interface Tag {
   chassisNo?: string;
   type?: string; // E.g., "Truck", "Generator", "LDV"
   siteId?: number | null; // Site where it's primarily located
-  siteName?: string; // Denormalized for display
+  siteName?: string; // Will hold siteCode for display
 }
 
 // --- FUEL RECORD ---
@@ -250,10 +250,12 @@ export interface FuelRecord {
   quantity: number;
   unitCost: number;
   totalCost?: number; // Calculated: quantity * unitCost
+  distanceTravelled?: number | null; // Calculated: currentOdometer - previousOdometer for same tag
 
   // For display in lists
   tagName?: string; // Denormalized from Tag table
-  siteName?: string; // Denormalized from Site table
+  siteName?: string; // Will hold siteCode for display
+  recorderUserId?: string; // ID of user who recorded the entry
 }
 
 

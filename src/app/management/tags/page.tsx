@@ -15,10 +15,10 @@ export default function ManageTagsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate fetching data and denormalizing siteName
+    // Simulate fetching data and denormalizing siteName to siteCode
     const enrichedTags = mockTagsData.map(tag => {
       const site = mockSitesData.find(s => s.id === tag.siteId);
-      return { ...tag, siteName: site?.name || `Site ID: ${tag.siteId}` };
+      return { ...tag, siteName: site?.siteCode || `Site ID: ${tag.siteId}` }; // Use siteCode
     });
     setTags(enrichedTags);
   }, []);
@@ -55,7 +55,7 @@ export default function ManageTagsPage() {
     { accessorKey: 'tankCapacity', header: 'Tank Cap. (L)' },
     { accessorKey: 'year', header: 'Year' },
     { accessorKey: 'chassisNo', header: 'Chassis No.' },
-    { accessorKey: 'siteName', header: 'Site' },
+    { accessorKey: 'siteName', header: 'Site Code' }, // Display siteCode
   ];
 
   return (
@@ -63,7 +63,7 @@ export default function ManageTagsPage() {
       <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="font-headline text-2xl">Manage Tags (Vehicles/Equipment)</CardTitle>
+            <CardTitle className="font-headline text-2xl">Manage Tags</CardTitle>
             <CardDescription>View, add, edit, or delete tagged vehicles and equipment.</CardDescription>
           </div>
           <Button onClick={handleAddNew}>
