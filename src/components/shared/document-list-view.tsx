@@ -6,7 +6,7 @@ import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { Button } from '@/components/ui/button';
 import { Download, Eye, Loader2, AlertTriangle } from 'lucide-react';
-import type { PurchaseOrderPayload, QuotePayload } from '@/types';
+import type { PurchaseOrderPayload, QuotePayload, RequisitionPayload } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -16,7 +16,7 @@ interface DocumentListViewProps {
   documentType: 'po' | 'grn' | 'quote' | 'requisition' | 'fuel';
 }
 
-type DocumentData = PurchaseOrderPayload | QuotePayload; // Add other types as needed
+type DocumentData = PurchaseOrderPayload | QuotePayload | RequisitionPayload;
 
 const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
   { accessorKey: 'poNumber', header: 'PO Number' },
@@ -73,6 +73,27 @@ const quoteColumns: ColumnDef<QuotePayload>[] = [
   { accessorKey: 'status', header: 'Status' },
 ];
 
+const requisitionColumns: ColumnDef<RequisitionPayload>[] = [
+  { accessorKey: 'requisitionNumber', header: 'Requisition No.'},
+  { 
+    accessorKey: 'requisitionDate', 
+    header: 'Date',
+    cell: (item) => format(new Date(item.requisitionDate), 'dd MMM yyyy')
+  },
+  { accessorKey: 'requestedByName', header: 'Requested By' },
+  { 
+    accessorKey: 'siteName', 
+    header: 'Site',
+    cell: (item) => item.siteName || `Site ID: ${item.siteId}` || 'N/A'
+  },
+  { accessorKey: 'status', header: 'Status' },
+  { 
+    accessorKey: 'totalEstimatedValue', 
+    header: 'Est. Value',
+    cell: (item) => item.totalEstimatedValue ? `${item.totalEstimatedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MZN` : 'N/A' // Assuming MZN for now
+  },
+];
+
 
 export function DocumentListView({ documentType }: DocumentListViewProps) {
   const [documents, setDocuments] = useState<DocumentData[]>([]);
@@ -86,16 +107,22 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     const currentYear = new Date().getFullYear().toString();
 
-    queryParams.append('month', filters?.month || currentMonth);
-    queryParams.append('year', filters?.year || currentYear);
+    // Default to current month and year if not provided
+    queryParams.append('month', filters?.month && filters.month !== 'all' ? filters.month : currentMonth);
+    queryParams.append('year', filters?.year && filters.year !== 'all' ? filters.year : currentYear);
+    
+    // Append other filters only if they are not 'all'
+    if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
+    if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
+    if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
+
 
     if (documentType === 'po') {
       apiUrl = '/api/purchase-orders';
-      if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
-      if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
-      if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
     } else if (documentType === 'quote') {
-      apiUrl = '/api/quotes'; // Mocked API, doesn't use date filters yet
+      apiUrl = '/api/quotes'; // Mocked API, date filters might not apply fully here yet
+    } else if (documentType === 'requisition') {
+      apiUrl = '/api/requisitions'; // Mocked API
     } else {
       setDocuments([]);
       setError(`List view for ${documentType.toUpperCase()}s is not yet implemented.`);
@@ -144,10 +171,11 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const handleFilterApply = (filters: any) => {
     const apiFilters = {
         ...filters,
-        creatorUserId: filters.requestor,
-        approverId: filters.approver,
-        siteId: filters.site,
+        creatorUserId: filters.requestor, // Map UI filter name to API param name
+        approverId: filters.approver, 
+        siteId: filters.site, 
     };
+    // Clean up UI-specific names if they were passed
     delete apiFilters.requestor;
     delete apiFilters.approver; 
     delete apiFilters.site; 
@@ -180,13 +208,39 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
         </Link>
       );
     }
+    if (documentType === 'requisition' && doc.id) {
+      return (
+        <Link href={`/requisitions/${doc.id}/print`} passHref legacyBehavior={false}>
+          <Button variant="outline" size="sm" title="View Requisition Details">
+            <Eye className="mr-1 h-4 w-4" /> View
+          </Button>
+        </Link>
+      );
+    }
     return null;
   };
 
-  const columnsToUse = documentType === 'po' ? poColumns : (documentType === 'quote' ? quoteColumns : [{ accessorKey: 'name', header: 'Name (Placeholder)' }]) as ColumnDef<DocumentData>[];
-  const listTitle = documentType === 'po' ? 'Purchase Orders' : 
-                    documentType === 'quote' ? 'Client Quotations' : 
-                    documentType.toUpperCase() + 's';
+  let columnsToUse: ColumnDef<any>[] = [];
+  let listTitle = '';
+  let showApprover = false;
+  let showRequestor = true; // Usually shown for internal docs
+  let showSite = true; // Often relevant
+
+  if (documentType === 'po') {
+    columnsToUse = poColumns as ColumnDef<any>[];
+    listTitle = 'Purchase Orders';
+    showApprover = true;
+  } else if (documentType === 'quote') {
+    columnsToUse = quoteColumns as ColumnDef<any>[];
+    listTitle = 'Client Quotations';
+    showSite = false; // Site might not be relevant for client quotes
+  } else if (documentType === 'requisition') {
+    columnsToUse = requisitionColumns as ColumnDef<any>[];
+    listTitle = 'Purchase Requisitions';
+  } else {
+     columnsToUse = [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
+     listTitle = `${documentType.toUpperCase()}s`;
+  }
 
 
   return (
@@ -198,9 +252,9 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       <CardContent>
         <FilterBar
           onFilterApply={handleFilterApply}
-          showApproverFilter={documentType === 'po'}
-          showRequestorFilter={documentType === 'po'}
-          showSiteFilter={documentType === 'po'}
+          showApproverFilter={showApprover}
+          showRequestorFilter={showRequestor}
+          showSiteFilter={showSite}
         />
         <div className="mt-4 flex justify-end">
           <Button onClick={handleDownloadExcel} variant="outline">

@@ -1,0 +1,152 @@
+
+import React from 'react';
+import type { RequisitionPayload, RequisitionItem, Site, Category } from '@/types';
+import { mockSitesData, mockCategoriesData } from '@/lib/mock-data'; // For fetching names
+
+interface PrintableRequisitionProps {
+  requisitionData: RequisitionPayload;
+  logoDataUri?: string; // Similar to PrintablePO
+}
+
+const JACHRIS_COMPANY_DETAILS = { // Re-use or centralize this
+  name: 'JACHRIS MOZAMBIQUE (LTD)',
+  logoUrl: '/jachris-logo.png',
+};
+
+export function PrintableRequisition({ requisitionData, logoDataUri }: PrintableRequisitionProps) {
+  const { items } = requisitionData;
+
+  const requisitionDateFormatted = requisitionData.requisitionDate 
+    ? new Date(requisitionData.requisitionDate).toLocaleDateString('en-GB') 
+    : 'N/A';
+  const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
+
+  const siteName = requisitionData.siteId 
+    ? mockSitesData.find(s => s.id === requisitionData.siteId)?.name || `Site ID: ${requisitionData.siteId}`
+    : 'N/A';
+
+  const formatCurrency = (value: number | undefined | null) => {
+    if (value === undefined || value === null) return '0.00';
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const printableItems = (items || []) as RequisitionItem[];
+
+  return (
+    <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6 pb-4 border-b-2 border-gray-700">
+        <div>
+          <img src={currentLogoSrc} alt="JACHRIS Logo" className="h-16 mb-2" data-ai-hint="company brand logo" />
+          <h1 className="text-xl font-bold text-red-700">{JACHRIS_COMPANY_DETAILS.name}</h1>
+        </div>
+        <div className="text-right">
+          <h2 className="text-3xl font-bold text-gray-700">PURCHASE REQUISITION</h2>
+          <p className="text-lg mt-1">No: <span className="font-semibold">{requisitionData.requisitionNumber}</span></p>
+        </div>
+      </div>
+
+      {/* Requisition Info */}
+      <div className="grid grid-cols-2 gap-4 mb-6 text-xs">
+        <div>
+          <p><strong className="text-gray-600">Date:</strong> {requisitionDateFormatted}</p>
+          <p><strong className="text-gray-600">Requested By:</strong> {requisitionData.requestedByName || 'N/A'}</p>
+        </div>
+        <div className="text-right">
+          <p><strong className="text-gray-600">Site/Department:</strong> {siteName}</p>
+          <p><strong className="text-gray-600">Status:</strong> <span className="font-semibold">{requisitionData.status}</span></p>
+        </div>
+      </div>
+      
+      {requisitionData.justification && (
+        <div className="mb-6 text-xs">
+            <h3 className="font-bold text-gray-600 mb-1">JUSTIFICATION:</h3>
+            <p className="border border-gray-300 p-2 min-h-[60px] bg-gray-50 whitespace-pre-wrap break-words">
+              {requisitionData.justification}
+            </p>
+        </div>
+      )}
+
+
+      {/* Items Table */}
+      <div className="mb-6 min-h-[250px]">
+        <table className="w-full border-collapse border border-gray-400 text-xs">
+          <thead>
+            <tr className="bg-gray-100 text-gray-600">
+              <th className="border border-gray-400 p-2 text-left w-2/5">ITEM / SERVICE DESCRIPTION</th>
+              <th className="border border-gray-400 p-2 text-left">CATEGORY</th>
+              <th className="border border-gray-400 p-2 text-center">QTY</th>
+              <th className="border border-gray-400 p-2 text-right">EST. UNIT PRICE (MZN)</th>
+              <th className="border border-gray-400 p-2 text-right">EST. TOTAL (MZN)</th>
+              <th className="border border-gray-400 p-2 text-left">NOTES</th>
+            </tr>
+          </thead>
+          <tbody>
+            {printableItems.map((item, index) => {
+              const categoryName = item.categoryId 
+                ? mockCategoriesData.find(c => c.id === item.categoryId)?.category || `Cat. ID: ${item.categoryId}`
+                : 'N/A';
+              const itemTotalEst = (item.quantity || 0) * (item.estimatedUnitPrice || 0);
+              return (
+                <tr key={item.id || index}>
+                  <td className="border border-gray-400 p-2 align-top">{item.description}</td>
+                  <td className="border border-gray-400 p-2 align-top">{categoryName}</td>
+                  <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
+                  <td className="border border-gray-400 p-2 text-right align-top">{item.estimatedUnitPrice ? formatCurrency(item.estimatedUnitPrice) : 'N/A'}</td>
+                  <td className="border border-gray-400 p-2 text-right align-top">{item.estimatedUnitPrice ? formatCurrency(itemTotalEst) : 'N/A'}</td>
+                  <td className="border border-gray-400 p-2 align-top">{item.notes || ''}</td>
+                </tr>
+              );
+            })}
+            {/* Fill empty rows for consistent table height */}
+            {Array.from({ length: Math.max(0, 8 - printableItems.length) }).map((_, i) => (
+                <tr key={`empty-${i}`}>
+                    <td className="border border-gray-400 p-2 h-7">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Total Estimated Value */}
+      {requisitionData.totalEstimatedValue !== undefined && (
+        <div className="flex justify-end mb-6">
+          <div className="w-2/5 text-xs">
+            <div className="flex justify-between font-bold text-sm pt-1 mt-1 border-t-2 border-gray-700">
+              <span>TOTAL ESTIMATED VALUE</span>
+              <span>MZN {formatCurrency(requisitionData.totalEstimatedValue)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signatures / Approval Section (Placeholder) */}
+      <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-3 gap-4">
+        <div>
+          <p className="mb-1">Requested By:</p>
+          <p className="font-semibold">{requisitionData.requestedByName}</p>
+          <div className="mt-8 border-b border-black w-4/5"></div>
+          <p className="text-xs">Signature & Date</p>
+        </div>
+        <div>
+          <p className="mb-1">Approved By (Dept. Head):</p>
+          <p className="font-semibold text-gray-400">(Pending)</p>
+          <div className="mt-8 border-b border-black w-4/5"></div>
+          <p className="text-xs">Signature & Date</p>
+        </div>
+        <div>
+          <p className="mb-1">Approved By (Finance):</p>
+          <p className="font-semibold text-gray-400">(Pending)</p>
+          <div className="mt-8 border-b border-black w-4/5"></div>
+          <p className="text-xs">Signature & Date</p>
+        </div>
+      </div>
+      <p className="text-center text-xs text-gray-500 mt-8">Internal Document - Not for External Distribution</p>
+    </div>
+  );
+}

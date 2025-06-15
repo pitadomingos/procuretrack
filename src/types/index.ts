@@ -192,6 +192,34 @@ export interface QuotePayload {
   status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived'; 
 }
 
+// --- REQUISITION ---
+export interface RequisitionItem {
+  id: string; // Client-side ID for react-hook-form field array
+  description: string;
+  categoryId: number | null;
+  quantity: number;
+  estimatedUnitPrice?: number | null; // Optional
+  notes?: string; // Optional item-specific notes
+}
+
+export interface RequisitionPayload {
+  id?: string; // Mock ID from backend
+  requisitionNumber: string;
+  requisitionDate: string; // ISO String
+  requestedByUserId?: string | null; // Could be a user ID from an auth system
+  requestedByName: string; // For display or if no user system
+  siteId: number | null;
+  status: 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
+  justification?: string;
+  items: RequisitionItem[];
+  totalEstimatedValue?: number; // Calculated or entered
+
+  // For display in lists
+  siteName?: string;
+  categoryName?: string; // (Maybe not needed here, item specific)
+}
+
+
 // For FilterBar options
 export interface FilterOption {
   value: string;

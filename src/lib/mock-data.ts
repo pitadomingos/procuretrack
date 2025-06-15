@@ -1,5 +1,5 @@
 
-import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption } from '@/types';
+import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload } from '@/types';
 import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, Tag, ClipboardList, Fuel, Truck } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
@@ -232,3 +232,40 @@ export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC009', name: 'Project Beta', code: 'PRJ-BET' },
     { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
   ];
+
+export const mockQuotesData: QuotePayload[] = [
+  { id: 'Q-MOCK-001', quoteNumber: 'Q-2024-001', quoteDate: '2024-07-15T10:00:00Z', clientId: 'client-001', clientName: 'Vale Mozambique', subTotal: 150000, vatAmount: 24000, grandTotal: 174000, currency: 'MZN', status: 'Draft', items: [{id:'qi1', description:'Service A', quantity:1, unitPrice:150000}] },
+  { id: 'Q-MOCK-002', quoteNumber: 'Q-2024-002', quoteDate: '2024-07-18T14:30:00Z', clientId: 'client-002', clientName: 'Mota-Engil', subTotal: 7500, vatAmount: 0, grandTotal: 7500, currency: 'USD', status: 'Sent', items: [{id:'qi2', description:'Consulting Hours', quantity:100, unitPrice:75}] },
+];
+
+export const mockRequisitionsData: RequisitionPayload[] = [
+    { 
+        id: 'REQ-MOCK-001', 
+        requisitionNumber: 'REQ-2024-001', 
+        requisitionDate: '2024-07-20T09:00:00Z',
+        requestedByName: 'Pita Domingos',
+        siteId: 1, // TMW-TET
+        status: 'Submitted for Approval', 
+        justification: 'Restock office stationery for Q3.',
+        items: [
+            { id: 'reqi-1-1', description: 'A4 Reams', categoryId: 1, quantity: 10 },
+            { id: 'reqi-1-2', description: 'Blue Pens', categoryId: 1, quantity: 50 },
+        ],
+        totalEstimatedValue: 2500, // Example value
+        siteName: 'Tete Main Warehouse', // Denormalized for list view
+    },
+    { 
+        id: 'REQ-MOCK-002', 
+        requisitionNumber: 'REQ-2024-002', 
+        requisitionDate: '2024-07-21T11:30:00Z',
+        requestedByName: 'Gil Lunguze',
+        siteId: 2, // MEM-TET
+        status: 'Draft', 
+        justification: 'Need new safety helmets for Site B personnel.',
+        items: [
+            { id: 'reqi-2-1', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5 },
+        ],
+        totalEstimatedValue: 5000, // Example value
+        siteName: 'Mota Engil Mozambique', // Denormalized for list view
+    },
+];

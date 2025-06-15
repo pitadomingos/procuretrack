@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { POForm } from '@/components/purchase-orders/po-form';
 import { GRNInterface } from '@/components/receiving/grn-interface';
 import { QuoteForm } from '@/components/quotes/quote-form';
+import { RequisitionForm } from '@/components/requisitions/requisition-form';
 import { DocumentListView } from '@/components/shared/document-list-view';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,6 +19,7 @@ function CreateDocumentContent() {
   const defaultMainTab = "create-po";
   const defaultPOTab = poIdToEditFromUrl ? "create-po-form" : "create-po-form";
   const defaultQuoteTab = "create-quote-form";
+  const defaultRequisitionTab = "create-requisition-form";
 
 
   return (
@@ -80,20 +82,18 @@ function CreateDocumentContent() {
       </TabsContent>
       
       <TabsContent value="create-requisition">
-        {/* Future: Implement nested tabs for Requisition create/list */}
-        <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-          <CardHeader>
-            <CardTitle className="font-headline text-2xl">Create Purchase Requisition</CardTitle>
-            <CardDescription>Submit internal requests for goods or services to initiate the procurement process.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              This section will allow users to submit internal purchase requisitions. 
-              These requisitions can then be reviewed, used to obtain supplier quotations, and subsequently converted into Purchase Orders.
-              This feature is planned for a future update.
-            </p>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue={defaultRequisitionTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
+            <TabsTrigger value="create-requisition-form">Create New Requisition</TabsTrigger>
+            <TabsTrigger value="list-requisitions">List of Requisitions</TabsTrigger>
+          </TabsList>
+          <TabsContent value="create-requisition-form">
+             <RequisitionForm />
+          </TabsContent>
+          <TabsContent value="list-requisitions">
+            <DocumentListView documentType="requisition" />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
 
       <TabsContent value="record-fuel">
