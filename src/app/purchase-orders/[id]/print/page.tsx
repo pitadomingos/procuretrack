@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category, POItemForPrint, Approver, User as UserType } from '@/types';
@@ -16,11 +16,13 @@ interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
   approverName?: string;
 }
 
-export default function PrintPOPage() {
+function PrintPOPageContent() {
   const router = useRouter();
   const params = useParams();
   const poId = params.id as string;
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const viewContext = searchParams.get('context');
 
   const [poData, setPoData] = useState<FullPODataForPrint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,7 +87,7 @@ export default function PrintPOPage() {
       const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
       
       try {
-        const logoResponse = await fetch('/jachris-logo.png'); // Fetch from public folder
+        const logoResponse = await fetch('/jachris-logo.png'); 
         if (logoResponse.ok) {
             const logoBlob = await logoResponse.blob();
             const reader = new FileReader();
@@ -95,11 +97,11 @@ export default function PrintPOPage() {
             reader.readAsDataURL(logoBlob);
         } else {
             console.warn('Client-side logo fetch failed, using default path for preview.');
-            setLogoDataUri(undefined); // Or '/jachris-logo.png' if you want to rely on browser caching for the preview
+            setLogoDataUri(undefined); 
         }
       } catch (logoError) {
           console.warn('Error fetching client-side logo:', logoError);
-          setLogoDataUri(undefined); // Or '/jachris-logo.png'
+          setLogoDataUri(undefined); 
       }
 
       setPoData({
@@ -108,9 +110,9 @@ export default function PrintPOPage() {
         supplierDetails: supplierDetails,
         approverName: approverDetails?.name,
         approverSignatureUrl: approverSignatureUrl,
-        poNumber: headerData.poNumber || `PO-${poId}`, // Fallback if poNumber is somehow null
-        status: headerData.status || 'Pending Approval', // Fallback status
-        quoteNo: headerData.quoteNo || '', // Fallback quoteNo
+        poNumber: headerData.poNumber || `PO-${poId}`, 
+        status: headerData.status || 'Pending Approval', 
+        quoteNo: headerData.quoteNo || '', 
       });
 
     } catch (err: any) {
@@ -135,7 +137,6 @@ export default function PrintPOPage() {
     if (!poData || !poId) return;
     setIsDownloading(true);
     try {
-      // Call the new pages/api endpoint
       const response = await fetch(`/api/generate-po-pdf?poId=${poId}`);
       
       if (!response.ok) {
@@ -187,25 +188,19 @@ export default function PrintPOPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // No body needed based on current approve route, but pass approver info if your logic changes
-        // body: JSON.stringify({ approverId: MOCK_APPROVER_ID_FOR_ACTION }), 
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ 
             error: 'Approval failed.', 
             details: `Server responded with status: ${response.status} ${response.statusText}`,
-            stack: '' // Placeholder for stack if needed
+            stack: '' 
         }));
         
-        // Construct a more informative error message for the client
         let clientErrorMessage = errorData.error || `Approval failed for PO ${poId}.`;
         if (errorData.details) {
             clientErrorMessage += ` Details: ${errorData.details}`;
         }
-        // If a stack trace is provided and useful for client-side debugging (rarely the case), append it.
-        // if (errorData.stack) { clientErrorMessage += ` Stack: ${errorData.stack}`; }
-        
         throw new Error(clientErrorMessage);
       }
 
@@ -214,12 +209,10 @@ export default function PrintPOPage() {
         title: "Success!",
         description: result.message || `Purchase Order ${poData.poNumber} approved.`,
       });
-      // Refresh PO data to show updated status
       await fetchPODataForPrint();
 
     } catch (err: any) {
       console.error(`Error approving PO (client-side catch):`, err); 
-      // Ensure err.message is used, which contains the server's detailed error if thrown correctly
       let errorMessage = 'Could not approve the PO.';
       if (err instanceof Error && err.message) {
         errorMessage = err.message;
@@ -268,7 +261,8 @@ export default function PrintPOPage() {
   }
 
   const canEditPO = poData.status === 'Pending Approval';
-  const canApprovePO = poData.status === 'Pending Approval';
+  // Updated logic for canApprovePO
+  const canApprovePO = poData.status === 'Pending Approval' && viewContext !== 'creator';
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
@@ -326,5 +320,13 @@ export default function PrintPOPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PrintPOPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-12 w-12 animate-spin text-primary" /> Loading...</div>}>
+      <PrintPOPageContent />
+    </Suspense>
   );
 }

@@ -253,9 +253,6 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       if (poDataToLoad.status !== 'Pending Approval') {
         toast({ title: "Cannot Edit", description: `PO ${poNumberToLoad} is in '${poDataToLoad.status}' status and cannot be edited.`, variant: "destructive"});
         setIsLoadingPOForEdit(false);
-        // Optionally, still load data but keep form disabled or revert to new PO state
-        // For now, just preventing edit mode:
-        // loadPODataIntoForm(poDataToLoad, suppliers); // Load data but don't set isEditingLoadedPO
         return;
       }
 
@@ -318,7 +315,11 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       toast({ title: 'Success!', description: successMessage });
       
       if (result.poId) {
-        router.push(`/purchase-orders/${result.poId}/print`);
+        if (!isEditingLoadedPO) { 
+          router.push(`/purchase-orders/${result.poId}/print?context=creator`);
+        } else { 
+          router.push(`/purchase-orders/${result.poId}/print`);
+        }
       } else if (!isEditingLoadedPO) {
         await resetFormForNew();
       }
@@ -343,8 +344,14 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         if (res.ok) { const poDetails = await res.json(); targetPoId = poDetails.id; }
         else { toast({ title: 'PO Not Found', description: `PO ${poNumberInForm} not found. Save it first.`, variant: 'destructive' }); return; }
       }
-      if (targetPoId) window.open(`/purchase-orders/${targetPoId}/print`, '_blank');
-      else toast({ title: 'Error', description: 'Could not determine PO to view/print.', variant: 'destructive' });
+      if (targetPoId) {
+        // When viewing/printing from the form, if it's a new PO (not editing), assume creator context.
+        // If editing, it's ambiguous, so don't add context. Approvers will access without context.
+        const urlSuffix = !isEditingLoadedPO && !loadedPOId ? '?context=creator' : '';
+        window.open(`/purchase-orders/${targetPoId}/print${urlSuffix}`, '_blank');
+      } else {
+        toast({ title: 'Error', description: 'Could not determine PO to view/print.', variant: 'destructive' });
+      }
     } catch (error: any) {
       toast({ title: 'Error', description: `Could not prepare PO for printing: ${error.message}`, variant: 'destructive' });
     } finally {
