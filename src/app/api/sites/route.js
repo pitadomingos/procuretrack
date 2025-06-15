@@ -12,7 +12,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const { name, location, siteCode } = await request.json();
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     );
 
     // MySQL insertId is part of the OkPacket, which is the first element of the array returned by execute
-    const insertId = (result as any).insertId;
+    const insertId = result.insertId;
 
     if (!insertId) {
         console.error('Failed to get insertId from site creation:', result);
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Site created but failed to retrieve it.' }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating site:', error);
     if (error.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'A site with this name or code may already exist.' }, { status: 409 });
