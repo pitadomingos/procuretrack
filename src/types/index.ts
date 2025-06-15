@@ -51,9 +51,8 @@ export interface Approver {
   email?: string | null;
   department?: string | null;
   isActive?: boolean | null;
-  // For filter "All" option
-  value?: string; // Can be 'all'
-  label?: string; // Can be 'All Approvers'
+  value?: string; 
+  label?: string; 
 }
 
 export interface User {
@@ -63,7 +62,6 @@ export interface User {
   role: 'Admin' | 'Manager' | 'User' | 'Viewer' | string;
   siteAccess?: string[];
   isActive: boolean;
-  // For filter "All" option
   value?: string;
   label?: string;
 }
@@ -73,9 +71,8 @@ export interface Site {
   name: string;
   location?: string | null;
   siteCode?: string | null;
-  // For filter "All" option
-  value?: string | number; // Can be 'all' or site.id
-  label?: string; // Can be 'All Sites' or site.name
+  value?: string | number; 
+  label?: string; 
 }
 
 export interface Allocation {
@@ -107,15 +104,16 @@ export interface POItemForPrint extends POItemPayload {
   categoryDisplay?: string;
 }
 
+// This is the primary type for a full PO object, used in forms, previews, and API responses (potentially with all details)
 export interface PurchaseOrderPayload {
   id?: number;
   poNumber: string;
-  creationDate: string;
+  creationDate: string; // ISO String
   creatorUserId: string | null;
-  requestedByName?: string | null;
-  supplierId: string | null;
-  approverId: string | null;
-  siteId?: number | null;
+  requestedByName?: string | null; // Free-text from form
+  supplierId: string | null; // Supplier Code
+  approverId: string | null; // Approver ID
+  siteId?: number | null; // Overall PO Site ID
   status: string;
   subTotal: number;
   vatAmount: number;
@@ -123,16 +121,20 @@ export interface PurchaseOrderPayload {
   currency: string;
   pricesIncludeVat: boolean;
   notes?: string | null;
-  items: POItemPayload[] | POItemForPrint[];
-  approvalDate?: string | null;
+  items: POItemPayload[] | POItemForPrint[]; // Array of items associated with the PO
+  approvalDate?: string | null; // ISO String
   rejectionReason?: string | null;
   rejectionDate?: string | null;
-  supplierDetails?: Supplier;
-  creatorName?: string;
-  approverName?: string;
+
+  // Denormalized/joined fields often returned by API for display convenience
+  supplierDetails?: Supplier; // Full supplier object (e.g. for print page)
+  supplierName?: string; // Just supplier name (e.g. for lists)
+  creatorName?: string; // Name of the user who created the PO (from User table)
+  approverName?: string; // Name of the assigned approver (from Approver table)
   approverSignatureUrl?: string;
   quoteNo?: string;
 }
+
 
 export interface ApprovalQueueItem {
   id: number;
@@ -164,28 +166,28 @@ export interface Client {
 }
 
 export interface QuoteItem {
-  id: string; // Client-side ID for react-hook-form field array
+  id: string; 
   description: string;
   quantity: number;
   unitPrice: number;
 }
 
 export interface QuotePayload {
-  id?: string; // Can be number if DB uses int PK
+  id?: string; 
   quoteNumber: string;
-  quoteDate: string; // ISO date string
+  quoteDate: string; 
   clientId: string;
-  creatorEmail?: string; // For CC, placeholder for now
-  clientName?: string; // Denormalized for display
-  clientEmail?: string; // Denormalized for email modal
+  creatorEmail?: string; 
+  clientName?: string; 
+  clientEmail?: string; 
   subTotal: number;
-  vatAmount: number; // Or taxAmount
+  vatAmount: number; 
   grandTotal: number;
   currency: string;
   termsAndConditions?: string;
   notes?: string;
   items: QuoteItem[];
-  status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived'; // Example statuses
+  status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived'; 
 }
 
 // For FilterBar options

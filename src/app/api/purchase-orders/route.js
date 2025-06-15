@@ -17,13 +17,71 @@ const runMiddleware = (req, res, fn) => {
     });
  });
 };
-export async function GET() {
+
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const month = searchParams.get('month');
+  const year = searchParams.get('year');
+  const siteId = searchParams.get('siteId');
+  const approverId = searchParams.get('approverId');
+  const creatorUserId = searchParams.get('creatorUserId'); // For "Requestor" filter
+
+  let query = `
+    SELECT
+        po.id,
+        po.poNumber,
+        po.creationDate,
+        po.status,
+        po.subTotal,
+        po.vatAmount,
+        po.grandTotal,
+        po.currency,
+        po.pricesIncludeVat,
+        po.notes,
+        po.requestedByName, 
+        po.creatorUserId,   
+        po.approverId,
+        po.supplierId,
+        s.supplierName,
+        app.name AS approverName,
+        u.name AS creatorName 
+    FROM PurchaseOrder po
+    LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
+    LEFT JOIN Approver app ON po.approverId = app.id
+    LEFT JOIN User u ON po.creatorUserId = u.id
+    WHERE 1=1
+  `;
+  const queryParams = [];
+
+  if (month && month !== 'all') {
+    query += ' AND MONTH(po.creationDate) = ?';
+    queryParams.push(parseInt(month, 10));
+  }
+  if (year && year !== 'all') {
+    query += ' AND YEAR(po.creationDate) = ?';
+    queryParams.push(parseInt(year, 10));
+  }
+  if (siteId && siteId !== 'all') {
+    query += ' AND po.siteId = ?'; // Assuming PO has a direct siteId column
+    queryParams.push(parseInt(siteId, 10));
+  }
+  if (approverId && approverId !== 'all') {
+    query += ' AND po.approverId = ?';
+    queryParams.push(approverId);
+  }
+  if (creatorUserId && creatorUserId !== 'all') {
+    query += ' AND po.creatorUserId = ?';
+    queryParams.push(creatorUserId);
+  }
+
+  query += ' ORDER BY po.creationDate DESC';
+
   try {
-    const [rows] = await pool.execute('SELECT * FROM PurchaseOrder');
+    const [rows] = await pool.execute(query, queryParams);
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Error fetching purchase orders:', error);
-    return NextResponse.json({ error: 'Failed to fetch purchase orders' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch purchase orders', details: error.message }, { status: 500 });
   }
 }
 
@@ -48,7 +106,8 @@ export async function POST(request) {
         currency,
         pricesIncludeVat,
         notes,
-        items
+        items,
+        siteId, // Overall PO Site ID
       } = poData;
 
       connection = await pool.getConnection();
@@ -57,21 +116,20 @@ export async function POST(request) {
       const finalCreatorUserId = creatorUserId || null;
 
       const [poResult] = await connection.execute(
-        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
+        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, siteId || null, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
       );
 
       const newPoId = poResult.insertId;
 
       if (items && items.length > 0) {
         for (const item of items) {
-          // item.allocation is Site.id (string from payload), item.categoryId is Category.id (number | null)
-          // POItem.siteId expects an INT.
+          // item.siteId from POItem should be used here (formerly item.allocation)
           await connection.execute(
             `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [newPoId, item.partNumber, item.description, item.categoryId, Number(item.allocation) || null, item.uom, Number(item.quantity), Number(item.unitPrice)]
+            [newPoId, item.partNumber, item.description, item.categoryId, item.siteId || null, item.uom, Number(item.quantity), Number(item.unitPrice)]
           );
         }
       }

@@ -5,12 +5,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { Button } from '@/components/ui/button';
-import { Download, ListFilter, Eye } from 'lucide-react';
-import { mockPurchaseOrders } from '@/lib/mock-data';
+import { Download, Eye, Loader2, AlertTriangle } from 'lucide-react';
 import type { PurchaseOrderPayload } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 interface DocumentListViewProps {
   documentType: 'po' | 'grn' | 'quote' | 'requisition' | 'fuel';
@@ -21,12 +21,12 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
   {
     accessorKey: 'creationDate',
     header: 'Date',
-    cell: (item) => new Date(item.creationDate).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' })
+    cell: (item) => format(new Date(item.creationDate), 'dd MMM yyyy')
   },
   {
-    accessorKey: 'supplierDetails.supplierName',
+    accessorKey: 'supplierName', // API should return this flattened
     header: 'Supplier',
-    cell: (item) => item.supplierDetails?.supplierName || 'N/A'
+    cell: (item) => item.supplierName || item.supplierId || 'N/A'
   },
   {
     accessorKey: 'grandTotal',
@@ -34,76 +34,107 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
     cell: (item) => `${item.currency} ${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   },
   { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'requestedByName', header: 'Requestor' },
-  { accessorKey: 'approverName', header: 'Approver' },
+  { 
+    accessorKey: 'requestedByName', // User-entered name
+    header: 'Requestor (Entered)' ,
+    cell: (item) => item.requestedByName || 'N/A'
+  },
+  { 
+    accessorKey: 'creatorName', // Name from User table
+    header: 'Creator (System User)',
+    cell: (item) => item.creatorName || item.creatorUserId || 'N/A'
+  },
+  { 
+    accessorKey: 'approverName', // Name from Approver table
+    header: 'Approver',
+    cell: (item) => item.approverName || item.approverId || 'N/A'
+  },
 ];
 
 
 export function DocumentListView({ documentType }: DocumentListViewProps) {
-  const [documents, setDocuments] = useState<PurchaseOrderPayload[]>([]); // Typed to PurchaseOrderPayload for POs
-  const [filteredDocuments, setFilteredDocuments] = useState<PurchaseOrderPayload[]>([]);
-  const [columns, setColumns] = useState<ColumnDef<any>[]>([]);
+  const [documents, setDocuments] = useState<PurchaseOrderPayload[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchAndSetDocuments = useCallback(() => {
-    // Simulate fetching data based on documentType
-    if (documentType === 'po') {
-      // Using mockPurchaseOrders directly as they now include approverName and supplierDetails
-      setDocuments(mockPurchaseOrders);
-      setFilteredDocuments(mockPurchaseOrders);
-      setColumns(poColumns);
-    } else {
-      // Placeholder for other document types
+  const fetchDocuments = useCallback(async (filters?: any) => {
+    if (documentType !== 'po') {
       setDocuments([]);
-      setFilteredDocuments([]);
-      setColumns([{ accessorKey: 'name', header: 'Name (Placeholder)' }]);
+      setError(`List view for ${documentType.toUpperCase()}s is not yet implemented.`);
       toast({
         title: "List View Not Implemented",
         description: `The list view for ${documentType.toUpperCase()}s is not yet available.`,
-        variant: "default"
       });
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const queryParams = new URLSearchParams();
+    const currentMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const currentYear = new Date().getFullYear().toString();
+
+    queryParams.append('month', filters?.month || currentMonth);
+    queryParams.append('year', filters?.year || currentYear);
+    if (filters?.siteId && filters.siteId !== 'all') queryParams.append('siteId', filters.siteId);
+    if (filters?.approverId && filters.approverId !== 'all') queryParams.append('approverId', filters.approverId);
+    // Use creatorUserId for requestor filter as it maps to User.id
+    if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
+
+    try {
+      const response = await fetch(`/api/purchase-orders?${queryParams.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to fetch ${documentType.toUpperCase()}s.`);
+      }
+      const data: PurchaseOrderPayload[] = await response.json();
+      setDocuments(data);
+    } catch (err: any) {
+      console.error(`Error fetching ${documentType}s:`, err);
+      setError(err.message || `An unexpected error occurred while fetching ${documentType.toUpperCase()}s.`);
+      toast({
+        title: `Error Fetching ${documentType.toUpperCase()}s`,
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   }, [documentType, toast]);
 
   useEffect(() => {
-    fetchAndSetDocuments();
-  }, [fetchAndSetDocuments]);
+    // Fetch with default filters (current month and year) on initial load
+    const defaultFilters = {
+      month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
+      year: new Date().getFullYear().toString(),
+      siteId: 'all',
+      approverId: 'all',
+      creatorUserId: 'all',
+    };
+    fetchDocuments(defaultFilters);
+  }, [fetchDocuments]);
 
   const handleFilterApply = (filters: any) => {
-    console.log(`Applying filters to ${documentType} list:`, filters);
-    let tempFiltered = [...documents];
-
-    if (filters.month && filters.month !== 'all') {
-      tempFiltered = tempFiltered.filter(doc => (new Date(doc.creationDate).getMonth() + 1).toString().padStart(2, '0') === filters.month);
-    }
-    if (filters.year && filters.year !== 'all') {
-      tempFiltered = tempFiltered.filter(doc => new Date(doc.creationDate).getFullYear().toString() === filters.year);
-    }
-    if (filters.site && filters.site !== 'all') {
-      // Assuming doc.siteId exists and needs to match. This needs alignment with how site filter values are structured.
-      // For now, mockSiteData has values like 'site_a', 'site_b'. If doc.siteId is numeric, this won't work directly.
-      // tempFiltered = tempFiltered.filter(doc => doc.site?.value === filters.site); // Example if site was an object
-      console.warn("Site filtering logic needs to be aligned with actual data structure for POs.");
-    }
-    if (filters.approver && filters.approver !== 'all') {
-       tempFiltered = tempFiltered.filter(doc => doc.approverId === filters.approver);
-    }
-    if (filters.requestor && filters.requestor !== 'all') {
-      // Assuming requestedByName for POs. If requestor filter value is an ID, this needs adjustment.
-      tempFiltered = tempFiltered.filter(doc => {
-        // This is a simple string match; for IDs, it would be doc.creatorUserId === filters.requestor
-        return doc.requestedByName?.toLowerCase().includes(filters.requestor.toLowerCase()) || doc.creatorUserId === filters.requestor;
-      });
-    }
-    setFilteredDocuments(tempFiltered);
+    // The filter bar component might pass 'requestor' for the label, but we need 'creatorUserId' for the API
+    const apiFilters = {
+        ...filters,
+        creatorUserId: filters.requestor, // Map 'requestor' (from filter bar state) to 'creatorUserId'
+        approverId: filters.approver, // Map 'approver' (from filter bar state) to 'approverId'
+        siteId: filters.site, // Map 'site' (from filter bar state) to 'siteId'
+    };
+    delete apiFilters.requestor; // remove original requestor key
+    delete apiFilters.approver; 
+    delete apiFilters.site; 
+    fetchDocuments(apiFilters);
   };
 
   const handleDownloadExcel = () => {
     toast({
         title: "Feature Not Implemented",
-        description: `Download to Excel for ${documentType} list is not yet available.`,
-        variant: "default"
-      });
+        description: `Download to Excel for ${documentType.toUpperCase()} list is not yet available.`,
+    });
   };
   
   const renderPOActions = (po: PurchaseOrderPayload) => (
@@ -114,18 +145,20 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     </Link>
   );
 
+  const columnsToUse = documentType === 'po' ? poColumns : [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
 
   return (
     <Card className="shadow-lg mt-6">
       <CardHeader>
-        <CardTitle className="font-headline text-xl capitalize">List of Purchase Orders</CardTitle>
-        <CardDescription>View, filter, and manage existing purchase order documents.</CardDescription>
+        <CardTitle className="font-headline text-xl capitalize">List of {documentType === 'po' ? 'Purchase Orders' : documentType.toUpperCase() + 's'}</CardTitle>
+        <CardDescription>View, filter, and manage existing {documentType === 'po' ? 'purchase order' : documentType} documents.</CardDescription>
       </CardHeader>
       <CardContent>
         <FilterBar
           onFilterApply={handleFilterApply}
           showApproverFilter={documentType === 'po'}
           showRequestorFilter={documentType === 'po'}
+          showSiteFilter={documentType === 'po'}
         />
         <div className="mt-4 flex justify-end">
           <Button onClick={handleDownloadExcel} variant="outline">
@@ -133,11 +166,27 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
           </Button>
         </div>
         <div className="mt-4">
-          <DataTable
-            columns={columns}
-            data={filteredDocuments}
-            renderRowActions={documentType === 'po' ? renderPOActions : undefined}
-          />
+          {isLoading ? (
+             <div className="flex justify-center items-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="ml-2 text-muted-foreground">Loading documents...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-64 text-destructive-foreground bg-destructive/10 p-4 rounded-md">
+                <AlertTriangle className="h-8 w-8 mb-2" />
+                <p className="font-semibold">Error loading documents:</p>
+                <p className="text-sm text-center">{error}</p>
+                <Button onClick={() => fetchDocuments()} variant="outline" className="mt-4 border-destructive-foreground text-destructive-foreground hover:bg-destructive/20">
+                    Retry
+                </Button>
+            </div>
+          ) : (
+            <DataTable
+              columns={columnsToUse}
+              data={documents}
+              renderRowActions={documentType === 'po' ? renderPOActions : undefined}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

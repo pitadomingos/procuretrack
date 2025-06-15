@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { monthsWithAll, yearsWithAll, sitesWithAll, mockApproversFilter, mockRequestorsFilter } from '@/lib/mock-data';
@@ -12,26 +12,41 @@ interface FilterBarProps {
   onFilterApply?: (filters: {
     month?: string;
     year?: string;
-    site?: string;
-    approver?: string;
-    requestor?: string;
+    site?: string; // This will hold siteId
+    approver?: string; // This will hold approverId
+    requestor?: string; // This will hold creatorUserId
   }) => void;
   showApproverFilter?: boolean;
   showRequestorFilter?: boolean;
+  showSiteFilter?: boolean; // Added to control site filter visibility
 }
 
-export function FilterBar({ onFilterApply, showApproverFilter = false, showRequestorFilter = false }: FilterBarProps) {
-  const [selectedMonth, setSelectedMonth] = useState<string | undefined>('all');
-  const [selectedYear, setSelectedYear] = useState<string | undefined>('all');
-  const [selectedSite, setSelectedSite] = useState<string | undefined>('all');
-  const [selectedApprover, setSelectedApprover] = useState<string | undefined>('all');
-  const [selectedRequestor, setSelectedRequestor] = useState<string | undefined>('all');
+export function FilterBar({ 
+  onFilterApply, 
+  showApproverFilter = false, 
+  showRequestorFilter = false,
+  showSiteFilter = false 
+}: FilterBarProps) {
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedSite, setSelectedSite] = useState<string>('all');
+  const [selectedApprover, setSelectedApprover] = useState<string>('all');
+  const [selectedRequestor, setSelectedRequestor] = useState<string>('all');
+
+  useEffect(() => {
+    // Set default to current month and year
+    const currentMonthValue = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const currentYearValue = new Date().getFullYear().toString();
+    setSelectedMonth(currentMonthValue);
+    setSelectedYear(currentYearValue);
+  }, []);
+
 
   const handleApplyFilters = () => {
     onFilterApply?.({
       month: selectedMonth,
       year: selectedYear,
-      site: selectedSite,
+      site: showSiteFilter ? selectedSite : undefined,
       approver: showApproverFilter ? selectedApprover : undefined,
       requestor: showRequestorFilter ? selectedRequestor : undefined,
     });
@@ -70,21 +85,23 @@ export function FilterBar({ onFilterApply, showApproverFilter = false, showReque
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label htmlFor="site-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Site</label>
-          <Select value={selectedSite} onValueChange={setSelectedSite}>
-            <SelectTrigger id="site-filter">
-              <SelectValue placeholder="Select Site" />
-            </SelectTrigger>
-            <SelectContent>
-              {sitesWithAll.map((site: FilterOption) => (
-                <SelectItem key={site.value} value={site.value}>
-                  {site.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {showSiteFilter && (
+          <div>
+            <label htmlFor="site-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Site</label>
+            <Select value={selectedSite} onValueChange={setSelectedSite}>
+              <SelectTrigger id="site-filter">
+                <SelectValue placeholder="Select Site" />
+              </SelectTrigger>
+              <SelectContent>
+                {sitesWithAll.map((site: FilterOption) => (
+                  <SelectItem key={site.value} value={site.value}>
+                    {site.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {showApproverFilter && (
           <div>
             <label htmlFor="approver-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Approver</label>

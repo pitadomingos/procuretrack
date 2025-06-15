@@ -101,16 +101,21 @@ export const years: FilterOption[] = Array.from({ length: 5 }, (_, i) => ({
   label: (currentYear - i).toString(),
 }));
 
-export const sites: Site[] = [ // Now conforms to Site type
-  { id: 1, name: 'TMW', location: 'Tete Main Warehouse', value: 'site_a', label: 'TMW' },
-  { id: 2, name: 'MEM', location: 'Mota Engil Mozambique', value: 'site_b', label: 'MEM' },
-  { id: 3, name: 'FMS', location: 'Fuel Management System', value: 'site_c', label: 'FMS' },
-  { id: 4, name: 'CHW', location: 'Container Hose Warehouse', value: 'site_d', label: 'CHW' },
+// Note: mockSitesData is the source of truth for Site details.
+// sitesWithAll will use site.id for 'value' and site.siteCode or site.name for 'label'.
+export const mockSitesData: Site[] = [
+  { id: 1, name: 'Tete Main Warehouse', location: 'Moatize - DC, Mozambique', siteCode: 'TMW-TET' },
+  { id: 2, name: 'Mota Engil Mozambique', location: 'Moatize - Vulcan, Mozambique', siteCode: 'MEM-TET' },
+  { id: 3, name: 'Fuel Management System', location: 'Moatize - Vulcan, Mozambique', siteCode: 'FMS-TET' },
+  { id: 4, name: 'Container Hose Warehouse', location: 'Moatize - Vulcan, Mozambique', siteCode: 'CHW-TET' },
 ];
 
 export const monthsWithAll: FilterOption[] = [{ value: 'all', label: 'All Months' }, ...months];
 export const yearsWithAll: FilterOption[] = [{ value: 'all', label: 'All Years' }, ...years];
-export const sitesWithAll: FilterOption[] = [{ value: 'all', label: 'All Sites' }, ...sites.map(s => ({value: s.value as string, label: s.label as string}))];
+export const sitesWithAll: FilterOption[] = [
+    { value: 'all', label: 'All Sites' }, 
+    ...mockSitesData.map(s => ({value: s.id.toString(), label: s.siteCode || s.name}))
+];
 
 
 export const spendByVendorData: ChartDataPoint[] = [
@@ -150,31 +155,12 @@ export const mockUsersData: User[] = [
   { id: 'USR002', name: 'Cherinne de Klerk', email: 'cherinne.deklerk@jachris.com', role: 'Manager', siteAccess: ['SITE001'], isActive: true },
   { id: 'USR003', name: 'Pita Domingos', email: 'pita.domingos@jachris.com', role: 'User', siteAccess: ['SITE002'], isActive: false },
   { id: 'USR004', name: 'John Enem', email: 'john.enem@jachris.com', role: 'Viewer', siteAccess: ['all'], isActive: true },
-  { id: 'USR005', name: 'Gil Lunguzi', email: 'gil.lunguze@jachris.com', role: 'Manager', siteAccess: ['SITE003'], isActive: true },
-  { id: 'USR006', name: 'Portia Mbuva', email: 'portia.mbuva@jachris.com', role: 'User', siteAccess: ['SITE001'], isActive: true },
+  { id: 'USR005', name: 'Gil Lunguzi', email: 'gil.lunguze@jachris.com', role: 'Creator', siteAccess: ['SITE003'], isActive: true },
+  { id: 'USR006', name: 'Portia Mbuva', email: 'portia.mbuva@jachris.com', role: 'Creator', siteAccess: ['SITE001'], isActive: true },
   { id: 'USR007', name: 'Tamara Moore', email: 'tamara.moore@jachris.com', role: 'Admin', siteAccess: ['all'], isActive: false },
-  { id: 'USR008', name: 'Donvale de Rita', email: 'donvale.derita@jachris.com', role: 'User', siteAccess: ['SITE003', 'SITE004'], isActive: true },
+  { id: 'USR008', name: 'Donvale de Rita', email: 'donvale.derita@jachris.com', role: 'Creator', siteAccess: ['SITE003', 'SITE004'], isActive: true },
 ];
 
-export const mockSitesData: Site[] = [
-  { id: 1, name: 'Tete Main Warehouse', location: 'Moatize - DC, Mozambique', siteCode: 'TMW-TET' },
-  { id: 2, name: 'Mota Engil Mozambique', location: 'Moatize - Vulcan, Mozambique', siteCode: 'MEM-TET' },
-  { id: 3, name: 'Fuel Management System', location: 'Moatize - Vulcan, Mozambique', siteCode: 'FMS-TET' },
-  { id: 4, name: 'Container Hose Warehouse', location: 'Moatize - Vulcan, Mozambique', siteCode: 'CHW-TET' },
-];
-
-export const mockAllocationsData: Allocation[] = [
-  { id: 'ALLOC001', name: 'Administration', code: 'ADM001', description: 'General administrative costs' },
-  { id: 'ALLOC002', name: 'Operations - Site A', code: 'OPS-A01', description: 'Operational costs for Site A' },
-  { id: 'ALLOC003', name: 'IT Department', code: 'ITD001', description: 'Information Technology expenses' },
-  { id: 'ALLOC004', name: 'Marketing & Sales', code: 'MKT001' },
-  { id: 'ALLOC005', name: 'Logistics', code: 'LOG001', description: 'Transport and logistics costs' },
-  { id: 'ALLOC006', name: 'Maintenance', code: 'MNT001' },
-  { id: 'ALLOC007', name: 'HR Department', code: 'HRD001' },
-  { id: 'ALLOC008', name: 'Project Alpha', code: 'PRJ-ALP' },
-  { id: 'ALLOC009', name: 'Project Beta', code: 'PRJ-BET' },
-  { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
-];
 
 export const mockCategoriesData: Category[] = [
   { id: 1, category: 'Stationery' },
@@ -199,25 +185,25 @@ export const mockClients: Client[] = [
   { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City' },
 ];
 
-// For PO List View
+// For PO List View - this can be removed if data is fetched from backend
 export const mockPurchaseOrders: PurchaseOrderPayload[] = [
   {
     id: 101, poNumber: 'PO-00101', creationDate: '2024-07-01T10:00:00Z', status: 'Approved',
     supplierId: 'supplier1', grandTotal: 1500, currency: 'MZN', requestedByName: 'Alice Smith', approverId: 'APP001',
     items: [{id:1, description: 'Item A', quantity:10, unitPrice:100, categoryId:1, uom:'EA'}], subTotal: 1293.10, vatAmount: 206.90, pricesIncludeVat: false, creatorUserId: 'USR002',
-    approverName: 'Cherinne de Klerk', supplierDetails: { supplierCode: 'supplier1', supplierName: 'Lebreya Limitada' }
+    approverName: 'Cherinne de Klerk', supplierName: 'Lebreya Limitada', creatorName: 'Cherinne de Klerk'
   },
   {
     id: 102, poNumber: 'PO-00102', creationDate: '2024-06-15T14:30:00Z', status: 'Pending Approval',
     supplierId: 'supplier2', grandTotal: 800, currency: 'USD', requestedByName: 'Bob Johnson', approverId: 'APP002',
     items: [{id:2, description: 'Service B', quantity:1, unitPrice:800, categoryId:5, uom:'SVC'}], subTotal: 800, vatAmount: 0, pricesIncludeVat: false, creatorUserId: 'USR005',
-    approverName: 'Cobus de Klerk', supplierDetails: { supplierCode: 'supplier2', supplierName: 'Global Office Solutions' }
+    approverName: 'Cobus de Klerk', supplierName: 'Global Office Solutions', creatorName: 'Gil Lunguzi'
   },
    {
     id: 103, poNumber: 'PO-00103', creationDate: '2023-12-05T11:20:00Z', status: 'Completed',
     supplierId: 'supplier3', grandTotal: 25000, currency: 'MZN', requestedByName: 'Carol White', approverId: 'APP001',
     items: [{id:3, description: 'Hardware C', quantity:50, unitPrice:431.03, categoryId:4, uom:'BOX'}], subTotal: 21551.72, vatAmount: 3448.28, pricesIncludeVat: false, creatorUserId: 'USR002',
-    approverName: 'Cherinne de Klerk', supplierDetails: { supplierCode: 'supplier3', supplierName: 'Tete Hardware Store' }
+    approverName: 'Cherinne de Klerk', supplierName: 'Tete Hardware Store', creatorName: 'Cherinne de Klerk'
   },
 ];
 
@@ -229,12 +215,20 @@ export const mockApproversFilter: FilterOption[] = [
 
 export const mockRequestorsFilter: FilterOption[] = [
   { value: 'all', label: 'All Requestors' },
-  // Populate from actual users or a distinct list of requestor names if available
-  // For now, using some from mock POs:
-  { value: 'alice_smith', label: 'Alice Smith' },
-  { value: 'bob_johnson', label: 'Bob Johnson' },
-  { value: 'carol_white', label: 'Carol White' },
-  // Add more or generate from User table if applicable
-  ...mockUsersData.filter(u => u.role === 'User' || u.role === 'Manager').map(u => ({ value: u.id, label: u.name })),
-].filter((value, index, self) => index === self.findIndex((t) => (t.label === value.label))); // Deduplicate by label
+  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'User' || u.role === 'Admin') // Broaden who can be a requestor
+                 .map(u => ({ value: u.id, label: u.name })),
+].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value))); // Deduplicate by value/id
 
+
+export const mockAllocationsData: Allocation[] = [
+    { id: 'ALLOC001', name: 'Administration', code: 'ADM001', description: 'General administrative costs' },
+    { id: 'ALLOC002', name: 'Operations - Site A', code: 'OPS-A01', description: 'Operational costs for Site A' },
+    { id: 'ALLOC003', name: 'IT Department', code: 'ITD001', description: 'Information Technology expenses' },
+    { id: 'ALLOC004', name: 'Marketing & Sales', code: 'MKT001' },
+    { id: 'ALLOC005', name: 'Logistics', code: 'LOG001', description: 'Transport and logistics costs' },
+    { id: 'ALLOC006', name: 'Maintenance', code: 'MNT001' },
+    { id: 'ALLOC007', name: 'HR Department', code: 'HRD001' },
+    { id: 'ALLOC008', name: 'Project Alpha', code: 'PRJ-ALP' },
+    { id: 'ALLOC009', name: 'Project Beta', code: 'PRJ-BET' },
+    { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
+  ];
