@@ -24,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { mockSitesData, mockCategoriesData } from '@/lib/mock-data'; // Using mock data for now
 
-const defaultItem: RequisitionItem = { id: crypto.randomUUID(), description: '', categoryId: null, quantity: 1, estimatedUnitPrice: 0.00, notes: '' };
+const defaultItem: RequisitionItem = { id: crypto.randomUUID(), partNumber: '', description: '', categoryId: null, quantity: 1, estimatedUnitPrice: 0.00, notes: '' };
 
 interface RequisitionFormValues {
   requestedByName: string;
@@ -119,6 +119,7 @@ export function RequisitionForm() {
       justification: formData.justification,
       items: formData.items.map(item => ({
         id: item.id, 
+        partNumber: item.partNumber,
         description: item.description,
         categoryId: item.categoryId ? Number(item.categoryId) : null,
         quantity: Number(item.quantity),
@@ -206,8 +207,14 @@ export function RequisitionForm() {
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-sm">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-end">
+                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
+                      <FormItem className="lg:col-span-2"> 
+                        <FormLabel>Part Number</FormLabel> 
+                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                      </FormItem> 
+                    )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-4"> 
+                      <FormItem className="lg:col-span-3"> 
                         <FormLabel>Description</FormLabel> 
                         <FormControl><Input placeholder="Item or service description" {...field} /></FormControl> 
                         <FormMessage /> 
@@ -231,7 +238,7 @@ export function RequisitionForm() {
                       </FormItem> 
                     )} />
                     <FormField control={form.control} name={`items.${index}.estimatedUnitPrice`} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2"> 
+                      <FormItem className="lg:col-span-1"> 
                         <FormLabel>Est. Unit Price (MZN)</FormLabel> 
                         <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> 
                         <FormMessage /> 
@@ -242,7 +249,7 @@ export function RequisitionForm() {
                       <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotalEst)}</div> 
                     </FormItem>
                      <FormField control={form.control} name={`items.${index}.notes`} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> {/* Adjust span as needed */}
+                      <FormItem className="lg:col-span-1">
                         <FormLabel>Item Notes</FormLabel> 
                         <FormControl><Input placeholder="Optional notes" {...field} /></FormControl> 
                       </FormItem> 
@@ -278,3 +285,4 @@ export function RequisitionForm() {
     </Card>
   );
 }
+

@@ -73,6 +73,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
         <table className="w-full border-collapse border border-gray-400 text-xs">
           <thead>
             <tr className="bg-gray-100 text-gray-600">
+              <th className="border border-gray-400 p-2 text-left">PART NUMBER</th>
               <th className="border border-gray-400 p-2 text-left w-2/5">ITEM / SERVICE DESCRIPTION</th>
               <th className="border border-gray-400 p-2 text-left">CATEGORY</th>
               <th className="border border-gray-400 p-2 text-center">QTY</th>
@@ -89,6 +90,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
               const itemTotalEst = (item.quantity || 0) * (item.estimatedUnitPrice || 0);
               return (
                 <tr key={item.id || index}>
+                  <td className="border border-gray-400 p-2 align-top">{item.partNumber || ''}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.description}</td>
                   <td className="border border-gray-400 p-2 align-top">{categoryName}</td>
                   <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
@@ -102,6 +104,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
             {Array.from({ length: Math.max(0, 8 - printableItems.length) }).map((_, i) => (
                 <tr key={`empty-${i}`}>
                     <td className="border border-gray-400 p-2 h-7">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
@@ -150,3 +153,4 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     </div>
   );
 }
+

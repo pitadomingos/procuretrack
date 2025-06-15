@@ -195,6 +195,7 @@ export interface QuotePayload {
 // --- REQUISITION ---
 export interface RequisitionItem {
   id: string; // Client-side ID for react-hook-form field array
+  partNumber?: string;
   description: string;
   categoryId: number | null;
   quantity: number;
@@ -225,3 +226,4 @@ export interface FilterOption {
   value: string;
   label: string;
 }
+
