@@ -27,6 +27,9 @@ export default function ApprovalsPage() {
 
   const [selectedPOForReview, setSelectedPOForReview] = useState<ApprovalQueueItem | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  
+  const [isApprovingPoId, setIsApprovingPoId] = useState<number | null>(null);
+
 
   const fetchPendingApprovals = useCallback(async () => {
     setLoading(true);
@@ -64,6 +67,51 @@ export default function ApprovalsPage() {
   const handleOpenReviewModal = (po: ApprovalQueueItem) => {
     setSelectedPOForReview(po);
     setIsReviewModalOpen(true);
+  };
+
+  const handleApprovePO = async (po: ApprovalQueueItem) => {
+    if (po.status !== 'Pending Approval') {
+      toast({ title: "Cannot Approve", description: `PO ${po.poNumber} is not pending approval.`, variant: "destructive" });
+      return;
+    }
+    
+    setIsApprovingPoId(po.id);
+    try {
+      const response = await fetch(`/api/purchase-orders/${po.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+            error: 'Approval failed.', 
+            details: `Server responded with status: ${response.status} ${response.statusText}`,
+        }));
+        let clientErrorMessage = errorData.error || `Approval failed for PO ${po.id}.`;
+        if (errorData.details) clientErrorMessage += ` Details: ${errorData.details}`;
+        throw new Error(clientErrorMessage);
+      }
+
+      const result = await response.json();
+      toast({
+        title: "Success!",
+        description: result.message || `Purchase Order ${po.poNumber} approved.`,
+      });
+      fetchPendingApprovals(); // Refresh data to show new status
+    } catch (err: any) {
+      console.error(`Error approving PO (client-side catch):`, err); 
+      let errorMessage = 'Could not approve the PO.';
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
+      toast({
+        title: 'Error Approving PO',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsApprovingPoId(null);
+    }
   };
 
   const columns: ColumnDef<ApprovalQueueItem>[] = [
@@ -139,15 +187,26 @@ export default function ApprovalsPage() {
             renderRowActions={(po) => (
               <div className="space-x-1">
                 <Link href={`/purchase-orders/${po.id}/print`} passHref legacyBehavior={false}>
-                  <Button variant="outline" size="sm" title="View & Approve PO">
-                    <CheckCircle2 className="mr-1 h-4 w-4 text-green-600" /> Approve
+                  <Button variant="ghost" size="sm" title="View PO Details">
+                    <Eye className="mr-1 h-4 w-4 text-muted-foreground" /> View
                   </Button>
                 </Link>
-                <Button variant="outline" size="sm" title="Review PO" onClick={() => handleOpenReviewModal(po)}>
-                  <MessageSquareText className="mr-1 h-4 w-4 text-blue-600" /> Review
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    title="Approve PO" 
+                    onClick={() => handleApprovePO(po)}
+                    disabled={isApprovingPoId === po.id}
+                    className="text-green-600 hover:text-green-700 border-green-600 hover:border-green-700 hover:bg-green-50"
+                >
+                  {isApprovingPoId === po.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} 
+                  Approve
                 </Button>
-                <Button variant="outline" size="sm" title="Reject PO" onClick={() => handleOpenRejectModal(po)}>
-                  <ThumbsDown className="mr-1 h-4 w-4 text-red-600" /> Reject
+                <Button variant="outline" size="sm" title="Review PO" onClick={() => handleOpenReviewModal(po)} className="text-blue-600 hover:text-blue-700 border-blue-600 hover:border-blue-700 hover:bg-blue-50">
+                  <MessageSquareText className="mr-1 h-4 w-4" /> Review
+                </Button>
+                <Button variant="outline" size="sm" title="Reject PO" onClick={() => handleOpenRejectModal(po)} className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700 hover:bg-red-50">
+                  <ThumbsDown className="mr-1 h-4 w-4" /> Reject
                 </Button>
               </div>
             )}
@@ -167,7 +226,7 @@ export default function ApprovalsPage() {
           open={isRejectModalOpen}
           onOpenChange={setIsRejectModalOpen}
           onRejected={() => {
-            fetchPendingApprovals(); // Refresh the list after rejection
+            fetchPendingApprovals(); 
             setSelectedPOForReject(null);
           }}
         />

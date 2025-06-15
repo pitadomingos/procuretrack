@@ -6,7 +6,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category, POItemForPrint, Approver, User as UserType } from '@/types';
-import { ArrowLeft, Printer, Download, Loader2, Edit, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Loader2, Edit, AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,7 +14,7 @@ interface FullPODataForPrint extends Omit<PurchaseOrderPayload, 'items'> {
   items: POItemForPrint[];
   supplierDetails?: Supplier;
   approverName?: string;
-  creatorName?: string; // Added creatorName
+  creatorName?: string;
 }
 
 function PrintPOPageContent() {
@@ -29,7 +29,6 @@ function PrintPOPageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
   const [logoDataUri, setLogoDataUri] = useState<string | undefined>(undefined);
 
   const fetchPODataForPrint = useCallback(async () => {
@@ -43,7 +42,7 @@ function PrintPOPageContent() {
         fetch('/api/sites'),
         fetch('/api/categories'),
         fetch('/api/approvers'),
-        fetch('/api/users'), // Fetch all users to find creator name
+        fetch('/api/users'), 
       ]);
 
       if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header: ${poHeaderRes.statusText}`);
@@ -112,7 +111,7 @@ function PrintPOPageContent() {
         ...headerData, 
         items: itemsForPrint,
         supplierDetails: supplierDetails,
-        creatorName: creatorDetails?.name, // Set creator name
+        creatorName: creatorDetails?.name,
         approverName: approverDetails?.name,
         approverSignatureUrl: approverSignatureUrl,
         poNumber: headerData.poNumber || `PO-${poId}`, 
@@ -180,56 +179,6 @@ function PrintPOPageContent() {
     router.push(`/create-document?editPoId=${poId}`);
   };
 
-  const handleApprovePO = async () => {
-    if (!poData || poData.status !== 'Pending Approval') {
-      toast({ title: "Cannot Approve", description: "This PO is not pending approval.", variant: "destructive" });
-      return;
-    }
-    
-    setIsApproving(true);
-    try {
-      const response = await fetch(`/api/purchase-orders/${poId}/approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ 
-            error: 'Approval failed.', 
-            details: `Server responded with status: ${response.status} ${response.statusText}`,
-        }));
-        
-        let clientErrorMessage = errorData.error || `Approval failed for PO ${poId}.`;
-        if (errorData.details) {
-            clientErrorMessage += ` Details: ${errorData.details}`;
-        }
-        throw new Error(clientErrorMessage);
-      }
-
-      const result = await response.json();
-      toast({
-        title: "Success!",
-        description: result.message || `Purchase Order ${poData.poNumber} approved.`,
-      });
-      await fetchPODataForPrint(); // Refresh data to show new status
-
-    } catch (err: any) {
-      console.error(`Error approving PO (client-side catch):`, err); 
-      let errorMessage = 'Could not approve the PO.';
-      if (err instanceof Error && err.message) {
-        errorMessage = err.message;
-      }
-      toast({
-        title: 'Error Approving PO',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-
   if (loading) {
     return (
       <div className="flex flex-col justify-center items-center h-screen">
@@ -262,10 +211,7 @@ function PrintPOPageContent() {
     );
   }
 
-  // PO can be edited only if 'Pending Approval' AND not viewed by creator in initial post-submission preview
   const canEditPO = poData.status === 'Pending Approval' && viewContext !== 'creator';
-  // PO can be approved only if 'Pending Approval' AND not viewed by creator in initial post-submission preview
-  const canApprovePO = poData.status === 'Pending Approval' && viewContext !== 'creator';
   const isRejected = poData.status === 'Rejected';
 
   return (
@@ -298,22 +244,6 @@ function PrintPOPageContent() {
                   title="Edit this Purchase Order"
                 >
                   <Edit className="mr-2 h-4 w-4" /> Edit PO
-                </Button>
-              )}
-              {canApprovePO && !isRejected && (
-                <Button
-                  onClick={handleApprovePO}
-                  disabled={isApproving}
-                  size="sm"
-                  variant="default"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {isApproving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                  )}
-                  {isApproving ? 'Approving...' : 'Approve PO'}
                 </Button>
               )}
               <Button onClick={handlePrint} size="sm">
