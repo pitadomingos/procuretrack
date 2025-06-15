@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import React from 'react'; // Required for JSX
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import { pool } from '../../../backend/db.js'; // Corrected path
+import { pool } from '../../../backend/db.js'; // Adjusted path for pages/api
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, Approver, POItemForPrint } from '@/types';
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
@@ -81,7 +81,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     });
     console.log(`[PDF API][getPODataForPdf] PO Items processed for printing: ${itemsForPrint.length} items.`);
 
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined;
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; // Path to signature image if exists
 
     console.log(`[PDF API][getPODataForPdf] END - Successfully processed data for PO ID: ${numericPoId}`);
     return {
@@ -95,14 +95,14 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
   } catch (dbError: any) {
     console.error(`[PDF API][getPODataForPdf][DB_ERROR] PO ID ${poId}: ${dbError.message}`);
     console.error(`[PDF API][getPODataForPdf][DB_ERROR_STACK]: ${dbError.stack || 'No stack available'}`);
-    throw dbError;
+    throw dbError; // Re-throw to be caught by the main handler
   } finally {
     if (connection) {
       try {
         await connection.release();
-        console.log(`[PDF API][getPODataForPdf] Database connection released for PO ID: ${numericPoId}`);
+        console.log(`[PDF API][getPODataForPdf][FINALLY] Database connection released for PO ID: ${numericPoId}`);
       } catch (releaseError: any) {
-        console.error(`[PDF API][getPODataForPdf] Error releasing database connection for PO ID ${numericPoId}: ${releaseError.message}`);
+        console.error(`[PDF API][getPODataForPdf][FINALLY] Error releasing database connection for PO ID ${numericPoId}: ${releaseError.message}`);
       }
     }
   }
@@ -148,7 +148,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
       console.log(`[PDF API][Handler] Logo read successfully. Data URI length: ${logoDataUri.length}`);
     } catch (logoError: any) {
-      console.warn(`[PDF API][Handler] Logo file error for path "${logoPath}": ${logoError.code} - ${logoError.message}. Proceeding without custom logo data URI.`);
+      console.warn(`[PDF API][Handler] Logo file error for path "${logoPath}": ${logoError.code} - ${logoError.message}. Proceeding without custom logo data URI (PrintablePO will use default path).`);
+      // logoDataUri will remain empty, PrintablePO component should handle this.
     }
 
     console.log(`[PDF API][Handler] Rendering PrintablePO component to HTML string for PO ID: ${poId}`);
@@ -159,34 +160,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const playwrightArgs = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
+      '--disable-dev-shm-usage', // Critical for some environments
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process',
+      '--single-process', // Can help in resource-constrained environments
       '--disable-gpu',
-      '--disable-features=IsolateOrigins,site-per-process',
-      '--disable-web-security', // Added this for potential cross-origin issues with data URIs if any
+      '--disable-features=IsolateOrigins,site-per-process', // For security/stability
+      '--disable-web-security', // Sometimes needed for data URIs or complex local content
     ];
     console.log(`[PDF API][Handler] Launching Playwright Chromium with args: ${playwrightArgs.join(' ')} for PO ID: ${poId}`);
     
     browser = await chromium.launch({
       args: playwrightArgs,
-      headless: true,
-      timeout: 60000, // Timeout for launch
+      headless: true, // Always true for server-side
+      timeout: 60000, // 60-second timeout for launch
       // dumpio: process.env.NODE_ENV === 'development', // Log browser console to Node.js console
     });
-    console.log(`[PDF API][Handler] Playwright browser launched. Version: ${browser.version()}`);
+    console.log(`[PDF API][Handler] Playwright browser launched successfully. Version: ${browser.version()}`);
 
     const context = await browser.newContext({
-        acceptDownloads: false,
-        // Consider reducing viewport if memory is an issue, though default is usually fine
-        // viewport: { width: 1280, height: 1024 }, 
+        acceptDownloads: false, // Ensure no download prompts
     });
     console.log(`[PDF API][Handler] Playwright context created.`);
     const page = await context.newPage();
     console.log(`[PDF API][Handler] Playwright page created.`);
 
+    // Log console messages, errors, and failed requests from the Playwright page during development
     if (process.env.NODE_ENV === 'development') {
         page.on('console', msg => console.log('[PDF API][Playwright Page Console]', msg.type().toUpperCase(), msg.text()));
         page.on('pageerror', pageError => console.error('[PDF API][Playwright Page Error]', pageError.message, pageError.stack));
@@ -194,8 +194,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log(`[PDF API][Handler] Setting page content for PO ID: ${poId}`);
-    // Using a simple wrapper to ensure basic CSS (like font) can be applied by Playwright.
-    // The PrintablePO component itself should handle its internal styling.
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -210,14 +208,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ${htmlContent}
         </body>
       </html>`;
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 30000 }); 
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 30000 }); // 30-second timeout for setContent
     console.log(`[PDF API][Handler] Page content set. Generating PDF for PO ID: ${poId}`);
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '20mm', right: '10mm', bottom: '20mm', left: '10mm' },
-      timeout: 60000, // Timeout for PDF generation
+      timeout: 60000, // 60-second timeout for PDF generation
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
@@ -229,8 +227,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await context.close();
     console.log(`[PDF API][Handler] Playwright context closed.`);
     console.log(`[PDF API][Handler] Attempting to close Playwright browser for PO ID: ${poId}`);
-    await browser.close();
-    browser = null; 
+    await browser.close(); // This is where browser.close() is called
+    browser = null; // Mark as closed
     console.log(`[PDF API][Handler] Playwright browser closed successfully.`);
 
     const poNumberForFile = poData.poNumber || `PO-${poId}`;
@@ -261,9 +259,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error("[PDF API][Handler][MAIN CATCH BLOCK] Headers already sent, cannot send JSON error response.");
     }
   } finally {
-    if (browser) {
+    if (browser) { // Check if browser is not null (i.e., an error occurred before it was set to null)
       try {
-        console.warn(`[PDF API][Handler][FINALLY BLOCK] Ensuring Playwright browser is closed for PO ID: ${poId}`);
+        console.warn(`[PDF API][Handler][FINALLY BLOCK] Ensuring Playwright browser is closed (if not already) for PO ID: ${poId}`);
         await browser.close();
         console.warn(`[PDF API][Handler][FINALLY BLOCK] Playwright browser closed in finally block for PO ID: ${poId}`);
       } catch (closeError: any) {
