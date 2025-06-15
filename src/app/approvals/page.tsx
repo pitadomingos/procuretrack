@@ -70,37 +70,37 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'poNumber', 
       header: 'PO Number',
-      cell: ({row}) => <span className="font-medium">{row.original.poNumber}</span>
+      cell: (item) => <span className="font-medium">{item.poNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: ({row}) => format(new Date(row.original.creationDate), 'PP')
+      cell: (item) => format(new Date(item.creationDate), 'PP')
     },
     { 
       accessorKey: 'creatorName', 
       header: 'Creator',
-      cell: ({row}) => row.original.creatorName || 'N/A'
+      cell: (item) => item.creatorName || 'N/A'
     },
     { 
       accessorKey: 'supplierName', 
       header: 'Supplier',
-      cell: ({row}) => row.original.supplierName || 'N/A'
+      cell: (item) => item.supplierName || 'N/A'
     },
     { 
       accessorKey: 'requestedByName', 
       header: 'Requested By',
-      cell: ({row}) => row.original.requestedByName || 'N/A'
+      cell: (item) => item.requestedByName || 'N/A'
     },
     { 
       accessorKey: 'grandTotal', 
       header: 'Total Amount',
-      cell: ({row}) => `${row.original.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.original.currency}`
+      cell: (item) => `${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency}`
     },
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: ({row}) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
+      cell: (item) => <span className="text-orange-600 font-semibold">{item.status}</span>
     },
   ];
 
