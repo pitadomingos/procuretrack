@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, Paperclip } from 'lucide-react';
+import { Loader2, Send, Paperclip, ExternalLink } from 'lucide-react'; // Added ExternalLink
 import type { QuotePayload } from '@/types';
 
 interface EmailQuoteModalProps {
@@ -36,7 +36,6 @@ const JACHRIS_COMPANY_DETAILS = { // Duplicated for simplicity, ideally from a s
   website: 'www.jachris.com',
 };
 
-// Refactored DEFAULT_EMAIL_BODY to accept quoteData
 const generateDefaultEmailBody = (quoteDataForBody: QuotePayload) => `Dear ${quoteDataForBody.clientName || 'Valued Client'},
 
 Please find attached our quotation ${quoteDataForBody.quoteNumber} for your review.
@@ -64,43 +63,53 @@ export function EmailQuoteModal({ quoteData, open, onOpenChange }: EmailQuoteMod
   const [ccEmails, setCcEmails] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
-  const [isSending, setIsSending] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false); // Changed from isSending
   const { toast } = useToast();
 
   useEffect(() => {
     if (quoteData) {
       setToEmail(quoteData.clientEmail || '');
-      // Determine CC email using quoteData within the effect
-      const creatorCC = quoteData.creatorEmail || 'my.email@jachris.com'; // Fallback if quoteData.creatorEmail is not set
+      const creatorCC = quoteData.creatorEmail || MOCK_SENDER_EMAIL; // Use placeholder if creator not set
       setCcEmails(creatorCC);
       setSubject(`${DEFAULT_EMAIL_SUBJECT_PREFIX} ${quoteData.quoteNumber} for ${quoteData.clientName || 'Your Company'}`);
-      // Generate email body using the new function and current quoteData
       setBody(generateDefaultEmailBody(quoteData));
     }
-  }, [quoteData, open]); // Re-populate when modal opens or quoteData changes
+  }, [quoteData, open]);
 
-  const handleSendEmail = async () => {
-    setIsSending(true);
+  const handlePrepareEmail = async () => {
+    setIsPreparing(true);
+
+    const mailtoTo = encodeURIComponent(toEmail);
+    const mailtoCc = encodeURIComponent(ccEmails.split(',').map(e => e.trim()).filter(e => e).join(','));
+    const mailtoSubject = encodeURIComponent(subject);
+    const mailtoBody = encodeURIComponent(body);
+
+    let mailtoUrl = `mailto:${mailtoTo}?subject=${mailtoSubject}`;
+    if (mailtoCc) {
+      mailtoUrl += `&cc=${mailtoCc}`;
+    }
+    mailtoUrl += `&body=${mailtoBody}`;
     
-    // Simulate sending email
-    console.log('---- SIMULATING EMAIL SEND ----');
-    console.log('To:', toEmail);
-    console.log('CC:', ccEmails.split(',').map(e => e.trim()).filter(e => e));
-    console.log('Subject:', subject);
-    console.log('Body:\n', body);
-    console.log('Attachment: Quote PDF (simulated)');
-    console.log('---- END SIMULATION ----');
+    // Log for debugging, especially if mailto doesn't work as expected
+    console.log("Constructed mailto URL:", mailtoUrl);
+    if (mailtoUrl.length > 2000) { // Common limit for mailto URLs, varies by client
+        console.warn("Mailto URL is very long and might be truncated by some email clients.");
+    }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Attempt to open mailto link
+    // Using window.open for potentially better behavior than direct assignment in some browsers for _blank
+    // However, for mailto, direct assignment or a simple link click is often more reliable.
+    // Let's try direct assignment first as it's simpler and often works well for mailto.
+    window.location.href = mailtoUrl;
 
     toast({
-      title: 'Email Sent (Simulated)',
-      description: `Quotation ${quoteData.quoteNumber} would be emailed to ${toEmail}.`,
+      title: 'Email Ready to Prepare',
+      description: `Your default email client should open. Please review the email, attach the quote PDF (${quoteData.quoteNumber}.pdf), and send.`,
+      duration: 8000, // Longer duration for this type of message
     });
-    
-    setIsSending(false);
-    onOpenChange(false); // Close modal after "sending"
+
+    setIsPreparing(false);
+    onOpenChange(false); // Close modal
   };
 
   if (!quoteData) return null;
@@ -109,10 +118,10 @@ export function EmailQuoteModal({ quoteData, open, onOpenChange }: EmailQuoteMod
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Send Quotation: {quoteData.quoteNumber}</DialogTitle>
+          <DialogTitle>Prepare Email for Quotation: {quoteData.quoteNumber}</DialogTitle>
           <DialogDescription>
-            Configure and send the quotation email to {quoteData.clientName || 'the client'}.
-            The quote PDF will be attached automatically (simulated).
+            Review and edit the details below. Clicking &quot;Open in Email Client&quot; will prepare a new email in your default mail application.
+            <span className="font-semibold block mt-1">You will need to manually attach the quote PDF.</span>
           </DialogDescription>
         </DialogHeader>
         
@@ -140,20 +149,21 @@ export function EmailQuoteModal({ quoteData, open, onOpenChange }: EmailQuoteMod
           </div>
           <div className="flex items-center text-sm text-muted-foreground">
             <Paperclip className="h-4 w-4 mr-2" />
-            <span>{quoteData.quoteNumber}.pdf (Attachment - Simulated)</span>
+            <span>To be attached manually: {quoteData.quoteNumber}.pdf</span>
           </div>
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <Button variant="outline" disabled={isSending}>Cancel</Button>
+            <Button variant="outline" disabled={isPreparing}>Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSendEmail} disabled={isSending || !toEmail || !subject || !body}>
-            {isSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            {isSending ? 'Sending...' : 'Send Email'}
+          <Button onClick={handlePrepareEmail} disabled={isPreparing || !toEmail || !subject || !body}>
+            {isPreparing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+            {isPreparing ? 'Preparing...' : 'Open in Email Client'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
