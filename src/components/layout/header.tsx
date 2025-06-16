@@ -1,6 +1,7 @@
 
 'use client';
 
+import React, { useState, useEffect } from 'react'; // Added useState, useEffect
 import Link from 'next/link';
 import Image from 'next/image';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -22,6 +23,15 @@ import { useTheme } from 'next-themes';
 export function AppHeader() {
   const pathname = usePathname();
   const { setTheme } = useTheme();
+
+  // State for AvatarFallback to manage hydration
+  // Initialize with "U" as per the error log for server-rendered output
+  const [avatarFallbackContent, setAvatarFallbackContent] = useState("U"); 
+
+  useEffect(() => {
+    // After component mounts on the client, update to "PD"
+    setAvatarFallbackContent("PD");
+  }, []);
 
   const currentNavItem = navItems.find(item => {
     if (item.href === '/') return pathname === '/';
@@ -101,7 +111,7 @@ export function AppHeader() {
             width={40}
             height={40}
             className="rounded-sm object-contain"
-            style={{ height: 'auto' }} // Added to help with aspect ratio if width is constrained by CSS
+            style={{ height: 'auto' }} 
             data-ai-hint="company brand logo"
           />
         </div>
@@ -111,7 +121,7 @@ export function AppHeader() {
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="https://placehold.co/40x40.png" alt="User avatar" data-ai-hint="user avatar" />
-                <AvatarFallback>PD</AvatarFallback>
+                <AvatarFallback>{avatarFallbackContent}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
