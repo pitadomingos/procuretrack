@@ -56,9 +56,12 @@ export async function GET() {
       } else if (row.status === 'Pending Approval') {
         monthlyData[monthYear].Pending = (monthlyData[monthYear].Pending as number) + count;
       }
+      // Other statuses are ignored for this specific chart's series
     });
     
-    const chartData = monthOrder.sort().map(monthYear => monthlyData[monthYear]);
+    // Ensure monthOrder is sorted chronologically before mapping
+    monthOrder.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const chartData = monthOrder.map(monthYear => monthlyData[monthYear]);
 
     return NextResponse.json(chartData);
 

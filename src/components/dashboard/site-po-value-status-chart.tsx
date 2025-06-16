@@ -51,7 +51,7 @@ export function SitePOValueStatusChart() {
     <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">PO Value by Site & Status</CardTitle>
-        <CardDescription>Total Purchase Order value for various PO statuses by site.</CardDescription>
+        <CardDescription>Total Purchase Order value for various PO statuses by site (based on PO item sites).</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (

@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 interface FetchedStats {
   totalPOs: number;
   completedPOs: number;
-  partiallyCompletedPOs: number; // Added
+  partiallyCompletedPOs: number;
   pendingApprovalPOs: number;
   openPOs: number;
   totalRequisitions: number;
@@ -46,7 +46,7 @@ export default function DashboardPage() {
           switch (stat.title) {
             case 'Total POs': return { ...stat, value: data.totalPOs.toString() };
             case 'Completed POs': return { ...stat, value: data.completedPOs.toString() };
-            case 'Partially Completed POs': return { ...stat, value: data.partiallyCompletedPOs.toString() }; // Added
+            case 'Partially Completed POs': return { ...stat, value: data.partiallyCompletedPOs.toString() };
             case 'Pending Approval': return { ...stat, value: data.pendingApprovalPOs.toString() };
             case 'Open POs': return { ...stat, value: data.openPOs.toString() };
             case 'Total Requisitions': return { ...stat, value: data.totalRequisitions.toString() };
@@ -76,6 +76,12 @@ export default function DashboardPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
+    // Potentially re-fetch chart data with filters if chart APIs support them
+    // For now, FilterBar on dashboard is more illustrative
+    // To make charts filterable, their respective fetchChartData functions would need to accept filters
+    // and their API endpoints would need to handle those filter query parameters.
+    // For now, we'll just refresh the existing charts without new filters.
+    setRefreshKey(prevKey => prevKey + 1);
   };
 
   return (
@@ -90,7 +96,7 @@ export default function DashboardPage() {
 
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoadingStats ? (
-          Array.from({ length: initialDashboardStatsConfig.length }).map((_, index) => ( // Use initial config length
+          Array.from({ length: initialDashboardStatsConfig.length }).map((_, index) => (
             <div key={index} className="p-6 rounded-lg border bg-card shadow-sm flex flex-col justify-between h-[140px] items-center text-center">
               <div className="flex flex-row items-center justify-between space-y-0 pb-2 w-full">
                 <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div> 
