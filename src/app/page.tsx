@@ -5,11 +5,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { MonthlyStatusChart } from '@/components/dashboard/monthly-status-chart';
-import { SitePOValueStatusChart } from '@/components/dashboard/site-po-value-status-chart'; // Updated import
+import { SitePOValueStatusChart } from '@/components/dashboard/site-po-value-status-chart';
 import { ActivityLogTable } from '@/components/shared/activity-log-table';
 import { dashboardStats as initialDashboardStatsConfig, activityLogData } from '@/lib/mock-data';
 import type { StatCardItem } from '@/types';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FetchedStats {
@@ -27,6 +27,7 @@ export default function DashboardPage() {
   const [dashboardStats, setDashboardStats] = useState<StatCardItem[]>(initialDashboardStatsConfig);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0); // Key for refreshing charts
 
   const fetchDashboardStats = useCallback(async () => {
     setIsLoadingStats(true);
@@ -66,16 +67,27 @@ export default function DashboardPage() {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
+  const handleRefreshAllData = () => {
+    fetchDashboardStats();
+    setRefreshKey(prevKey => prevKey + 1); // Trigger chart re-mount and data fetch
+  };
+
   const handleFilterApply = (filters: any) => {
-    console.log('Applying filters to dashboard (stats will not refetch based on these filters yet):', filters);
-    // Future: Potentially refetch stats based on filters if API supports it
-    // For charts that fetch their own data, this filter bar won't directly control them unless
-    // we pass filter state down or use a global state/context.
+    console.log('Applying filters to dashboard:', filters);
+    // For now, filters don't directly refetch dashboard stats or charts
+    // Charts will refetch based on refreshKey, stats refetch via handleRefreshAllData
+    // To make charts react to filters, filters would need to be passed to them or a global state used.
   };
 
   return (
     <div className="space-y-6">
-      <FilterBar onFilterApply={handleFilterApply} />
+      <div className="flex justify-between items-center">
+        <FilterBar onFilterApply={handleFilterApply} />
+        <Button onClick={handleRefreshAllData} variant="outline" size="sm" className="ml-4">
+          <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </Button>
+      </div>
 
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {isLoadingStats ? (
@@ -110,8 +122,8 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <MonthlyStatusChart /> 
-        <SitePOValueStatusChart /> {/* Use the new dynamic chart */}
+        <MonthlyStatusChart key={`monthly-${refreshKey}`} /> 
+        <SitePOValueStatusChart key={`site-po-${refreshKey}`} />
       </section>
 
       <section>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import type { ApprovalQueueItem } from '@/types';
-import { Eye, Loader2, ThumbsDown, MessageSquareText, CheckCircle2 } from 'lucide-react';
+import { Eye, Loader2, ThumbsDown, MessageSquareText, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -152,7 +152,7 @@ export default function ApprovalsPage() {
     },
   ];
 
-  if (loading) {
+  if (loading && !pendingPOs.length) { // Show initial loading state
     return (
       <div className="flex flex-col justify-center items-center h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -161,12 +161,16 @@ export default function ApprovalsPage() {
     );
   }
 
-  if (error) {
+  if (error && !pendingPOs.length) { // Show error only if there's no data to display
     return (
       <div className="flex flex-col justify-center items-center h-[calc(100vh-200px)] text-destructive p-4">
-        <p className="font-semibold">Error loading approvals:</p>
-        <p className="text-sm mb-4 text-center">{error}</p>
-        <Button onClick={fetchPendingApprovals} variant="outline">Retry</Button>
+        <AlertTriangle className="h-10 w-10 mb-3" />
+        <p className="font-semibold text-center mb-2">Error loading approvals:</p>
+        <p className="text-sm text-center mb-4">{error}</p>
+        <Button onClick={fetchPendingApprovals} variant="outline" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          Retry
+        </Button>
       </div>
     );
   }
@@ -174,13 +178,34 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">My Pending Approvals</CardTitle>
-          <CardDescription>
-            Purchase Orders awaiting your approval. (Showing for: <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>)
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-2">
+          <div>
+            <CardTitle className="font-headline text-2xl">My Pending Approvals</CardTitle>
+            <CardDescription>
+              Purchase Orders awaiting your approval. (Showing for: <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>)
+            </CardDescription>
+          </div>
+          <Button onClick={fetchPendingApprovals} variant="outline" size="sm" disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Refreshing...' : 'Refresh List'}
+          </Button>
         </CardHeader>
         <CardContent>
+          {loading && pendingPOs.length > 0 && ( // Show subtle loading indicator when refreshing existing data
+            <div className="flex items-center justify-center py-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span>Refreshing data...</span>
+            </div>
+          )}
+          {error && pendingPOs.length > 0 && ( // Show non-blocking error if data is already present
+            <div className="mb-4 p-3 border-l-4 border-destructive bg-destructive/10 text-destructive-foreground flex items-start text-sm">
+              <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Failed to refresh:</p>
+                <p>{error}</p>
+              </div>
+            </div>
+          )}
           <DataTable
             columns={columns}
             data={pendingPOs}
@@ -211,7 +236,7 @@ export default function ApprovalsPage() {
               </div>
             )}
           />
-           {pendingPOs.length === 0 && !loading && (
+           {pendingPOs.length === 0 && !loading && !error && (
              <div className="text-center py-8 text-muted-foreground">
                 No purchase orders are currently pending your approval.
              </div>
