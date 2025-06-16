@@ -51,7 +51,7 @@ export function SitePOValueStatusChart() {
     <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">PO Value by Site & Status</CardTitle>
-        <CardDescription>Total Purchase Order value for various PO statuses by site (based on PO item sites).</CardDescription>
+        <CardDescription>Total Purchase Order value for Approved and Pending Approval POs by site.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -89,10 +89,8 @@ export function SitePOValueStatusChart() {
                 formatter={(value: number, name: string) => [formatCurrency(value), name]}
               />
               <Legend wrapperStyle={{ fontSize: '12px' }}/>
-              <Bar dataKey="Completed Value" stackId="a" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Partially Completed Value" stackId="a" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Open Value" name="Open Value (Approved)" stackId="a" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Pending Value" name="Pending Value (Approval)" stackId="a" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="ApprovedValue" name="Approved Value" stackId="a" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="PendingApprovalValue" name="Pending Approval Value" stackId="a" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         )}

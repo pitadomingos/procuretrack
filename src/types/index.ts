@@ -20,14 +20,12 @@ export interface ActivityLogEntry {
 
 export interface ChartDataPoint {
   name: string; // e.g., month or category
-  Completed?: number;
-  Open?: number; // Represents 'Approved' POs
-  Pending?: number; // Represents 'Pending Approval' POs
-  PartiallyCompleted?: number; // New status
-  'Completed Value'?: number;
-  'Open Value'?: number;
-  'Pending Value'?: number;
-  'Partially Completed Value'?: number; // New status value
+  // For Monthly PO Status Chart
+  'Pending Approval'?: number;
+  'Approved'?: number;
+  // For Site PO Value Chart
+  'PendingApprovalValue'?: number;
+  'ApprovedValue'?: number;
   [key: string]: number | string | undefined; // Allow other dynamic keys
 }
 
@@ -42,8 +40,8 @@ export interface POItem {
   uom: string;
   quantity: number;
   unitPrice: number;
-  quantityReceived?: number; // Added
-  itemStatus?: string; // Added: e.g., 'Pending', 'Partially Received', 'Fully Received'
+  quantityReceived?: number; 
+  itemStatus?: string; // e.g., 'Pending', 'Partially Received', 'Fully Received' - THIS IS UPDATED BY GRN
 }
 
 export interface Supplier {
@@ -111,8 +109,8 @@ export interface POItemPayload {
   uom: string;
   quantity: number;
   unitPrice: number;
-  quantityReceived: number; 
-  itemStatus: string; 
+  quantityReceived: number; // This will be updated by GRN process
+  itemStatus: string; // This will be updated by GRN process (e.g. 'Pending', 'Partially Received', 'Fully Received')
 }
 
 export interface POItemForPrint extends POItemPayload {
@@ -120,13 +118,12 @@ export interface POItemForPrint extends POItemPayload {
   categoryDisplay?: string;
 }
 
+// PO Header statuses are simplified
 export type PurchaseOrderStatus = 
   | 'Pending Approval' 
   | 'Approved' 
-  | 'Partially Completed' 
-  | 'Completed' 
   | 'Rejected' 
-  | 'Draft'; // Ensure all statuses are covered
+  | 'Draft';
 
 export interface PurchaseOrderPayload {
   id?: number;
@@ -136,14 +133,14 @@ export interface PurchaseOrderPayload {
   requestedByName?: string | null;
   supplierId: string | null;
   approverId: string | null;
-  status: PurchaseOrderStatus;
+  status: PurchaseOrderStatus; // Simplified PO status
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
   currency: string;
   pricesIncludeVat: boolean;
   notes?: string | null;
-  items: POItemPayload[] | POItemForPrint[];
+  items: POItemPayload[] | POItemForPrint[]; // Items will still hold quantityReceived and itemStatus updated by GRN
   approvalDate?: string | null;
   rejectionReason?: string | null;
   rejectionDate?: string | null;

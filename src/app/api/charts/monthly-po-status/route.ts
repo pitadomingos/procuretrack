@@ -1,12 +1,12 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js'; // Adjust path as needed
+import { pool } from '../../../../../backend/db.js'; 
 import type { ChartDataPoint } from '@/types';
 
 interface MonthlyPOQueryResult {
   month_year: string; // Format 'YYYY-MM'
   status: string;
-  count: number | string; // MySQL COUNT returns BigInt, which serializes to string
+  count: number | string; 
 }
 
 export async function GET() {
@@ -19,6 +19,7 @@ export async function GET() {
         status,
         COUNT(*) as count
       FROM PurchaseOrder
+      WHERE status IN ('Pending Approval', 'Approved') -- Only these two are direct PO statuses now
       GROUP BY month_year, status
       ORDER BY month_year ASC, status ASC;
     `;
@@ -36,10 +37,8 @@ export async function GET() {
         
         monthlyData[monthYear] = { 
           name: `${displayMonth} ${year}`, // Chart X-axis label
-          Completed: 0, 
-          PartiallyCompleted: 0,
-          Open: 0,      // Corresponds to 'Approved' POs
-          Pending: 0   // Corresponds to 'Pending Approval' POs
+          'Approved': 0,      
+          'Pending Approval': 0   
         };
         if (!monthOrder.includes(monthYear)) {
           monthOrder.push(monthYear);
@@ -47,19 +46,13 @@ export async function GET() {
       }
 
       const count = Number(row.count);
-      if (row.status === 'Completed') {
-        monthlyData[monthYear].Completed = (monthlyData[monthYear].Completed as number) + count;
-      } else if (row.status === 'Partially Completed') {
-        monthlyData[monthYear].PartiallyCompleted = (monthlyData[monthYear].PartiallyCompleted as number) + count;
-      } else if (row.status === 'Approved') { 
-        monthlyData[monthYear].Open = (monthlyData[monthYear].Open as number) + count;
+      if (row.status === 'Approved') { 
+        monthlyData[monthYear]['Approved'] = (monthlyData[monthYear]['Approved'] as number) + count;
       } else if (row.status === 'Pending Approval') {
-        monthlyData[monthYear].Pending = (monthlyData[monthYear].Pending as number) + count;
+        monthlyData[monthYear]['Pending Approval'] = (monthlyData[monthYear]['Pending Approval'] as number) + count;
       }
-      // Other statuses are ignored for this specific chart's series
     });
     
-    // Ensure monthOrder is sorted chronologically before mapping
     monthOrder.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
     const chartData = monthOrder.map(monthYear => monthlyData[monthYear]);
 

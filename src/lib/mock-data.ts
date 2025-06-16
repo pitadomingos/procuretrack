@@ -1,37 +1,25 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord } from '@/types';
-import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon } from 'lucide-react'; // Renamed TagIcon to TagLucideIcon, Added Package
+import { Archive, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
   {
     title: 'Total POs',
-    value: 'N/A', // Will be dynamic
+    value: 'N/A', 
     icon: Archive,
     description: 'All purchase orders created.',
   },
   {
-    title: 'Completed POs',
-    value: 'N/A', // Will be dynamic
-    icon: BadgeCheck,
-    description: 'POs fully received and closed.',
-  },
-  {
-    title: 'Partially Completed POs', // New Stat Card
-    value: 'N/A', // Will be dynamic
-    icon: ListChecksIcon, // Using ListChecks for partially completed
-    description: 'POs with some items received.',
-  },
-  {
-    title: 'Pending Approval', 
-    value: 'N/A', // Will be dynamic
+    title: 'Pending Approval POs', 
+    value: 'N/A', 
     icon: Loader,
     description: 'POs awaiting approval actions.',
   },
   {
-    title: 'Open POs', // Approved but not yet partially or fully completed/closed
-    value: 'N/A', // Will be dynamic
+    title: 'Open POs (Approved)', 
+    value: 'N/A', 
     icon: FolderOpen,
-    description: 'POs approved, items pending receipt.',
+    description: 'POs approved and awaiting receipt.',
   },
   {
     title: 'Total Requisitions',
@@ -53,26 +41,28 @@ export const dashboardStats: StatCardItem[] = [
   },
   {
     title: 'Goods Received Notes',
-    value: 'N/A',
+    value: 'N/A', // This will be a GRN specific stat
     icon: Truck,
     description: 'Overview of recent GRNs processed.',
   },
 ];
 
+// Mock data for Monthly PO Status Chart
 export const monthlyStatusData: ChartDataPoint[] = [
-  { name: 'Jan', Completed: 400, Open: 240, PartiallyCompleted: 100, Pending: 50 },
-  { name: 'Feb', Completed: 300, Open: 139, PartiallyCompleted: 90, Pending: 30 },
-  { name: 'Mar', Completed: 200, Open: 480, PartiallyCompleted: 120, Pending: 60 },
-  { name: 'Apr', Completed: 278, Open: 390, PartiallyCompleted: 80, Pending: 40 },
-  { name: 'May', Completed: 189, Open: 480, PartiallyCompleted: 70, Pending: 20 },
-  { name: 'Jun', Completed: 239, Open: 380, PartiallyCompleted: 110, Pending: 70 },
+  { name: 'Jan', 'Approved': 240, 'Pending Approval': 50 },
+  { name: 'Feb', 'Approved': 139, 'Pending Approval': 30 },
+  { name: 'Mar', 'Approved': 480, 'Pending Approval': 60 },
+  { name: 'Apr', 'Approved': 390, 'Pending Approval': 40 },
+  { name: 'May', 'Approved': 480, 'Pending Approval': 20 },
+  { name: 'Jun', 'Approved': 380, 'Pending Approval': 70 },
 ];
 
-export const allocationsData: ChartDataPoint[] = [
-  { name: 'TMW', Completed: 120, PartiallyCompleted: 60, Closed: 200 },
-  { name: 'MEM', Completed: 90, PartiallyCompleted: 40, Closed: 150 },
-  { name: 'FMS', Completed: 150, PartiallyCompleted: 80, Closed: 220 },
-  { name: 'CHW', Completed: 70, PartiallyCompleted: 30, Closed: 100 },
+// Mock data for Site PO Value Status Chart
+export const allocationsData: ChartDataPoint[] = [ // This name 'allocationsData' is a bit misleading now, it's for site PO values
+  { name: 'TMW', 'ApprovedValue': 180000, 'PendingApprovalValue': 60000 },
+  { name: 'MEM', 'ApprovedValue': 130000, 'PendingApprovalValue': 40000 },
+  { name: 'FMS', 'ApprovedValue': 230000, 'PendingApprovalValue': 80000 },
+  { name: 'CHW', 'ApprovedValue': 100000, 'PendingApprovalValue': 30000 },
 ];
 
 export const activityLogData: ActivityLogEntry[] = [
@@ -122,7 +112,6 @@ export const mockSitesData: Site[] = [
 export const monthsWithAll: FilterOption[] = [{ value: 'all', label: 'All Months' }, ...months];
 export const yearsWithAll: FilterOption[] = [{ value: 'all', label: 'All Years' }, ...years];
 
-// For FilterBar: Use actual Site IDs as values
 export const sitesWithAll: FilterOption[] = [
     { value: 'all', label: 'All Sites' },
     ...mockSitesData.map(s => ({value: s.id.toString(), label: `${s.siteCode || s.name} (${s.name})`}))
@@ -157,7 +146,7 @@ export const mockCategoriesData: Category[] = [
 
 export const poCountByCategoryData: ChartDataPoint[] = mockCategoriesData.slice(0,6).map(cat => ({
     name: cat.category,
-    Count: Math.floor(Math.random() * 100) + 20 // Random count for example
+    Count: Math.floor(Math.random() * 100) + 20
 }));
 
 
@@ -183,10 +172,10 @@ export const mockUsersData: User[] = [
 
 
 export const mockClients: Client[] = [
-  { id: 'client-001', name: 'Vale Mozambique', email: 'procurement@vale.co.mz', contactPerson: 'Mr. Silva', address: 'Vale Office Park, Moatize' },
-  { id: 'client-002', name: 'Mota-Engil', email: 'compras@mota-engil.mz', contactPerson: 'Ms. Ferreira', address: 'Mota-Engil Site, Tete' },
-  { id: 'client-003', name: 'WBHO', email: 'tenders.mz@wbho.co.za', contactPerson: 'Mr. Botha', address: 'WBHO Camp, Nacala Corridor' },
-  { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City' },
+  { id: 'client-001', name: 'Vale Mozambique', email: 'procurement@vale.co.mz', contactPerson: 'Mr. Silva', address: 'Vale Office Park, Moatize', city: 'Moatize', country: 'Mozambique' },
+  { id: 'client-002', name: 'Mota-Engil', email: 'compras@mota-engil.mz', contactPerson: 'Ms. Ferreira', address: 'Mota-Engil Site, Tete', city: 'Tete', country: 'Mozambique' },
+  { id: 'client-003', name: 'WBHO', email: 'tenders.mz@wbho.co.za', contactPerson: 'Mr. Botha', address: 'WBHO Camp, Nacala Corridor', city: 'Nacala', country: 'Mozambique' },
+  { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City', city: 'Tete', country: 'Mozambique' },
 ];
 
 export const mockPurchaseOrders: PurchaseOrderPayload[] = [
@@ -202,26 +191,25 @@ export const mockPurchaseOrders: PurchaseOrderPayload[] = [
     items: [{id:2, description: 'Service B', quantity:1, unitPrice:800, categoryId:5, uom:'SVC', quantityReceived: 0, itemStatus: 'Pending'}], subTotal: 800, vatAmount: 0, pricesIncludeVat: false, creatorUserId: 'user_005',
     approverName: 'Cobus de Klerk', supplierName: 'ADVANCED CONSULTORIA E SERVICOS ,LDA', creatorName: 'Gil Lunguze'
   },
-   {
-    id: 3, poNumber: 'PO-00003', creationDate: '2023-12-05T11:20:00Z', status: 'Completed',
+   { // This PO shows an example where its header status might be 'Approved' but items are received.
+     // However, per new logic, 'Completed' PO status is removed. GRN will track item completion.
+    id: 3, poNumber: 'PO-00003', creationDate: '2023-12-05T11:20:00Z', status: 'Approved', // Changed from 'Completed' to 'Approved'
     supplierId: 'AMT01', grandTotal: 25000, currency: 'MZN', requestedByName: 'Carol White', approverId: 'approver_001',
     items: [{id:3, description: 'Hardware C', quantity:50, unitPrice:431.03, categoryId:4, uom:'BOX', quantityReceived: 50, itemStatus: 'Fully Received'}], subTotal: 21551.72, vatAmount: 3448.28, pricesIncludeVat: false, creatorUserId: 'user_002',
     approverName: 'Cherinne de Klerk', supplierName: 'AMTECH ENGINEERING SOLUTIONS', creatorName: 'Portia Mbuva'
   },
 ];
 
-// For FilterBar: Use Approver IDs as values
 export const mockApproversFilter: FilterOption[] = [
   { value: 'all', label: 'All Approvers' },
   ...mockApproversData.map(app => ({ value: app.id, label: app.name })),
 ];
 
-// For FilterBar: Use User IDs as values for requestors
 export const mockRequestorsFilter: FilterOption[] = [
   { value: 'all', label: 'All Requestors' },
-  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'User') // Adjust roles as needed
+  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'User') 
                  .map(u => ({ value: u.id, label: u.name })),
-].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value))); // Ensure unique values
+].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value)));
 
 
 export const mockAllocationsData: Allocation[] = [
@@ -256,7 +244,7 @@ export const mockRequisitionsData: RequisitionPayload[] = [
             { id: 'reqi-1-2', partNumber: 'PEN-BL-BX', description: 'Blue Pens', categoryId: 1, quantity: 50, estimatedUnitPrice: 10, notes: 'Box of 50' },
         ],
         totalEstimatedValue: 2500,
-        siteName: 'TMW', // Site Code for display
+        siteName: 'TMW',
     },
     {
         id: 'REQ-MOCK-002',
@@ -270,7 +258,7 @@ export const mockRequisitionsData: RequisitionPayload[] = [
             { id: 'reqi-2-1', partNumber: 'SAF-HAT-YEL', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5, estimatedUnitPrice: 1000, notes: 'Standard safety helmets' },
         ],
         totalEstimatedValue: 5000,
-        siteName: 'TML', // Site Code for display
+        siteName: 'TML', 
     },
 ];
 
