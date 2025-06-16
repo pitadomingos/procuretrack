@@ -49,10 +49,10 @@ export async function PUT(request, { params }) {
     await connection.beginTransaction();
 
     const [poUpdateResult] = await connection.execute(
-      \`UPDATE PurchaseOrder SET 
+      `UPDATE PurchaseOrder SET 
         poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, siteId = ?,
         subTotal = ?, vatAmount = ?, grandTotal = ?, currency = ?, pricesIncludeVat = ?, notes = ?
-       WHERE id = ?\`,
+       WHERE id = ?`,
       [
         poNumber, new Date(creationDate), requestedByName, supplierId, approverId, siteId ? Number(siteId) : null,
         subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes,
@@ -70,8 +70,8 @@ export async function PUT(request, { params }) {
     if (items && items.length > 0) {
       for (const item of items) {
         await connection.execute(
-          \`INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\`,
+          `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             numericPoId, 
             item.partNumber || null, 
@@ -95,7 +95,7 @@ export async function PUT(request, { params }) {
     if (connection) {
       await connection.rollback();
     }
-    console.error(\`Error updating purchase order \${numericPoId}:\`, dbError);
+    console.error(`Error updating purchase order ${numericPoId}:`, dbError);
     const errorMessage = dbError instanceof Error ? dbError.message : String(dbError);
     return NextResponse.json({ error: 'Failed to update purchase order.', details: errorMessage }, { status: 500 });
   } finally {
@@ -104,3 +104,4 @@ export async function PUT(request, { params }) {
     }
   }
 }
+
