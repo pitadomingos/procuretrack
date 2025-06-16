@@ -5,11 +5,11 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
-import { EmailQuoteModal } from '@/components/quotes/email-quote-modal';
-import type { QuotePayload } from '@/types';
-import { ArrowLeft, Send, Download, Loader2 } from 'lucide-react';
+import type { QuotePayload, Approver } from '@/types'; // Added Approver
+import { ArrowLeft, Printer, Download, Loader2, ThumbsUp, ThumbsDown, Edit } from 'lucide-react'; // Added approval icons
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names
 
 function PrintQuotePageContent() {
   const router = useRouter();
@@ -20,9 +20,8 @@ function PrintQuotePageContent() {
   const [quoteData, setQuoteData] = useState<QuotePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  // const [isDownloading, setIsDownloading] = useState(false); // For PDF download if needed
   const [logoDataUri, setLogoDataUri] = useState<string | undefined>(undefined);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
 
 
   const fetchQuoteDataForPrint = useCallback(async () => {
@@ -30,15 +29,21 @@ function PrintQuotePageContent() {
     setLoading(true);
     setError(null);
     try {
-      const quoteRes = await fetch(`/api/quotes/${quoteId}`); // Mocked API
+      const quoteRes = await fetch(`/api/quotes/${quoteId}`); 
       if (!quoteRes.ok) {
         const errorData = await quoteRes.json().catch(() => ({ message: 'Failed to fetch quote details.' }));
         throw new Error(errorData.message || `Failed to fetch quote: ${quoteRes.statusText}`);
       }
       const data: QuotePayload = await quoteRes.json();
+
+      // If approverId exists, try to fetch approver name (mocked for now)
+      if (data.approverId) {
+        const approver = mockApproversData.find(appr => appr.id === data.approverId);
+        data.approverName = approver?.name;
+      }
+      
       setQuoteData(data);
 
-      // Fetch logo (same as PO print page)
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
         if (logoResponse.ok) {
@@ -73,9 +78,34 @@ function PrintQuotePageContent() {
   const handlePrint = () => {
     window.print();
   };
+  
+  const handleApproveQuote = async () => {
+    if (!quoteData) return;
+    setIsProcessingAction(true);
+    // Placeholder: Actual API call to /api/quotes/[id]/approve would go here
+    console.log(`Simulating approval for quote ${quoteData.quoteNumber}`);
+    toast({ title: "Quote Approved (Simulated)", description: `${quoteData.quoteNumber} marked as Approved.`});
+    setQuoteData(prev => prev ? ({ ...prev, status: 'Approved' }) : null);
+    setIsProcessingAction(false);
+  };
 
-  // PDF Download for Quotes - can be implemented similarly to POs if needed
-  // const handleDownloadPdf = async () => { ... };
+  const handleRejectQuote = async () => {
+    if (!quoteData) return;
+    setIsProcessingAction(true);
+    // Placeholder: Actual API call to /api/quotes/[id]/reject would go here
+    console.log(`Simulating rejection for quote ${quoteData.quoteNumber}`);
+    toast({ title: "Quote Rejected (Simulated)", description: `${quoteData.quoteNumber} marked as Rejected.`});
+    setQuoteData(prev => prev ? ({ ...prev, status: 'Rejected' }) : null);
+    setIsProcessingAction(false);
+  };
+  
+  const handleEditQuote = () => {
+    if (!quoteData || !quoteId) return;
+    // This will need a new page or modal for editing quotes. For now, placeholder.
+    toast({ title: "Edit Quote", description: "Quote editing functionality is not yet implemented.", variant: "default"});
+    // router.push(`/create-document?editQuoteId=${quoteId}`); // Example future route
+  };
+
 
   if (loading) {
     return (
@@ -108,29 +138,50 @@ function PrintQuotePageContent() {
       </div>
     );
   }
+  
+  const canEdit = quoteData.status === 'Draft' || quoteData.status === 'Pending Approval';
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
       <div className="print-page-inner-container container mx-auto max-w-4xl print:max-w-full print:p-0">
         <Card className="mb-6 print:hidden shadow-lg">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">
-              Quote Preview: {quoteData.quoteNumber}
-            </h1>
+            <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">
+                Quote: {quoteData.quoteNumber}
+                </h1>
+                <span className={`text-sm font-semibold px-2 py-1 rounded-md ${
+                    quoteData.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                    quoteData.status === 'Pending Approval' ? 'bg-yellow-100 text-yellow-700' :
+                    quoteData.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                    quoteData.status === 'Draft' ? 'bg-gray-100 text-gray-700' :
+                    'bg-blue-100 text-blue-700' // Default for 'Sent to Client', 'Archived'
+                }`}>
+                    {quoteData.status}
+                </span>
+            </div>
             <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
               <Button onClick={() => router.back()} variant="outline" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Close Preview
+                <ArrowLeft className="mr-2 h-4 w-4" /> Close
               </Button>
-              <Button onClick={() => setIsEmailModalOpen(true)} size="sm">
-                <Send className="mr-2 h-4 w-4" /> Prepare Email to Send Quote
-              </Button>
-              {/* <Button onClick={handlePrint} size="sm" variant="outline">
+              {canEdit && (
+                <Button onClick={handleEditQuote} variant="outline" size="sm" disabled={isProcessingAction}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit Quote
+                </Button>
+              )}
+              {quoteData.status === 'Pending Approval' && (
+                <>
+                  <Button onClick={handleApproveQuote} size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" disabled={isProcessingAction}>
+                    {isProcessingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />} Approve
+                  </Button>
+                  <Button onClick={handleRejectQuote} size="sm" variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700" disabled={isProcessingAction}>
+                    {isProcessingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsDown className="mr-2 h-4 w-4" />} Reject
+                  </Button>
+                </>
+              )}
+               <Button onClick={handlePrint} size="sm" variant="default">
                 <Printer className="mr-2 h-4 w-4" /> Print Quote
-              </Button> */}
-              {/* <Button onClick={handleDownloadPdf} disabled={isDownloading} size="sm">
-                {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                {isDownloading ? 'Preparing...' : 'Download PDF'}
-              </Button> */}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -139,13 +190,6 @@ function PrintQuotePageContent() {
          <PrintableQuote quoteData={quoteData} logoDataUri={logoDataUri} />
         </div>
       </div>
-      {isEmailModalOpen && quoteData && (
-        <EmailQuoteModal
-          open={isEmailModalOpen}
-          onOpenChange={setIsEmailModalOpen}
-          quoteData={quoteData}
-        />
-      )}
     </div>
   );
 }

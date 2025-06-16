@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -16,18 +16,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Send, Save, Eye } from 'lucide-react';
-import type { Client, QuoteItem, QuotePayload } from '@/types';
+import { PlusCircle, Trash2, Save, Eye } from 'lucide-react';
+import type { Client, QuoteItem, QuotePayload, Approver } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { mockApproversData } from '@/lib/mock-data'; // Using mock data for now
 
 const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
 interface QuoteFormValues {
   clientId: string | null;
-  clientNameDisplay: string; // For display purposes if client details are fetched
+  clientNameDisplay: string; 
   clientEmailDisplay: string;
   quoteDate: string;
   quoteNumberDisplay: string;
@@ -35,19 +36,21 @@ interface QuoteFormValues {
   termsAndConditions: string;
   notes: string;
   items: QuoteItem[];
+  approverId: string | null;
 }
 
-// Placeholder for current user's email - replace with actual auth context later
 const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
 
 export function QuoteForm() {
   const { toast } = useToast();
   const router = useRouter();
   const [subTotal, setSubTotal] = useState(0);
-  const [vatAmount, setVatAmount] = useState(0); // Assuming 16% MZN VAT for quotes too
+  const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
+  const [approvers, setApprovers] = useState<Approver[]>([]);
+
 
   const form = useForm<QuoteFormValues>({
     defaultValues: {
@@ -60,6 +63,7 @@ export function QuoteForm() {
       termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
       notes: '',
       items: [defaultItem],
+      approverId: null,
     },
     mode: 'onBlur',
   });
@@ -71,9 +75,10 @@ export function QuoteForm() {
 
   const fetchInitialData = useCallback(async () => {
     try {
-      const [clientsRes, nextQuoteNumRes] = await Promise.all([
+      const [clientsRes, nextQuoteNumRes, approversRes] = await Promise.all([
         fetch('/api/clients'),
-        fetch('/api/quotes/next-quote-number') // Mocked API
+        fetch('/api/quotes/next-quote-number'), // Mocked API
+        fetch('/api/approvers') // Assuming API for approvers
       ]);
 
       if (clientsRes.ok) {
@@ -90,9 +95,21 @@ export function QuoteForm() {
         form.setValue('quoteNumberDisplay', 'Q-ERROR');
         toast({ title: "Error", description: "Could not load next quote number.", variant: "destructive" });
       }
+
+      if (approversRes.ok) {
+        const approversData = await approversRes.json();
+        setApprovers(approversData);
+      } else {
+        // Fallback to mock data if API fails or not ready
+        console.warn('Failed to fetch approvers from API, using mock data.');
+        setApprovers(mockApproversData); 
+        // toast({ title: "Error", description: "Could not load approvers.", variant: "destructive" });
+      }
+
     } catch (error) {
       toast({ title: "Error Loading Data", description: "Could not load initial form data.", variant: "destructive" });
       form.setValue('quoteNumberDisplay', 'Q-ERROR');
+      setApprovers(mockApproversData); // Fallback for approvers on general error
     }
   }, [form, toast]);
 
@@ -114,7 +131,6 @@ export function QuoteForm() {
 
     let newDisplaySubTotal = calculatedInputSum;
     let newDisplayVatAmount = 0;
-    // Example: Apply 16% VAT if currency is MZN. Adjust as needed.
     if (watchedCurrency === 'MZN') {
         newDisplayVatAmount = newDisplaySubTotal * 0.16;
     }
@@ -128,7 +144,7 @@ export function QuoteForm() {
     if (selectedClient) {
       form.setValue('clientId', selectedClient.id);
       form.setValue('clientNameDisplay', selectedClient.name);
-      form.setValue('clientEmailDisplay', selectedClient.email);
+      form.setValue('clientEmailDisplay', selectedClient.email || '');
     } else {
       form.setValue('clientNameDisplay', '');
       form.setValue('clientEmailDisplay', '');
@@ -147,6 +163,7 @@ export function QuoteForm() {
     setIsSubmitting(true);
 
     const selectedClient = clients.find(c => c.id === formData.clientId);
+    const quoteStatus = formData.approverId ? 'Pending Approval' : 'Draft';
 
     const payload: QuotePayload = {
       quoteNumber: formData.quoteNumberDisplay,
@@ -154,7 +171,7 @@ export function QuoteForm() {
       clientId: formData.clientId,
       clientName: selectedClient?.name,
       clientEmail: selectedClient?.email,
-      creatorEmail: MOCK_CREATOR_EMAIL, // Placeholder
+      creatorEmail: MOCK_CREATOR_EMAIL, 
       subTotal: subTotal,
       vatAmount: vatAmount,
       grandTotal: grandTotal,
@@ -162,18 +179,18 @@ export function QuoteForm() {
       termsAndConditions: formData.termsAndConditions,
       notes: formData.notes,
       items: formData.items.map(item => ({
-        id: item.id, // Keep client-side ID for now
+        id: item.id, 
         partNumber: item.partNumber,
         customerRef: item.customerRef,
         description: item.description,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
       })),
-      status: 'Draft',
+      status: quoteStatus,
+      approverId: formData.approverId,
     };
 
     try {
-      // Simulate POST request
       const response = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -185,10 +202,9 @@ export function QuoteForm() {
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
       
-      const result = await response.json(); // Expecting { message: string, quoteId: string }
-      toast({ title: 'Quote Saved (Simulated)', description: `Quote ${payload.quoteNumber} has been saved.` });
+      const result = await response.json(); 
+      toast({ title: 'Quote Saved (Simulated)', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}.` });
       
-      // Redirect to preview page with the mock ID
       router.push(`/quotes/${result.quoteId}/print`);
 
     } catch (error: any) {
@@ -228,21 +244,39 @@ export function QuoteForm() {
               <FormField control={form.control} name="quoteDate" rules={{ required: 'Quote Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Quote Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
 
-            <FormField control={form.control} name="currency" render={({ field }) => (
-              <FormItem className="w-full md:w-1/3">
-                <FormLabel>Currency</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || 'MZN'}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    <SelectItem value="MZN">MZN</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="ZAR">ZAR</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <div className="grid md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="currency" render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>Currency</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || 'MZN'}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="MZN">MZN</SelectItem>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="ZAR">ZAR</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                 <FormField
+                  control={form.control} name="approverId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Assign Approver (Optional)</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None (Save as Draft)</SelectItem>
+                          {approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
 
             <Separator />
             <h3 className="text-lg font-medium font-headline">Quotation Items</h3>
@@ -343,7 +377,7 @@ export function QuoteForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Ensure all client and item details are correct before saving. This quote will be saved as a draft.
+          Select an approver to submit the quote for approval, or leave blank to save as a draft.
         </p>
       </CardFooter>
     </Card>

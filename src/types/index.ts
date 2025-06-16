@@ -1,5 +1,4 @@
 
-
 import type { LucideIcon } from 'lucide-react';
 
 export interface StatCardItem {
@@ -120,7 +119,6 @@ export interface PurchaseOrderPayload {
   requestedByName?: string | null;
   supplierId: string | null;
   approverId: string | null;
-  // siteId?: number | null; // Removed Overall PO Site ID
   status: string;
   subTotal: number;
   vatAmount: number;
@@ -195,7 +193,10 @@ export interface QuotePayload {
   termsAndConditions?: string;
   notes?: string;
   items: QuoteItem[];
-  status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived';
+  status: 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Sent to Client' | 'Archived';
+  approverId?: string | null;
+  approverName?: string; // For display
+  approvalDate?: string | null;
 }
 
 export interface RequisitionItem {
@@ -261,4 +262,3 @@ export interface FilterOption {
   value: string;
   label: string;
 }
-

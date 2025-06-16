@@ -1,9 +1,10 @@
 
 import { NextResponse } from 'next/server';
-import type { QuotePayload } from '@/types';
+import type { QuotePayload, Approver } from '@/types';
 import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names
 
 // Mock database for quotes
 const MOCK_QUOTES_DB: QuotePayload[] = [];
@@ -59,24 +60,22 @@ export async function POST(request: Request) {
           .on('data', (data) => results.push(data))
           .on('end', () => {
             console.log('Parsed Quote Header CSV data:', results);
-            // Here you would typically validate and process `results` into your DB
-            // For now, just logging. Items would be added via UI.
             results.forEach(quoteHeader => {
-                // Simulate adding to mock DB if needed for testing list view
                 const newQuoteId = `MOCK-QID-CSV-${Date.now()}-${Math.random().toString(36).substring(7)}`;
                 MOCK_QUOTES_DB.push({
                     id: newQuoteId,
-                    quoteNumber: `Q-CSV-${newQuoteId.slice(-5)}`, // Placeholder number
+                    quoteNumber: `Q-CSV-${newQuoteId.slice(-5)}`, 
                     quoteDate: quoteHeader['QuoteDate (YYYY-MM-DD)'] ? new Date(quoteHeader['QuoteDate (YYYY-MM-DD)']).toISOString() : new Date().toISOString(),
                     clientId: quoteHeader['ClientID'],
                     currency: quoteHeader['Currency'] || 'MZN',
                     termsAndConditions: quoteHeader['TermsAndConditions'],
                     notes: quoteHeader['Notes'],
-                    subTotal: 0, // Items to be added via UI
+                    subTotal: 0, 
                     vatAmount: 0,
                     grandTotal: 0,
                     items: [],
-                    status: 'Draft',
+                    status: 'Draft', // Default status for CSV import
+                    approverId: quoteHeader['ApproverID'] || null,
                 });
             });
             resolve();
@@ -98,7 +97,7 @@ export async function POST(request: Request) {
       const newQuote: QuotePayload = {
         ...quoteData,
         id: newQuoteId,
-        status: 'Draft',
+        // status is already set in payload from form
       };
       MOCK_QUOTES_DB.push(newQuote);
       console.log('Mocked saving quote (JSON):', newQuote);
@@ -117,7 +116,14 @@ export async function GET(request: Request) {
   const month = searchParams.get('month');
   const year = searchParams.get('year');
 
-  let filteredQuotes = MOCK_QUOTES_DB;
+  let filteredQuotes = MOCK_QUOTES_DB.map(quote => {
+    let approverName;
+    if (quote.approverId) {
+      const approver = mockApproversData.find(appr => appr.id === quote.approverId);
+      approverName = approver?.name;
+    }
+    return { ...quote, approverName };
+  });
 
   if (month && month !== 'all') {
     filteredQuotes = filteredQuotes.filter(q => {
