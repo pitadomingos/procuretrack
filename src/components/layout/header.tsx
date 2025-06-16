@@ -110,7 +110,7 @@ export function AppHeader() {
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="https://placehold.co/40x40.png" alt="User avatar" data-ai-hint="user avatar" />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback>PD</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

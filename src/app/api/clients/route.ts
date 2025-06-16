@@ -35,8 +35,18 @@ export async function GET() {
     const [rows] = await pool.execute('SELECT id, name, address, city, country, contactPerson, email, createdAt, updatedAt FROM Client ORDER BY name ASC');
     return NextResponse.json(rows);
   } catch (error: any) {
-    console.error('Error fetching clients from DB:', error);
-    return NextResponse.json({ error: 'Failed to fetch clients from database', details: error.message }, { status: 500 });
+    console.error('[API_ERROR] /api/clients GET: Error fetching clients from DB:', error);
+    console.error('[API_ERROR_DETAILS] /api/clients GET: Error message:', error.message);
+    console.error('[API_ERROR_DETAILS] /api/clients GET: Error name:', error.name);
+    console.error('[API_ERROR_DETAILS] /api/clients GET: Error code:', error.code); // For DB specific errors
+    console.error('[API_ERROR_DETAILS] /api/clients GET: Error stack:', error.stack);
+    return NextResponse.json(
+        { 
+            error: 'Failed to fetch clients from database. Please check server logs for more details.', 
+            details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error.'
+        }, 
+        { status: 500 }
+    );
   }
 }
 
@@ -85,7 +95,7 @@ export async function POST(request: Request) {
         await connection.beginTransaction();
 
         for (const record of results) {
-          const clientId = record.ID || record.id || randomUUID(); // Allow 'ID' or 'id' from CSV or generate
+          const clientId = record.ID || record.id || randomUUID(); 
           const clientName = record.Name || record.name;
           const clientAddress = record.Address || record.address || null;
           const clientCity = record.City || record.city || null;
@@ -124,7 +134,7 @@ export async function POST(request: Request) {
         await connection.commit();
       } catch (transactionError: any) {
         await connection.rollback();
-        console.error('Transaction error during CSV client import:', transactionError);
+        console.error('[API_ERROR] /api/clients POST CSV: Transaction error during client import:', transactionError);
         return NextResponse.json({ error: 'Transaction failed during CSV import.', details: transactionError.message, errors }, { status: 500 });
       } finally {
         connection.release();
@@ -138,7 +148,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message, errors: errors.length > 0 ? errors : undefined }, { status: errors.length > 0 && successfulInserts === 0 ? 400 : 200 });
 
     } catch (error: any) {
-      console.error('Error handling client CSV upload:', error);
+      console.error('[API_ERROR] /api/clients POST CSV: Error handling client CSV upload:', error);
       if (error instanceof multer.MulterError) {
         return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
       }
@@ -178,7 +188,7 @@ export async function POST(request: Request) {
       return NextResponse.json(newClientRows[0], { status: 201 });
 
     } catch (error: any) {
-      console.error('Error creating client (JSON):', error);
+      console.error('[API_ERROR] /api/clients POST JSON: Error creating client:', error);
       if (error.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'Client with this ID already exists.' }, { status: 409 });
       }
