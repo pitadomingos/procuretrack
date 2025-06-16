@@ -125,8 +125,8 @@ export async function POST(request) {
       const finalCreatorUserId = creatorUserId || null;
 
       const [poResult] = await connection.execute(
-        \`INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\`,
+        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, siteId || null, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
       );
 
@@ -135,8 +135,8 @@ export async function POST(request) {
       if (items && items.length > 0) {
         for (const item of items) {
           await connection.execute(
-            \`INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\`,
+            `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [newPoId, item.partNumber, item.description, item.categoryId, item.siteId || null, item.uom, Number(item.quantity), Number(item.unitPrice), item.quantityReceived || 0, item.itemStatus || 'Pending']
           );
         }
@@ -176,11 +176,11 @@ export async function POST(request) {
           })
           .on('error', reject);
       });
-      return NextResponse.json({ message: \`Purchase order CSV uploaded and parsed successfully. \${results.length} POs found. (Data not saved to DB yet)\`, data: results });
+      return NextResponse.json({ message: `Purchase order CSV uploaded and parsed successfully. ${results.length} POs found. (Data not saved to DB yet)`, data: results });
     } catch (error) {
       console.error('Error handling purchase order file upload:', error);
       if (error instanceof multer.MulterError) {
-        return NextResponse.json({ error: \`Multer error: \${error.message}\` }, { status: 400 });
+        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
       }
       return NextResponse.json({ error: 'Failed to handle purchase order file upload' }, { status: 500 });
     }
@@ -188,3 +188,4 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
+
