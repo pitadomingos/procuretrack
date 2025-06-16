@@ -98,9 +98,9 @@ export function AppHeader() {
           <Image
             src="/jachris-logo.png" // Assuming logo is in public folder
             alt="Company Logo"
-            width={40} // Increased width
-            height={40} // Increased height
-            className="rounded-sm" // Optional: add some rounding if desired
+            width={40} 
+            height={40} 
+            className="rounded-sm"
             data-ai-hint="company brand logo"
           />
         </div>
