@@ -11,9 +11,9 @@ export function StatCard({ title, value, icon: Icon, description, change, change
         <CardTitle className="text-sm font-medium text-card-foreground/80">{title}</CardTitle>
         <Icon className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold font-headline text-card-foreground">{value}</div>
-        {description && <p className="text-xs text-muted-foreground pt-1">{description}</p>}
+      <CardContent className="flex flex-col items-center justify-center text-center">
+        <div className="text-3xl font-bold font-headline text-card-foreground">{value}</div>
+        {description && <p className="text-xs text-muted-foreground pt-1 mt-1">{description}</p>}
         {change && (
           <p className={cn(
             "text-xs text-muted-foreground pt-1",

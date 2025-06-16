@@ -7,7 +7,7 @@ import { FilterBar } from '@/components/shared/filter-bar';
 import { MonthlyStatusChart } from '@/components/dashboard/monthly-status-chart';
 import { AllocationsChart } from '@/components/dashboard/allocations-chart';
 import { ActivityLogTable } from '@/components/shared/activity-log-table';
-import { dashboardStats as initialDashboardStatsConfig, monthlyStatusData, allocationsData, activityLogData } from '@/lib/mock-data';
+import { dashboardStats as initialDashboardStatsConfig, allocationsData, activityLogData } from '@/lib/mock-data'; // Removed monthlyStatusData
 import type { StatCardItem } from '@/types';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -69,6 +69,8 @@ export default function DashboardPage() {
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard (stats will not refetch based on these filters yet):', filters);
     // Future: Potentially refetch stats based on filters if API supports it
+    // For charts that fetch their own data, this filter bar won't directly control them unless
+    // we pass filter state down or use a global state/context.
   };
 
   return (
@@ -78,14 +80,14 @@ export default function DashboardPage() {
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {isLoadingStats ? (
           Array.from({ length: 8 }).map((_, index) => (
-            <div key={index} className="p-6 rounded-lg border bg-card shadow-sm flex flex-col justify-between h-[120px]">
-              <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div className="h-4 bg-muted rounded w-3/4"></div> {/* Skeleton for title */}
+            <div key={index} className="p-6 rounded-lg border bg-card shadow-sm flex flex-col justify-between h-[140px] items-center text-center">
+              <div className="flex flex-row items-center justify-between space-y-0 pb-2 w-full">
+                <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div> {/* Skeleton for title */}
                 <div className="h-5 w-5 bg-muted rounded-full"></div> {/* Skeleton for icon */}
               </div>
-              <div>
-                <div className="h-7 bg-muted rounded w-1/2 mb-1"></div> {/* Skeleton for value */}
-                <div className="h-3 bg-muted rounded w-full"></div> {/* Skeleton for description */}
+              <div className="w-full flex flex-col items-center">
+                <div className="h-8 bg-muted rounded w-1/2 mb-1"></div> {/* Skeleton for value */}
+                <div className="h-3 bg-muted rounded w-full mt-1"></div> {/* Skeleton for description */}
               </div>
             </div>
           ))
@@ -108,8 +110,8 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <MonthlyStatusChart data={monthlyStatusData} />
-        <AllocationsChart data={allocationsData} />
+        <MonthlyStatusChart /> {/* Will fetch its own data */}
+        <AllocationsChart data={allocationsData} /> {/* Continues using mock data */}
       </section>
 
       <section>
