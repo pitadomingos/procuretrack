@@ -96,11 +96,11 @@ export function AppHeader() {
         {/* Company Logo */}
         <div className="mx-2">
           <Image
-            src="/headerlogo.png" // Use headerlogo.png
+            src="/headerlogo.png" 
             alt="Company Logo"
             width={40} 
             height={40} 
-            className="rounded-sm"
+            className="rounded-sm object-contain"
             data-ai-hint="company brand logo"
           />
         </div>
@@ -109,7 +109,7 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="pitaD.png" alt="User avatar" data-ai-hint="user avatar" />
+                <AvatarImage src="https://placehold.co/40x40.png" alt="User avatar" data-ai-hint="user avatar" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
             </Button>
