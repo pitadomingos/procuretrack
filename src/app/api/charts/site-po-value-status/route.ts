@@ -37,7 +37,7 @@ export async function GET() {
     const siteData: { [key: string]: ChartDataPoint } = {};
     const siteOrder: string[] = [];
 
-    for (const po of poRows as Array<Omit<SitePOValueQueryResult, 'total_value'> & {total_value: number | string}>) {
+    for (const po of poRows as Array<Omit<SitePOValueQueryResult, 'total_value'> & {total_value: number | string | null}>) {
       const siteIdentifier = po.site_identifier;
       if (!siteData[siteIdentifier]) {
         siteData[siteIdentifier] = { 
@@ -51,13 +51,13 @@ export async function GET() {
         }
       }
 
-      const poValue = Number(po.total_value);
+      const poValue = Number(po.total_value) || 0; // Ensure poValue is 0 if total_value is null, undefined or NaN
 
-      if (po.status === 'Pending Approval') {
+      if (po.status && po.status.trim() === 'Pending Approval') {
         siteData[siteIdentifier]['Pending Value'] = (siteData[siteIdentifier]['Pending Value'] as number) + poValue;
-      } else if (po.status === 'Completed') {
+      } else if (po.status && po.status.trim() === 'Completed') {
         siteData[siteIdentifier]['Completed Value'] = (siteData[siteIdentifier]['Completed Value'] as number) + poValue;
-      } else if (po.status === 'Approved') {
+      } else if (po.status && po.status.trim() === 'Approved') {
         // For 'Approved' POs, check item status
         const [itemRows]: any[] = await connection.execute(
           'SELECT quantity, quantityReceived FROM POItem WHERE poId = ?', 
@@ -65,7 +65,7 @@ export async function GET() {
         );
         
         let allItemsFullyReceived = true;
-        if (itemRows.length === 0) { // If an approved PO has no items, consider it open (or handle as error/edge case)
+        if (itemRows.length === 0) { // If an approved PO has no items, consider it open
           allItemsFullyReceived = false; 
         }
 
