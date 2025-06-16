@@ -43,15 +43,17 @@ export default function UserManualPage() {
 
           <section>
             <h2 className="text-xl font-semibold mb-2">4. Creating Documents</h2>
-            <div className="ml-4 space-y-2">
+            <div className="ml-4 space-y-3">
               <h3 className="text-lg font-medium">4.1 Purchase Orders (PO)</h3>
-              <p className="text-muted-foreground">(Step-by-step guide on how to create, submit, and manage Purchase Orders.)</p>
+              <p className="text-muted-foreground">(Step-by-step guide on how to create, submit, edit, and manage Purchase Orders.)</p>
               <h3 className="text-lg font-medium">4.2 Goods Received Notes (GRN)</h3>
               <p className="text-muted-foreground">(Instructions on how to receive items against a Purchase Order and generate GRNs.)</p>
-              <h3 className="text-lg font-medium">4.3 Quotations (Future)</h3>
-              <p className="text-muted-foreground">(This section will cover creating and managing supplier quotations.)</p>
-              <h3 className="text-lg font-medium">4.4 Fuel Records (Future)</h3>
-              <p className="text-muted-foreground">(This section will detail how to record and track fuel consumption.)</p>
+              <h3 className="text-lg font-medium">4.3 Client Quotations</h3>
+              <p className="text-muted-foreground">(How to create client quotations, add items, and preview them for sending.)</p>
+              <h3 className="text-lg font-medium">4.4 Purchase Requisitions</h3>
+              <p className="text-muted-foreground">(Guide on creating internal purchase requisitions, adding items, and submitting them for approval.)</p>
+              <h3 className="text-lg font-medium">4.5 Fuel Records</h3>
+              <p className="text-muted-foreground">(This section will detail how to record fuel consumption, select tags/vehicles, and track odometer readings.)</p>
             </div>
           </section>
 
@@ -59,8 +61,15 @@ export default function UserManualPage() {
             <h2 className="text-xl font-semibold mb-2">5. Management Section</h2>
             <p className="text-muted-foreground">
               The management section allows administrators to configure and maintain core data entities.
-              (Details on managing Approvers, Users, Sites, Allocations, and Categories.)
             </p>
+            <ul className="list-disc list-inside text-muted-foreground ml-4">
+              <li><strong>Sites:</strong> Add, view, edit, and delete company sites/locations.</li>
+              <li><strong>Categories:</strong> (Future) Manage item and service categories.</li>
+              <li><strong>Tags (Vehicles/Equipment):</strong> (Future) Manage tagged assets.</li>
+              <li><strong>Clients:</strong> (Future) Manage client information.</li>
+              <li><strong>Approvers & Users:</strong> (Future) Manage user accounts, roles, and approver assignments (tied to custom authentication).</li>
+              <li><strong>Allocations:</strong> (Legacy - To be reviewed) Manage cost allocations/departments.</li>
+            </ul>
           </section>
 
           <section>

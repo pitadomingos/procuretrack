@@ -24,7 +24,10 @@ import {
   UserCheck, 
   ServerCog, 
   Edit3, 
-  ClipboardList // Added ClipboardList here
+  ClipboardList,
+  Building,
+  UploadCloud,
+  Table2
 } from "lucide-react";
 
 export default function TodoProgressPage() {
@@ -34,7 +37,7 @@ export default function TodoProgressPage() {
     { icon: LayoutList, text: "Core App Layout: Collapsible sidebar, header, theme provider." },
     { icon: Palette, text: "Dark Mode & Light Mode theme toggle functionality." },
     { icon: LayoutDashboard, text: "Dashboard Page: Stat cards, placeholder charts for PO status and allocations." },
-    { icon: FileSignature, text: "Create Document Page: Tabbed interface for PO, GRN, Quote (placeholder), Fuel (placeholder)." },
+    { icon: FileSignature, text: "Create Document Page: Tabbed interface for PO, GRN, Quote, Requisition, Fuel." },
     { icon: FileSignature, text: "Purchase Order (PO) Form: Detailed form for creating POs with item arrays, calculations, supplier selection, and support for editing existing POs." },
     { icon: Edit3, text: "PO Editing Functionality: Load existing PO data into form, update header & items via API, manage PO number display (read-only in edit mode)." },
     { icon: Printer, text: "PO PDF Generation: Server-side creation and download of POs as PDF documents using Puppeteer, including print styling." },
@@ -43,7 +46,11 @@ export default function TodoProgressPage() {
     { icon: DatabaseZap, text: "Database Schema Management: Ensured correct handling of `PurchaseOrder` table's `approverId` and removed obsolete `approvedByUserId` columns/logic, updated related foreign keys." },
     { icon: Users, text: "Goods Received Note (GRN) Interface: PO search and item receiving simulation." },
     { icon: Settings, text: "Management Section Hub: Links to individual entity management pages." },
-    { icon: Users, text: "Placeholder Management Pages: For Approvers, Users, Sites, Allocations, Categories with mock data tables." },
+    { icon: Users, text: "Placeholder Management Pages: For Approvers, Users, Allocations, Categories with mock data tables." },
+    { icon: Building, text: "Site Management: Full CRUD operations for managing company sites (Add, View, Edit, Delete) with backend API and UI integration." },
+    { icon: FileSignature, text: "Client Quotation Form & List View: UI for creating quotes, list view with mock data, print preview." },
+    { icon: ClipboardList, text: "Purchase Requisition Form & List View: UI for creating requisitions, list view with mock data, print preview, part number field." },
+    { icon: Fuel, text: "Fuel Record Form & List View: UI for recording fuel, list view with mock data, distance travelled calculation, site code display." },
     { icon: ListChecks, text: "Activity Log Page: Displaying mock activity data." },
     { icon: BarChart3, text: "Analytics Page: Charts for Spend by Vendor, PO Count by Category, and placeholders for Quote/Fuel." },
     { icon: FileText, text: "Reports Page: Placeholder for future reporting features." },
@@ -52,15 +59,15 @@ export default function TodoProgressPage() {
   ];
 
   const upcomingTasks = [
-    { icon: DatabaseZap, text: "Full Backend Integration: Connect forms and tables to the MySQL database via Express API for all CRUD operations (Suppliers, Users, Sites, Categories, etc.)." },
+    { icon: DatabaseZap, text: "Full Backend Integration: Connect forms and tables to the MySQL database via Express API for all CRUD operations (Suppliers, Categories, Tags, Clients, etc.)." },
+    { icon: UploadCloud, text: "CSV Data Upload Functionality: Implement CSV uploads for Fuel Records, Quotes (headers), and potentially other entities like Suppliers, POs. Create CSV templates." },
+    { icon: Table2, text: "Database Table Creation Scripts: Finalize and test scripts for all new entities (Clients, Quotes, Requisitions, Tags, Fuel Records)." },
     { icon: FileSignature, text: "Complete GRN Functionality: Actual item receipt processing, stock updates, back-order handling." },
-    { icon: ClipboardList, text: "Implement Purchase Requisition & Supplier Quotation Process: Forms for internal requisitions, handling supplier quotes, and converting to POs." },
-    { icon: Fuel, text: "Implement 'Record Fuel' Form & Logic: Track fuel consumption, vehicle mileage, and inventory." },
+    { icon: Fuel, text: "Complete 'Record Fuel' Logic: Backend saving of fuel records and robust distance calculation if API needs more complex logic." },
     { icon: FileText, text: "Develop Report Generation: Create dynamic reports based on system data (PO status, spend, vendor performance)." },
-    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement login, user roles, and permissions (critical for 'My Approvals' with actual user)." },
+    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement custom login, user roles, and permissions." },
     { icon: BrainCircuit, text: "Integrate Genkit for AI Features: Explore AI-assisted form filling, data analysis, or report summaries." },
     { icon: Zap, text: "Real-time Notifications (e.g., Email for PO approvals, new assignments)." },
-    { icon: DatabaseZap, text: "Data Upload Functionality: Implement CSV/Excel uploads for suppliers, POs, etc. via backend routes." },
     { icon: Users, text: "User Profile & Settings Page: Allow users to manage their preferences." },
   ];
 
