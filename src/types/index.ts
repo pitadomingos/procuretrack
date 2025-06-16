@@ -128,6 +128,7 @@ export interface PurchaseOrderPayload {
   notes?: string | null;
   items: POItemPayload[] | POItemForPrint[];
   approvalDate?: string | null;
+  // siteId removed from here
   rejectionReason?: string | null;
   rejectionDate?: string | null;
   supplierDetails?: Supplier;
@@ -161,11 +162,14 @@ export interface POReviewItem extends POItemPayload {
 export interface Client {
   id: string;
   name: string;
-  email?: string | null;
-  contactPerson?: string | null;
-  contactNumber?: string | null;
   address?: string | null;
-  nuit?: string | null; 
+  city?: string | null;
+  country?: string | null;
+  contactPerson?: string | null; // Mapped from CSV "Contact"
+  email?: string | null;         // Mapped from CSV "Email"
+  // nuit and contactNumber removed
+  createdAt?: string; // DATETIME from DB
+  updatedAt?: string; // DATETIME from DB
 }
 
 export interface QuoteItem {

@@ -105,13 +105,17 @@ export default function ManageClientsPage() {
             body: formData,
         });
 
+        const result = await response.json(); // Try to parse JSON regardless of status for detailed error
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'File upload failed.' }));
-            throw new Error(errorData.message || 'Server error during file upload.');
+            throw new Error(result.error || result.message || 'File upload failed. Server error.');
         }
-
-        const result = await response.json();
-        toast({ title: "Upload Successful", description: result.message || "File processed." });
+        
+        toast({ title: "Upload Processing", description: result.message || "File processed." });
+        if (result.errors && result.errors.length > 0) {
+            result.errors.forEach((errMsg: string) => {
+                toast({ title: "Upload Warning", description: errMsg, variant: "destructive", duration: 7000 });
+            });
+        }
         fetchClients(); 
     } catch (error: any) {
         toast({ title: "Upload Error", description: error.message, variant: "destructive" });
@@ -126,10 +130,10 @@ export default function ManageClientsPage() {
   const columns: ColumnDef<Client>[] = [
     { accessorKey: 'id', header: 'Client ID' },
     { accessorKey: 'name', header: 'Name' },
-    { accessorKey: 'email', header: 'Email' },
+    { accessorKey: 'email', header: 'Contact Email' },
     { accessorKey: 'contactPerson', header: 'Contact Person' },
-    { accessorKey: 'contactNumber', header: 'Contact Number' },
-    { accessorKey: 'nuit', header: 'NUIT' },
+    { accessorKey: 'city', header: 'City' },
+    { accessorKey: 'country', header: 'Country' },
     { accessorKey: 'address', header: 'Address', cell: (row) => <span className="truncate block max-w-xs">{row.address || 'N/A'}</span> },
   ];
 
@@ -139,7 +143,7 @@ export default function ManageClientsPage() {
         <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="font-headline text-2xl">Manage Clients</CardTitle>
-            <CardDescription>View, add, edit, or delete client records.</CardDescription>
+            <CardDescription>View, add, edit, or delete client records. You can also upload a CSV file.</CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
             <Button onClick={handleUploadCsvClick} variant="outline" disabled={isUploading}>

@@ -27,15 +27,16 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Client } from '@/types';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { randomUUID } from 'crypto'; // For generating IDs if needed
 
 const clientFormSchema = z.object({
   id: z.string().min(1, 'Client ID is required').max(255),
   name: z.string().min(1, 'Client name is required').max(255),
-  email: z.string().email('Invalid email address').max(255).optional().nullable(),
-  contactPerson: z.string().max(255).optional().nullable(),
-  contactNumber: z.string().max(50).optional().nullable(),
   address: z.string().optional().nullable(),
-  nuit: z.string().max(50).optional().nullable(),
+  city: z.string().max(255).optional().nullable(),
+  country: z.string().max(255).optional().nullable(),
+  contactPerson: z.string().max(255).optional().nullable(), // Mapped from "Contact"
+  email: z.string().email('Invalid email address').max(255).optional().nullable(),
 });
 
 type ClientFormValues = z.infer<typeof clientFormSchema>;
@@ -55,11 +56,11 @@ export function ClientForm({ open, onOpenChange, clientToEdit, onSuccess }: Clie
     defaultValues: {
       id: '',
       name: '',
-      email: '',
-      contactPerson: '',
-      contactNumber: '',
       address: '',
-      nuit: '',
+      city: '',
+      country: '',
+      contactPerson: '',
+      email: '',
     },
   });
 
@@ -69,21 +70,21 @@ export function ClientForm({ open, onOpenChange, clientToEdit, onSuccess }: Clie
         form.reset({
           id: clientToEdit.id,
           name: clientToEdit.name,
-          email: clientToEdit.email || '',
-          contactPerson: clientToEdit.contactPerson || '',
-          contactNumber: clientToEdit.contactNumber || '',
           address: clientToEdit.address || '',
-          nuit: clientToEdit.nuit || '',
+          city: clientToEdit.city || '',
+          country: clientToEdit.country || '',
+          contactPerson: clientToEdit.contactPerson || '',
+          email: clientToEdit.email || '',
         });
       } else {
         form.reset({
-          id: crypto.randomUUID(), // Generate new ID for creation
+          id: randomUUID(), // Generate new ID for creation
           name: '',
-          email: '',
-          contactPerson: '',
-          contactNumber: '',
           address: '',
-          nuit: '',
+          city: '',
+          country: '',
+          contactPerson: '',
+          email: '',
         });
       }
     }
@@ -126,15 +127,15 @@ export function ClientForm({ open, onOpenChange, clientToEdit, onSuccess }: Clie
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2 max-h-[70vh] overflow-y-auto pr-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 py-2 max-h-[70vh] overflow-y-auto pr-2">
             <FormField
               control={form.control}
               name="id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Client ID</FormLabel>
+                  <FormLabel>Client ID *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., CLIENT-001" {...field} readOnly={!!clientToEdit} />
+                    <Input placeholder="e.g., CLIENT-001 or auto-generated" {...field} readOnly={!!clientToEdit} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,61 +146,9 @@ export function ClientForm({ open, onOpenChange, clientToEdit, onSuccess }: Clie
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Client Name</FormLabel>
+                  <FormLabel>Client Name *</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Vale Mozambique" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="e.g., contact@client.com" {...field} value={field.value ?? ''}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="contactPerson"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Person</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Mr. John Doe" {...field} value={field.value ?? ''}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="contactNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Contact Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., +258 123 4567" {...field} value={field.value ?? ''}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="nuit"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>NUIT</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Client NUIT number" {...field} value={field.value ?? ''}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -218,6 +167,61 @@ export function ClientForm({ open, onOpenChange, clientToEdit, onSuccess }: Clie
                 </FormItem>
               )}
             />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField
+                control={form.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Tete" {...field} value={field.value ?? ''}/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Mozambique" {...field} value={field.value ?? ''}/>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={form.control}
+              name="contactPerson"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Person</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Mr. John Doe" {...field} value={field.value ?? ''}/>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contact Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="e.g., contact@client.com" {...field} value={field.value ?? ''}/>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             {form.formState.errors.root && (
                 <p className="text-sm font-medium text-destructive">{form.formState.errors.root.message}</p>
             )}
