@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { pool } from '../../../../../backend/db.js'; // Adjust path as per your project structure
+import { pool } from '../../../../../backend/db.js'; 
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, POItemForPrint, Approver } from '@/types';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import fs from 'fs/promises';
@@ -28,6 +28,7 @@ async function getPOData(poId: string): Promise<PurchaseOrderPayload | null> {
       items: [], 
     };
 
+    // Fetch items including new fields
     const [poItemRows]: any[] = await pool.execute('SELECT * FROM POItem WHERE poId = ?', [numericPoId]);
     
     const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
@@ -49,11 +50,13 @@ async function getPOData(poId: string): Promise<PurchaseOrderPayload | null> {
       const site = allSites.find(s => s.id === (item.siteId ? Number(item.siteId) : null));
       const category = allCategories.find(c => c.id === (item.categoryId ? Number(item.categoryId) : null));
       return {
-        ...item,
+        ...item, // Includes quantityReceived and itemStatus from DB
         id: item.id ? Number(item.id) : undefined,
         poId: item.poId ? Number(item.poId) : undefined,
         quantity: Number(item.quantity || 0),
         unitPrice: Number(item.unitPrice || 0),
+        quantityReceived: Number(item.quantityReceived || 0), // Ensure this is present
+        itemStatus: item.itemStatus || 'Pending', // Ensure this is present
         categoryId: item.categoryId ? Number(item.categoryId) : null,
         siteId: item.siteId ? Number(item.siteId) : null,
         siteDisplay: site?.siteCode || site?.name || (item.siteId ? `Site ID ${item.siteId}` : 'N/A'),
@@ -92,26 +95,18 @@ export default async function InternalPrintPOPage({ params }: { params: { poId: 
 
   let logoDataUri = '';
   try {
-    // Ensure the path is correct relative to the server's CWD when running.
-    // public/ is typically served from the root.
     const logoPath = path.resolve(process.cwd(), 'public', 'jachris-logo.png');
     const logoBuffer = await fs.readFile(logoPath);
     logoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
   } catch (logoError) {
     console.warn('Logo file not found or could not be read for internal print page, PDF will use default path or show broken image:', logoError);
-    // If logo is critical, you might want to return an error response here too.
   }
   
-  // This page should output minimal HTML for Puppeteer
-  // We will rely on Puppeteer's page.setContent() to apply Tailwind classes if it loads globals.css,
-  // or ensure PrintablePO uses inline styles or a self-contained style block for print.
-  // For now, assuming PrintablePO is styled sufficiently with Tailwind and print media queries.
   return (
     <html>
       <head>
         <meta charSet="UTF-8" />
         <title>Purchase Order {poData.poNumber}</title>
-        {/* Minimal styling for the page itself, PrintablePO handles its own styles */}
         <style>{`
           @media print {
             body, html { margin: 0; padding: 0; background-color: #fff; color: #000; font-family: 'Arial', sans-serif; }
@@ -125,5 +120,4 @@ export default async function InternalPrintPOPage({ params }: { params: { poId: 
   );
 }
 
-// This tells Next.js to treat this as a dynamic page that should be server-rendered on demand.
 export const dynamic = 'force-dynamic';

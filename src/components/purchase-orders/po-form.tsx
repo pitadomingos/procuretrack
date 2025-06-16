@@ -29,7 +29,18 @@ interface POFormProps {
   poIdToEditProp?: string | null;
 }
 
-const defaultItem: POFormItemStructure = { id: crypto.randomUUID(), partNumber: '', description: '', categoryId: null, siteId: null, uom: '', quantity: 1, unitPrice: 0.00 };
+const defaultItem: POFormItemStructure = { 
+  id: crypto.randomUUID(), 
+  partNumber: '', 
+  description: '', 
+  categoryId: null, 
+  siteId: null, 
+  uom: '', 
+  quantity: 1, 
+  unitPrice: 0.00,
+  quantityReceived: 0, // Default value for new field
+  itemStatus: 'Pending', // Default value for new field
+};
 
 interface POFormValues {
   vendorName: string | null;
@@ -44,7 +55,7 @@ interface POFormValues {
   currency: string;
   requestedByName: string;
   approverId: string | null;
-  siteId: string | null; // Added siteId here
+  siteId: string | null; 
   pricesIncludeVat: boolean;
   notes: string;
   items: POFormItemStructure[];
@@ -76,7 +87,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Loading PO...', currency: 'MZN', requestedByName: '',
-      approverId: null, siteId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
+      approverId: null, siteId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
     },
     mode: 'onBlur',
   });
@@ -112,6 +123,8 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         uom: item.uom,
         quantity: item.quantity, 
         unitPrice: item.unitPrice,
+        quantityReceived: item.quantityReceived || 0, // Load new field
+        itemStatus: item.itemStatus || 'Pending',   // Load new field
       })),
     });
 
@@ -134,7 +147,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Fetching...', currency: 'MZN', requestedByName: '',
-      approverId: null, siteId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
+      approverId: null, siteId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
     });
     setIsEditingLoadedPO(false);
     setLoadedPOId(null);
@@ -289,6 +302,8 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       items: formData.items.map(item => ({
         partNumber: item.partNumber, description: item.description, categoryId: item.categoryId ? Number(item.categoryId) : null,
         siteId: item.siteId ? Number(item.siteId) : null, uom: item.uom, quantity: Number(item.quantity), unitPrice: Number(item.unitPrice),
+        quantityReceived: item.quantityReceived || 0, // Ensure new fields are included
+        itemStatus: item.itemStatus || 'Pending',   // Ensure new fields are included
       })),
       quoteNo: formData.quoteNo,
     };
@@ -453,7 +468,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <FormField control={form.control} name="approverId" rules={{ required: 'Approver is required' }} render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
                  <FormField
                   control={form.control}
-                  name="siteId" // This should map to the siteId in form values
+                  name="siteId" 
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Overall PO Site</FormLabel>
@@ -477,7 +492,6 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               const itemTotal = (Number(itemQuantity) * Number(itemUnitPrice));
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
-                  {/* Item fields now in a responsive grid aiming for single row on large screens */}
                   <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-x-4 gap-y-2 items-end">
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
                       <FormItem className="lg:col-span-2"> 
@@ -607,4 +621,3 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   );
 }
     
-

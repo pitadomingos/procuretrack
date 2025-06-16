@@ -4,9 +4,9 @@ import ReactDOMServer from 'react-dom/server';
 import { chromium, type Browser } from 'playwright';
 import fs from 'fs/promises';
 import path from 'path';
-import React from 'react'; // Required for JSX
+import React from 'react'; 
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import { pool } from '../../../backend/db.js'; // Adjusted path for pages/api
+import { pool } from '../../../backend/db.js'; 
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, Approver, POItemForPrint } from '@/types';
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
@@ -43,6 +43,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     console.log(`[PDF API][getPODataForPdf] PO Header data processed for ID: ${numericPoId}`);
 
     console.log(`[PDF API][getPODataForPdf] Executing PO Items query for PO ID: ${numericPoId}`);
+    // Fetch items including new fields
     const [poItemRows]: any[] = await connection.execute('SELECT * FROM POItem WHERE poId = ?', [numericPoId]);
     console.log(`[PDF API][getPODataForPdf] PO Items query done. Rows found: ${poItemRows.length}`);
 
@@ -68,11 +69,13 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
       const site = allSites.find(s => s.id === (item.siteId ? Number(item.siteId) : null));
       const category = allCategories.find(c => c.id === (item.categoryId ? Number(item.categoryId) : null));
       return {
-        ...item,
+        ...item, // Includes quantityReceived and itemStatus from DB
         id: item.id ? Number(item.id) : undefined,
         poId: item.poId ? Number(item.poId) : undefined,
         quantity: Number(item.quantity || 0),
         unitPrice: Number(item.unitPrice || 0),
+        quantityReceived: Number(item.quantityReceived || 0), // Ensure this is present
+        itemStatus: item.itemStatus || 'Pending', // Ensure this is present
         categoryId: item.categoryId ? Number(item.categoryId) : null,
         siteId: item.siteId ? Number(item.siteId) : null,
         siteDisplay: site?.siteCode || site?.name || (item.siteId ? `Site ID ${item.siteId}` : 'N/A'),
@@ -81,7 +84,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
     });
     console.log(`[PDF API][getPODataForPdf] PO Items processed for printing: ${itemsForPrint.length} items.`);
 
-    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; // Path to signature image if exists
+    const approverSignatureUrl = approverDetails ? `/signatures/${approverDetails.id}.png` : undefined; 
 
     console.log(`[PDF API][getPODataForPdf] END - Successfully processed data for PO ID: ${numericPoId}`);
     return {
@@ -95,7 +98,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
   } catch (dbError: any) {
     console.error(`[PDF API][getPODataForPdf][DB_ERROR] PO ID ${poId}: ${dbError.message}`);
     console.error(`[PDF API][getPODataForPdf][DB_ERROR_STACK]: ${dbError.stack || 'No stack available'}`);
-    throw dbError; // Re-throw to be caught by the main handler
+    throw dbError; 
   } finally {
     if (connection) {
       try {
@@ -149,7 +152,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`[PDF API][Handler] Logo read successfully. Data URI length: ${logoDataUri.length}`);
     } catch (logoError: any) {
       console.warn(`[PDF API][Handler] Logo file error for path "${logoPath}": ${logoError.code} - ${logoError.message}. Proceeding without custom logo data URI (PrintablePO will use default path).`);
-      // logoDataUri will remain empty, PrintablePO component should handle this.
     }
 
     console.log(`[PDF API][Handler] Rendering PrintablePO component to HTML string for PO ID: ${poId}`);
@@ -160,33 +162,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const playwrightArgs = [
       '--no-sandbox',
       '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage', // Critical for some environments
+      '--disable-dev-shm-usage', 
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--single-process', // Can help in resource-constrained environments
+      '--single-process', 
       '--disable-gpu',
-      '--disable-features=IsolateOrigins,site-per-process', // For security/stability
-      '--disable-web-security', // Sometimes needed for data URIs or complex local content
+      '--disable-features=IsolateOrigins,site-per-process', 
+      '--disable-web-security', 
     ];
     console.log(`[PDF API][Handler] Launching Playwright Chromium with args: ${playwrightArgs.join(' ')} for PO ID: ${poId}`);
     
     browser = await chromium.launch({
       args: playwrightArgs,
-      headless: true, // Always true for server-side
-      timeout: 60000, // 60-second timeout for launch
-      // dumpio: process.env.NODE_ENV === 'development', // Log browser console to Node.js console
+      headless: true, 
+      timeout: 60000, 
     });
     console.log(`[PDF API][Handler] Playwright browser launched successfully. Version: ${browser.version()}`);
 
     const context = await browser.newContext({
-        acceptDownloads: false, // Ensure no download prompts
+        acceptDownloads: false, 
     });
     console.log(`[PDF API][Handler] Playwright context created.`);
     const page = await context.newPage();
     console.log(`[PDF API][Handler] Playwright page created.`);
 
-    // Log console messages, errors, and failed requests from the Playwright page during development
     if (process.env.NODE_ENV === 'development') {
         page.on('console', msg => console.log('[PDF API][Playwright Page Console]', msg.type().toUpperCase(), msg.text()));
         page.on('pageerror', pageError => console.error('[PDF API][Playwright Page Error]', pageError.message, pageError.stack));
@@ -208,18 +208,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           ${htmlContent}
         </body>
       </html>`;
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 30000 }); // 30-second timeout for setContent
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 30000 }); 
     console.log(`[PDF API][Handler] Page content set. Generating PDF for PO ID: ${poId}`);
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: { top: '20mm', right: '10mm', bottom: '20mm', left: '10mm' },
-      timeout: 60000, // 60-second timeout for PDF generation
+      timeout: 60000, 
     });
     console.log(`[PDF API][Handler] PDF buffer generated. Size: ${pdfBuffer.length} bytes.`);
 
-    // Attempt to close browser resources *before* sending the response
     console.log(`[PDF API][Handler] Attempting to close Playwright page for PO ID: ${poId}`);
     await page.close();
     console.log(`[PDF API][Handler] Playwright page closed.`);
@@ -227,8 +226,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await context.close();
     console.log(`[PDF API][Handler] Playwright context closed.`);
     console.log(`[PDF API][Handler] Attempting to close Playwright browser for PO ID: ${poId}`);
-    await browser.close(); // This is where browser.close() is called
-    browser = null; // Mark as closed
+    await browser.close(); 
+    browser = null; 
     console.log(`[PDF API][Handler] Playwright browser closed successfully.`);
 
     const poNumberForFile = poData.poNumber || `PO-${poId}`;
@@ -259,7 +258,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error("[PDF API][Handler][MAIN CATCH BLOCK] Headers already sent, cannot send JSON error response.");
     }
   } finally {
-    if (browser) { // Check if browser is not null (i.e., an error occurred before it was set to null)
+    if (browser) { 
       try {
         console.warn(`[PDF API][Handler][FINALLY BLOCK] Ensuring Playwright browser is closed (if not already) for PO ID: ${poId}`);
         await browser.close();

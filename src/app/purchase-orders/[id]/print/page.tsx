@@ -23,7 +23,7 @@ function PrintPOPageContent() {
   const poId = params.id as string;
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const viewContext = searchParams.get('context'); // e.g., 'creator'
+  const viewContext = searchParams.get('context'); 
 
   const [poData, setPoData] = useState<FullPODataForPrint | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,7 @@ function PrintPOPageContent() {
         const site = allSites.find(s => s.id === (item.siteId ? Number(item.siteId) : null));
         const category = allCategories.find(c => c.id === (item.categoryId ? Number(item.categoryId) : null));
         return {
-          ...item,
+          ...item, // Includes quantityReceived and itemStatus from POItemPayload
           id: item.id ? Number(item.id) : undefined,
           quantity: Number(item.quantity || 0),
           unitPrice: Number(item.unitPrice || 0),

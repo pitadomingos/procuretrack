@@ -1,4 +1,5 @@
 
+
 import type { LucideIcon } from 'lucide-react';
 
 export interface StatCardItem {
@@ -33,6 +34,8 @@ export interface POItem {
   uom: string;
   quantity: number;
   unitPrice: number;
+  quantityReceived?: number; // Added
+  itemStatus?: string; // Added: e.g., 'Pending', 'Partially Received', 'Fully Received'
 }
 
 export interface Supplier {
@@ -46,23 +49,21 @@ export interface Supplier {
 }
 
 export interface Approver {
-  id: string; // Keep as string to align with User and other potential ID types
+  id: string; 
   name: string;
   email?: string | null;
   department?: string | null;
-  isActive: boolean; // Changed from isActive?: boolean | null
-  approvalLimit?: number | null; // DECIMAL(10, 2)
-  // value and label are for select options, not part of core data model
+  isActive: boolean; 
+  approvalLimit?: number | null; 
 }
 
 export interface User {
   id: string;
   name: string;
   email?: string | null;
-  role?: string | null; // Kept flexible as per DB VARCHAR
-  siteAccess?: string[]; // This will be derived for display, not directly editable in simple form
-  isActive: boolean; // Changed from isActive?: boolean | null
-  // value and label are for select options, not part of core data model
+  role?: string | null; 
+  siteAccess?: string[]; 
+  isActive: boolean; 
 }
 
 export interface UserSiteAccessDisplay {
@@ -78,7 +79,6 @@ export interface Site {
   name: string;
   location?: string | null;
   siteCode?: string | null;
-  // value and label are for select options, not part of core data model
 }
 
 export interface Allocation {
@@ -91,8 +91,6 @@ export interface Allocation {
 export interface Category {
   id: number;
   category: string;
-  // Removed description and parentCategory to align with simple DB schema
-  // If these are needed, DB schema and APIs must be updated first.
 }
 
 export interface POItemPayload {
@@ -105,6 +103,8 @@ export interface POItemPayload {
   uom: string;
   quantity: number;
   unitPrice: number;
+  quantityReceived: number; // Added, ensure NOT NULL in DB (DEFAULT 0)
+  itemStatus: string; // Added, ensure NOT NULL in DB (DEFAULT 'Pending')
 }
 
 export interface POItemForPrint extends POItemPayload {
@@ -167,8 +167,7 @@ export interface Client {
   contactPerson?: string | null;
   contactNumber?: string | null;
   address?: string | null;
-  nuit?: string | null; // Added NUIT to match DB
-  // createdAt and updatedAt are usually handled by DB
+  nuit?: string | null; 
 }
 
 export interface QuoteItem {
@@ -234,8 +233,8 @@ export interface Tag {
   year?: number | null;
   chassisNo?: string | null;
   type?: string | null;
-  siteId: number | null; // Changed from siteId?: number | null to be explicit
-  siteName?: string; // For display
+  siteId: number | null; 
+  siteName?: string; 
 }
 
 export interface FuelRecord {

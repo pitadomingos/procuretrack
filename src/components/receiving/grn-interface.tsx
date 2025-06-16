@@ -11,8 +11,9 @@ import { CheckSquare, PackageSearch, Loader2 } from 'lucide-react';
 import type { POItemPayload, PurchaseOrderPayload } from '@/types';
 
 interface ReceivedItem extends POItemPayload {
-  quantityReceived: number;
-  originalQuantityOrdered: number; 
+  quantityReceivedNow: number; // Quantity being received in this transaction
+  originalQuantityOrdered: number;
+  alreadyReceived: number; // Quantity already received prior to this transaction
 }
 
 export function GRNInterface() {
@@ -43,8 +44,9 @@ export function GRNInterface() {
       setSearchedPOItems(
         data.poItems.map(item => ({ 
           ...item, 
-          quantityReceived: 0,
-          originalQuantityOrdered: item.quantity, // Store original ordered quantity
+          quantityReceivedNow: 0, // Initialize "Receive Now" to 0
+          originalQuantityOrdered: item.quantity,
+          alreadyReceived: item.quantityReceived || 0, // Use fetched quantityReceived
         }))
       );
 
@@ -55,15 +57,14 @@ export function GRNInterface() {
     }
   };
 
-  const handleQuantityChange = (itemId: number | undefined, quantityReceived: number) => {
+  const handleQuantityChange = (itemId: number | undefined, quantityReceivedNow: number) => {
     if (searchedPOItems && itemId !== undefined) {
       setSearchedPOItems(
         searchedPOItems.map((item) => {
           if (item.id === itemId) {
-            // Ensure quantityReceived does not exceed originalQuantityOrdered
-            const maxReceivable = item.originalQuantityOrdered; 
-            const newQuantityReceived = Math.max(0, Math.min(quantityReceived, maxReceivable));
-            return { ...item, quantityReceived: newQuantityReceived };
+            const remainingToReceive = item.originalQuantityOrdered - item.alreadyReceived;
+            const newQuantityReceivedNow = Math.max(0, Math.min(quantityReceivedNow, remainingToReceive));
+            return { ...item, quantityReceivedNow: newQuantityReceivedNow };
           }
           return item;
         })
@@ -72,16 +73,16 @@ export function GRNInterface() {
   };
 
   const handleReceiveItems = () => {
-    if (!searchedPOItems || searchedPOItems.every(item => item.quantityReceived === 0)) {
+    if (!searchedPOItems || searchedPOItems.every(item => item.quantityReceivedNow === 0)) {
       alert('No items selected or quantities entered for receiving.');
       return;
     }
     const receivedSummary = searchedPOItems
-      .filter(item => item.quantityReceived > 0)
-      .map(item => `${item.description}: ${item.quantityReceived}/${item.originalQuantityOrdered}`)
+      .filter(item => item.quantityReceivedNow > 0)
+      .map(item => `${item.description}: ${item.quantityReceivedNow} (Ordered: ${item.originalQuantityOrdered}, Prev. Rec: ${item.alreadyReceived})`)
       .join('\n');
     
-    alert(`Items received for PO ${poNumber.toUpperCase()}:\n${receivedSummary}\n\nGRN generation and stock update not functional in this version.`);
+    alert(`Items received for PO ${poNumber.toUpperCase()}:\n${receivedSummary}\n\nGRN generation and actual stock update with new item statuses is not fully functional in this version. This simulates the UI interaction.`);
     // Reset after "receiving"
     setPoNumber('');
     setSearchedPO(null);
@@ -123,32 +124,38 @@ export function GRNInterface() {
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Ordered</TableHead>
                     <TableHead className="text-right">Prev. Received</TableHead>
+                    <TableHead className="text-right">Remaining</TableHead>
                     <TableHead className="w-[150px] text-right">Receive Now</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {searchedPOItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.description}</TableCell>
-                      <TableCell className="text-right">{item.originalQuantityOrdered} {item.uom}</TableCell>
-                      <TableCell className="text-right">0 {item.uom}</TableCell> 
-                      <TableCell className="text-right">
-                        <Input 
-                          type="number" 
-                          min="0" 
-                          max={item.originalQuantityOrdered} 
-                          value={item.quantityReceived} 
-                          onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 0)} 
-                          className="h-8 text-right" 
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {searchedPOItems.map((item) => {
+                    const remainingToReceive = item.originalQuantityOrdered - item.alreadyReceived;
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.description}</TableCell>
+                        <TableCell className="text-right">{item.originalQuantityOrdered} {item.uom}</TableCell>
+                        <TableCell className="text-right">{item.alreadyReceived} {item.uom}</TableCell> 
+                        <TableCell className="text-right">{remainingToReceive} {item.uom}</TableCell>
+                        <TableCell className="text-right">
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            max={remainingToReceive} 
+                            value={item.quantityReceivedNow} 
+                            onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 0)} 
+                            className="h-8 text-right"
+                            disabled={remainingToReceive <= 0}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
             <div className="flex justify-end">
-              <Button onClick={handleReceiveItems} disabled={!searchedPOItems || searchedPOItems.every(item => item.quantityReceived === 0)}>
+              <Button onClick={handleReceiveItems} disabled={!searchedPOItems || searchedPOItems.every(item => item.quantityReceivedNow === 0)}>
                 <CheckSquare className="mr-2 h-4 w-4" /> Confirm Receipt
               </Button>
             </div>
@@ -157,7 +164,7 @@ export function GRNInterface() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          This interface fetches approved POs for receiving. Full GRN functionality, including tracking previously received quantities and stock updates, is planned for a future version.
+          This interface fetches approved POs for receiving. Full GRN functionality, including updating item statuses and stock, is planned for a future version.
         </p>
       </CardFooter>
     </Card>

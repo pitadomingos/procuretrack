@@ -30,8 +30,6 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
 
   const printableItems = (items || []) as POItemForPrint[]; 
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
-
-  // Determine Prepared By name
   const preparedByName = poData.creatorName || poData.requestedByName || "System User (JMS)";
 
 
@@ -87,7 +85,9 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
               <th className="border border-black p-1 text-left">DESCRIPTION</th>
               <th className="border border-black p-1 text-left">ALLOCATION</th>
               <th className="border border-black p-1 text-center">UNIT</th>
-              <th className="border border-black p-1 text-center">QTY</th>
+              <th className="border border-black p-1 text-center">QTY ORD.</th>
+              {/* Optional: Add QTY REC. if needed for specific print views */}
+              {/* <th className="border border-black p-1 text-center">QTY REC.</th> */}
               <th className="border border-black p-1 text-right">UNIT PRICE</th>
               <th className="border border-black p-1 text-right">TOTAL (Excl VAT)</th>
             </tr>
@@ -100,6 +100,9 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
                 <td className="border border-black p-1 align-top">{item.siteDisplay || 'N/A'}</td>
                 <td className="border border-black p-1 text-center align-top">{item.uom}</td>
                 <td className="border border-black p-1 text-center align-top">{item.quantity}</td>
+                {/* Optional: Display quantityReceived
+                <td className="border border-black p-1 text-center align-top">{item.quantityReceived || 0}</td> 
+                */}
                 <td className="border border-black p-1 text-right align-top">{formatCurrency(item.unitPrice)}</td>
                 <td className="border border-black p-1 text-right align-top">{formatCurrency(item.quantity * item.unitPrice)}</td>
               </tr>
@@ -111,6 +114,9 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
                     <td className="border border-black p-1">&nbsp;</td>
                     <td className="border border-black p-1">&nbsp;</td>
                     <td className="border border-black p-1">&nbsp;</td>
+                    {/* Optional: Empty cell for QTY REC.
+                    <td className="border border-black p-1">&nbsp;</td>
+                    */}
                     <td className="border border-black p-1">&nbsp;</td>
                     <td className="border border-black p-1">&nbsp;</td>
                 </tr>
@@ -184,4 +190,3 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
     </div>
   );
 }
-

@@ -19,7 +19,6 @@ export async function GET(
   try {
     connection = await pool.getConnection();
 
-    // Fetch Purchase Order Header
     const [poHeaderRows]: any[] = await connection.execute(
       'SELECT * FROM PurchaseOrder WHERE poNumber = ?',
       [decodedPoNumber]
@@ -31,12 +30,10 @@ export async function GET(
 
     const poHeader: PurchaseOrderPayload = poHeaderRows[0] as PurchaseOrderPayload;
 
-    // Check if PO is approved
     if (poHeader.status !== 'Approved') {
       return NextResponse.json({ message: `Purchase Order ${decodedPoNumber} is not approved. Current status: ${poHeader.status}. Cannot receive items.` }, { status: 400 });
     }
     
-    // Fetch Supplier Details
     if (poHeader.supplierId) {
         const [supplierRows]: any[] = await connection.execute('SELECT * FROM Supplier WHERE supplierCode = ?', [poHeader.supplierId]);
         if (supplierRows.length > 0) {
@@ -44,8 +41,6 @@ export async function GET(
         }
     }
 
-
-    // Fetch Purchase Order Items
     const [poItemRows]: any[] = await connection.execute(
       'SELECT * FROM POItem WHERE poId = ?',
       [poHeader.id]
@@ -61,12 +56,13 @@ export async function GET(
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
+        quantityReceived: Number(item.quantityReceived || 0), // Fetch new field
+        itemStatus: item.itemStatus || 'Pending', // Fetch new field
     }));
     
     if (poItems.length === 0) {
         return NextResponse.json({ message: `No items found for approved Purchase Order ${decodedPoNumber}.` }, { status: 404 });
     }
-
 
     return NextResponse.json({ poHeader, poItems });
 
