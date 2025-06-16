@@ -188,4 +188,3 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
-
