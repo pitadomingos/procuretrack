@@ -96,7 +96,7 @@ export function AppHeader() {
         {/* Company Logo */}
         <div className="mx-2">
           <Image
-            src="/jachris-logo.png" // Assuming logo is in public folder
+            src="/headerlogo.png" // Updated to use headerlogo.png
             alt="Company Logo"
             width={40} 
             height={40} 
