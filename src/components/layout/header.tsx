@@ -109,7 +109,7 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="https://placehold.co/100x100.png" alt="User avatar" data-ai-hint="user avatar" />
+                <AvatarImage src="pitaD.png" alt="User avatar" data-ai-hint="user avatar" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
             </Button>
@@ -117,9 +117,9 @@ export function AppHeader() {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">John Doe</p>
+                <p className="text-sm font-medium leading-none">Pita Domingos</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  john.doe@example.com
+                  pita.domingos@jachris.com
                 </p>
               </div>
             </DropdownMenuLabel>
