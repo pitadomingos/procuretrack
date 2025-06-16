@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image'; // Import next/image
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -91,6 +92,18 @@ export function AppHeader() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Company Logo */}
+        <div className="mx-2">
+          <Image
+            src="/jachris-logo.png" // Assuming logo is in public folder
+            alt="Company Logo"
+            width={32} // Adjust width as needed
+            height={32} // Adjust height as needed
+            className="rounded-sm" // Optional: add some rounding if desired
+            data-ai-hint="company brand logo"
+          />
+        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
