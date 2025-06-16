@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ClientForm } from '@/components/management/clients/client-form';
 import type { Client } from '@/types';
 import { PlusCircle, Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +16,13 @@ export default function ManageClientsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedClientForEdit, setSelectedClientForEdit] = useState<Client | null>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchClients = useCallback(async () => {
     setIsLoading(true);
@@ -39,25 +48,40 @@ export default function ManageClientsPage() {
   }, [fetchClients]);
 
   const handleAddNew = () => {
-    toast({
-      title: 'Add New Client',
-      description: 'This functionality is not yet implemented. Full CRUD operations will be added soon.',
-    });
+    setSelectedClientForEdit(null);
+    setIsFormOpen(true);
   };
 
   const handleEdit = (client: Client) => {
-    toast({
-      title: 'Edit Client',
-      description: `Editing client "${client.name}" is not yet implemented.`,
-    });
+    setSelectedClientForEdit(client);
+    setIsFormOpen(true);
   };
 
-  const handleDelete = (client: Client) => {
-    toast({
-      title: 'Delete Client',
-      description: `Deleting client "${client.name}" is not yet implemented.`,
-      variant: 'destructive',
-    });
+  const openDeleteConfirmation = (client: Client) => {
+    setClientToDelete(client);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteClient = async () => {
+    if (!clientToDelete) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/clients/${clientToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to delete client.');
+      }
+      toast({ title: 'Success', description: `Client "${clientToDelete.name}" deleted successfully.` });
+      fetchClients(); 
+    } catch (error: any) {
+      toast({ title: 'Error Deleting Client', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setClientToDelete(null);
+    }
   };
 
   const columns: ColumnDef<Client>[] = [
@@ -66,8 +90,8 @@ export default function ManageClientsPage() {
     { accessorKey: 'email', header: 'Email' },
     { accessorKey: 'contactPerson', header: 'Contact Person' },
     { accessorKey: 'contactNumber', header: 'Contact Number' },
-    { accessorKey: 'address', header: 'Address' },
     { accessorKey: 'nuit', header: 'NUIT' },
+    { accessorKey: 'address', header: 'Address', cell: (row) => <span className="truncate block max-w-xs">{row.address || 'N/A'}</span> },
   ];
 
   return (
@@ -106,7 +130,7 @@ export default function ManageClientsPage() {
                   <Button variant="outline" size="icon" onClick={() => handleEdit(client)} title="Edit Client">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="destructive" size="icon" onClick={() => handleDelete(client)} title="Delete Client">
+                  <Button variant="destructive" size="icon" onClick={() => openDeleteConfirmation(client)} title="Delete Client">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -115,6 +139,36 @@ export default function ManageClientsPage() {
           )}
         </CardContent>
       </Card>
+
+      <ClientForm
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        clientToEdit={selectedClientForEdit}
+        onSuccess={() => {
+          fetchClients();
+          toast({ title: 'Success', description: `Client ${selectedClientForEdit ? 'updated' : 'created'} successfully.` });
+        }}
+      />
+
+      {clientToDelete && (
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete this client?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. Deleting "{clientToDelete.name}" will permanently remove it.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+              <Button onClick={handleDeleteClient} variant="destructive" disabled={isDeleting}>
+                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Delete Client
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

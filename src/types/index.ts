@@ -46,33 +46,39 @@ export interface Supplier {
 }
 
 export interface Approver {
-  id: string;
+  id: string; // Keep as string to align with User and other potential ID types
   name: string;
   email?: string | null;
   department?: string | null;
-  isActive?: boolean | null;
-  value?: string;
-  label?: string;
+  isActive: boolean; // Changed from isActive?: boolean | null
+  approvalLimit?: number | null; // DECIMAL(10, 2)
+  // value and label are for select options, not part of core data model
 }
 
 export interface User {
   id: string;
   name: string;
   email?: string | null;
-  role: 'Admin' | 'Manager' | 'User' | 'Viewer' | string;
-  siteAccess?: string[];
-  isActive: boolean;
-  value?: string;
-  label?: string;
+  role?: string | null; // Kept flexible as per DB VARCHAR
+  siteAccess?: string[]; // This will be derived for display, not directly editable in simple form
+  isActive: boolean; // Changed from isActive?: boolean | null
+  // value and label are for select options, not part of core data model
 }
+
+export interface UserSiteAccessDisplay {
+  userId: string;
+  siteId: number;
+  siteName?: string;
+  siteCode?: string;
+}
+
 
 export interface Site {
   id: number;
   name: string;
   location?: string | null;
   siteCode?: string | null;
-  value?: string | number;
-  label?: string;
+  // value and label are for select options, not part of core data model
 }
 
 export interface Allocation {
@@ -84,9 +90,9 @@ export interface Allocation {
 
 export interface Category {
   id: number;
-  category: string; // Changed from 'name' to 'category' to match DB script
-  description?: string; // Optional description
-  parentCategory?: number | null; // Optional parent category ID
+  category: string;
+  // Removed description and parentCategory to align with simple DB schema
+  // If these are needed, DB schema and APIs must be updated first.
 }
 
 export interface POItemPayload {
@@ -106,16 +112,15 @@ export interface POItemForPrint extends POItemPayload {
   categoryDisplay?: string;
 }
 
-// This is the primary type for a full PO object, used in forms, previews, and API responses (potentially with all details)
 export interface PurchaseOrderPayload {
   id?: number;
   poNumber: string;
   creationDate: string; // ISO String
   creatorUserId: string | null;
-  requestedByName?: string | null; // Free-text from form
-  supplierId: string | null; // Supplier Code
-  approverId: string | null; // Approver ID
-  siteId?: number | null; // Overall PO Site ID
+  requestedByName?: string | null;
+  supplierId: string | null;
+  approverId: string | null;
+  siteId?: number | null;
   status: string;
   subTotal: number;
   vatAmount: number;
@@ -123,16 +128,14 @@ export interface PurchaseOrderPayload {
   currency: string;
   pricesIncludeVat: boolean;
   notes?: string | null;
-  items: POItemPayload[] | POItemForPrint[]; // Array of items associated with the PO
-  approvalDate?: string | null; // ISO String
+  items: POItemPayload[] | POItemForPrint[];
+  approvalDate?: string | null;
   rejectionReason?: string | null;
   rejectionDate?: string | null;
-
-  // Denormalized/joined fields often returned by API for display convenience
-  supplierDetails?: Supplier; // Full supplier object (e.g. for print page)
-  supplierName?: string; // Just supplier name (e.g. for lists)
-  creatorName?: string; // Name of the user who created the PO (from User table)
-  approverName?: string; // Name of the assigned approver (from Approver table)
+  supplierDetails?: Supplier;
+  supplierName?: string;
+  creatorName?: string;
+  approverName?: string;
   approverSignatureUrl?: string;
   quoteNo?: string;
 }
@@ -157,7 +160,6 @@ export interface POReviewItem extends POItemPayload {
   totalPrice: number;
 }
 
-// --- QUOTATION ---
 export interface Client {
   id: string;
   name: string;
@@ -165,26 +167,28 @@ export interface Client {
   contactPerson?: string | null;
   contactNumber?: string | null;
   address?: string | null;
+  nuit?: string | null; // Added NUIT to match DB
+  // createdAt and updatedAt are usually handled by DB
 }
 
 export interface QuoteItem {
-  id: string; // Client-side or DB ID
+  id: string;
   partNumber?: string;
   customerRef?: string;
   description: string;
   quantity: number;
   unitPrice: number;
-  quoteId?: string; // Foreign key to Quote table
+  quoteId?: string;
 }
 
 export interface QuotePayload {
-  id?: string; // DB ID
+  id?: string;
   quoteNumber: string;
-  quoteDate: string; // ISO String
-  clientId: string; // Foreign key to Client table
-  creatorEmail?: string; // Email of the user who created the quote
-  clientName?: string; // Denormalized for display
-  clientEmail?: string; // Denormalized for display
+  quoteDate: string;
+  clientId: string;
+  creatorEmail?: string;
+  clientName?: string;
+  clientEmail?: string;
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
@@ -195,22 +199,21 @@ export interface QuotePayload {
   status?: 'Draft' | 'Sent' | 'Accepted' | 'Rejected' | 'Archived';
 }
 
-// --- REQUISITION ---
 export interface RequisitionItem {
-  id: string; // Client-side or DB ID
+  id: string;
   partNumber?: string;
   description: string;
   categoryId: number | null;
   quantity: number;
   estimatedUnitPrice?: number | null;
   notes?: string;
-  requisitionId?: string; // Foreign key to Requisition table
+  requisitionId?: string;
 }
 
 export interface RequisitionPayload {
-  id?: string; // DB ID
+  id?: string;
   requisitionNumber: string;
-  requisitionDate: string; // ISO String
+  requisitionDate: string;
   requestedByUserId?: string | null;
   requestedByName: string;
   siteId: number | null;
@@ -218,30 +221,26 @@ export interface RequisitionPayload {
   justification?: string;
   items: RequisitionItem[];
   totalEstimatedValue?: number;
-
-  // For display in lists
-  siteName?: string; // Will hold siteCode for display
+  siteName?: string;
 }
 
-// --- TAG (Vehicle/Equipment) ---
 export interface Tag {
   id: string;
   tagNumber: string;
-  registration?: string;
-  make?: string;
-  model?: string;
-  tankCapacity?: number;
-  year?: number;
-  chassisNo?: string;
-  type?: string;
-  siteId?: number | null;
-  siteName?: string; // Will hold siteCode for display
+  registration?: string | null;
+  make?: string | null;
+  model?: string | null;
+  tankCapacity?: number | null;
+  year?: number | null;
+  chassisNo?: string | null;
+  type?: string | null;
+  siteId: number | null; // Changed from siteId?: number | null to be explicit
+  siteName?: string; // For display
 }
 
-// --- FUEL RECORD ---
 export interface FuelRecord {
   id?: string;
-  fuelDate: string; // ISO String
+  fuelDate: string;
   reqNo?: string;
   invNo?: string;
   driver?: string;
@@ -255,14 +254,10 @@ export interface FuelRecord {
   totalCost?: number;
   distanceTravelled?: number | null;
   recorderUserId?: string;
-
-  // For display in lists
   tagName?: string;
-  siteName?: string; // Will hold siteCode for display
+  siteName?: string;
 }
 
-
-// For FilterBar options
 export interface FilterOption {
   value: string;
   label: string;
