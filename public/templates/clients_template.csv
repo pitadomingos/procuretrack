@@ -1,0 +1,3 @@
+id,name,email,contactPerson,contactNumber,address,nuit
+CLIENT-AUTO-001,Alpha Corp,contact@alphacorp.com,Mr. Alpha,+1-555-0200,"456 Business Rd, Anytown, USA",111222333
+CLIENT-AUTO-002,Beta Industries,info@betaindustries.com,Ms. Beta,+44-20-7946-0123,"Innovation Hub, London, UK",444555666

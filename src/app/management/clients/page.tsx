@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ClientForm } from '@/components/management/clients/client-form';
 import type { Client } from '@/types';
-import { PlusCircle, Pencil, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2, Loader2, AlertTriangle, UploadCloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ManageClientsPage() {
@@ -23,6 +23,9 @@ export default function ManageClientsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchClients = useCallback(async () => {
     setIsLoading(true);
@@ -84,6 +87,42 @@ export default function ManageClientsPage() {
     }
   };
 
+  const handleUploadCsvClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('/api/clients', {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'File upload failed.' }));
+            throw new Error(errorData.message || 'Server error during file upload.');
+        }
+
+        const result = await response.json();
+        toast({ title: "Upload Successful", description: result.message || "File processed." });
+        fetchClients(); 
+    } catch (error: any) {
+        toast({ title: "Upload Error", description: error.message, variant: "destructive" });
+    } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''; 
+        }
+    }
+  };
+
   const columns: ColumnDef<Client>[] = [
     { accessorKey: 'id', header: 'Client ID' },
     { accessorKey: 'name', header: 'Name' },
@@ -97,14 +136,24 @@ export default function ManageClientsPage() {
   return (
     <div className="space-y-6">
       <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="font-headline text-2xl">Manage Clients</CardTitle>
             <CardDescription>View, add, edit, or delete client records.</CardDescription>
           </div>
-          <Button onClick={handleAddNew}>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add New Client
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+            <Button onClick={handleUploadCsvClick} variant="outline" disabled={isUploading}>
+              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+              Upload CSV
+            </Button>
+            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" style={{ display: 'none' }} />
+             <Button asChild variant="link" size="sm" className="p-0 h-auto sm:ml-2">
+                <a href="/templates/clients_template.csv" download>Download Template</a>
+            </Button>
+            <Button onClick={handleAddNew} className="mt-2 sm:mt-0 sm:ml-auto">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Client
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (

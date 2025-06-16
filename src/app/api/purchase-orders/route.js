@@ -5,7 +5,9 @@ import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 
-const upload = multer({ dest: '/tmp/uploads/' });
+// Configure multer for file uploads (memory storage)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 const runMiddleware = (req, res, fn) => {
  return new Promise((resolve, reject) => {
@@ -16,6 +18,12 @@ const runMiddleware = (req, res, fn) => {
       return resolve(result);
     });
  });
+};
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
 };
 
 export async function GET(request) {
@@ -116,8 +124,8 @@ export async function POST(request) {
       const finalCreatorUserId = creatorUserId || null;
 
       const [poResult] = await connection.execute(
-        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        \`INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\`,
         [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, siteId || null, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
       );
 
@@ -127,8 +135,8 @@ export async function POST(request) {
         for (const item of items) {
           // item.siteId from POItem should be used here (formerly item.allocation)
           await connection.execute(
-            `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            \`INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)\`,
             [newPoId, item.partNumber, item.description, item.categoryId, item.siteId || null, item.uom, Number(item.quantity), Number(item.unitPrice)]
           );
         }
@@ -148,8 +156,8 @@ export async function POST(request) {
         connection.release();
       }
     }
-  } else {
-    // Handle existing CSV file upload logic
+  } else if (contentType && contentType.includes('multipart/form-data')) {
+    // Handle CSV file upload logic
     const res = new NextResponse();
     try {
       await runMiddleware(request, res, upload.single('file'));
@@ -165,14 +173,21 @@ export async function POST(request) {
           .on('data', (data) => results.push(data))
           .on('end', () => {
             console.log('Parsed CSV data for purchase orders:', results);
+            // TODO: Implement logic to process these POs (headers and potentially items if CSV format supports it)
+            // This is complex and would likely involve creating POs and POItems in the DB.
             resolve();
           })
           .on('error', reject);
       });
-      return NextResponse.json({ message: 'Purchase order file uploaded and parsed successfully. Processing not yet implemented.', data: results });
+      return NextResponse.json({ message: `Purchase order CSV uploaded and parsed successfully. ${results.length} POs found. (Data not saved to DB yet)`, data: results });
     } catch (error) {
       console.error('Error handling purchase order file upload:', error);
+      if (error instanceof multer.MulterError) {
+        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
+      }
       return NextResponse.json({ error: 'Failed to handle purchase order file upload' }, { status: 500 });
     }
+  } else {
+    return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }

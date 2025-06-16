@@ -204,7 +204,8 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     let uploadUrl = '';
     if (documentType === 'fuel') uploadUrl = '/api/fuel-records';
     else if (documentType === 'quote') uploadUrl = '/api/quotes';
-    // Add other types like PO, Requisition if they support CSV upload later
+    else if (documentType === 'po') uploadUrl = '/api/purchase-orders'; // Assuming general PO upload
+    // Add other types like Requisition if they support CSV upload later
 
     if (!uploadUrl) {
         toast({ title: "Upload Error", description: `CSV Upload not configured for ${documentType}.`, variant: "destructive"});
@@ -282,6 +283,8 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     columnsToUse = poColumns as ColumnDef<any>[];
     listTitle = 'Purchase Orders';
     showApproverFilter = true;
+    showUploadCsv = true; // Enable CSV upload for POs
+    csvTemplateLink = '/templates/purchase_orders_template.csv'; // Add template if applicable
   } else if (documentType === 'quote') {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';

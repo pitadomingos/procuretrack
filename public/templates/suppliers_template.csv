@@ -1,0 +1,3 @@
+supplierCode,supplierName,salesPerson,cellNumber,physicalAddress,nuitNumber,emailAddress
+SUP001,Example Supplier Inc.,John Doe,+1-555-0100,"123 Main St, Anytown, USA",123456789,sales@example.com
+SUP002,Global Parts Ltd.,Jane Smith,+44-20-7946-0958,"Unit 5, Business Park, London, UK",987654321,info@globalparts.co.uk

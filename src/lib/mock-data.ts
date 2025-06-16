@@ -1,6 +1,6 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord } from '@/types';
-import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck } from 'lucide-react'; // Renamed TagIcon to TagLucideIcon
+import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package } from 'lucide-react'; // Renamed TagIcon to TagLucideIcon, Added Package
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -81,6 +81,7 @@ export const activityLogData: ActivityLogEntry[] = [
 ];
 
 export const managementTables = [
+  { name: 'Suppliers', href: '/management/suppliers', icon: Package, count: 14, description: "Manage suppliers / vendors" },
   { name: 'Approvers', href: '/management/approvers', icon: Users, count: 3, description: "Manage PO approvers" },
   { name: 'Users', href: '/management/users', icon: Users, count: 5, description: "Manage system users and roles" },
   { name: 'Sites', href: '/management/sites', icon: Building, count: 5, description: "Manage company sites/locations" },
@@ -287,3 +288,4 @@ export const mockFuelRecordsData: FuelRecord[] = [
   { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW' },
   { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'MEM' },
 ];
+

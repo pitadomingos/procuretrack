@@ -1,0 +1,4 @@
+poNumber,creationDate,creatorUserId,requestedByName,supplierId,approverId,siteId,status,subTotal,vatAmount,grandTotal,currency,pricesIncludeVat,notes,items_partNumber,items_description,items_categoryId,items_siteId,items_uom,items_quantity,items_unitPrice
+PO-CSV-001,2024-08-01,user_002,John Requestor,SUP001,approver_001,1,Pending Approval,100,16,116,MZN,FALSE,"Notes for PO1",PART001,"Item 1 for PO1",1,1,EA,10,10
+,,,,,,,,,,,,,,PART002,"Item 2 for PO1",2,1,BOX,5,20
+PO-CSV-002,2024-08-02,user_005,Jane Requester,SUP002,approver_002,2,Pending Approval,200,0,200,USD,TRUE,"Notes for PO2",PART003,"Service for PO2",12,,SVC,1,200

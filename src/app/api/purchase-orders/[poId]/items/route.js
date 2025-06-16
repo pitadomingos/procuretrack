@@ -5,8 +5,9 @@ import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream'; // Import Readable stream
 
-// Configure multer for file uploads
-const upload = multer({ dest: '/tmp/uploads/' }); // Store uploads temporarily
+// Configure multer for file uploads (memory storage)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage }); 
 
 // Helper function to run multer middleware
 const runMiddleware = (req, res, fn) => {
@@ -41,8 +42,8 @@ export async function GET(request, { params }) {
 
 // POST handler for uploading PO items
 export async function POST(request, { params }) {
-  const res = new NextResponse(); // Create a NextResponse instance
-  const { poId } = params; // Get poId from parameters if needed
+  const res = new NextResponse(); 
+  const { poId } = params; 
 
   try {
     // Run the multer middleware
@@ -61,15 +62,21 @@ export async function POST(request, { params }) {
       stream
         .pipe(csv())
         .on('data', (data) => results.push(data))
-        .on('end', () => resolve())
+        .on('end', () => {
+            console.log(`Parsed PO item CSV data for PO ID ${poId}:`, results);
+            // TODO: Add logic for validating and inserting PO item data into POItem table,
+            // ensuring each item is correctly linked to the poId.
+            resolve();
+        })
         .on('error', (error) => reject(error));
     });
 
-    console.log('Parsed PO item CSV data:', results);
-    // TODO: Add logic for validating and inserting PO item data, linking to poId
-    return NextResponse.json({ message: 'File uploaded and parsed successfully', data: results });
+    return NextResponse.json({ message: `PO Items CSV uploaded and parsed successfully for PO ID ${poId}. ${results.length} items found. (Data not saved to DB yet)`, data: results });
   } catch (error) {
-    console.error('Error handling PO item file upload:', error);
+    console.error(`Error handling PO item file upload for PO ID ${poId}:`, error);
+    if (error instanceof multer.MulterError) {
+        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
+    }
     return NextResponse.json({ error: 'Failed to handle PO item file upload' }, { status: 500 });
   }
 }

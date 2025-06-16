@@ -1,0 +1,4 @@
+id,tagNumber,registration,make,model,tankCapacity,year,chassisNo,type,siteId
+TAG-AUTO-001,LDV001,ABC-123-MP,Toyota,Hilux,80,2023,TOY123XYZ,LDV,1
+TAG-AUTO-002,TRK002,DEF-456-TT,Scania,R500,600,2022,SCA456UVW,Truck,2
+TAG-AUTO-003,GEN003,,Caterpillar,C15,200,,Generator,1
