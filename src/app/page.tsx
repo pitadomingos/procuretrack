@@ -5,9 +5,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { MonthlyStatusChart } from '@/components/dashboard/monthly-status-chart';
-import { AllocationsChart } from '@/components/dashboard/allocations-chart';
+import { SitePOValueStatusChart } from '@/components/dashboard/site-po-value-status-chart'; // Updated import
 import { ActivityLogTable } from '@/components/shared/activity-log-table';
-import { dashboardStats as initialDashboardStatsConfig, allocationsData, activityLogData } from '@/lib/mock-data'; // Removed monthlyStatusData
+import { dashboardStats as initialDashboardStatsConfig, activityLogData } from '@/lib/mock-data';
 import type { StatCardItem } from '@/types';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -110,8 +110,8 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <MonthlyStatusChart /> {/* Will fetch its own data */}
-        <AllocationsChart data={allocationsData} /> {/* Continues using mock data */}
+        <MonthlyStatusChart /> 
+        <SitePOValueStatusChart /> {/* Use the new dynamic chart */}
       </section>
 
       <section>
