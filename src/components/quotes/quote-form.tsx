@@ -40,6 +40,7 @@ interface QuoteFormValues {
 }
 
 const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
+const NO_APPROVER_VALUE = "__none__"; // Special value for "None" option
 
 export function QuoteForm() {
   const { toast } = useToast();
@@ -265,10 +266,15 @@ export function QuoteForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Assign Approver (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select
+                        onValueChange={(selectedValue) => {
+                          field.onChange(selectedValue === NO_APPROVER_VALUE ? null : selectedValue);
+                        }}
+                        value={field.value || NO_APPROVER_VALUE}
+                      >
                         <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl>
                         <SelectContent>
-                          <SelectItem value="">None (Save as Draft)</SelectItem>
+                          <SelectItem value={NO_APPROVER_VALUE}>None (Save as Draft)</SelectItem>
                           {approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}
                         </SelectContent>
                       </Select>
@@ -290,13 +296,13 @@ export function QuoteForm() {
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
                       <FormItem className="lg:col-span-2"> 
                         <FormLabel>Part Number</FormLabel> 
-                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> 
                       </FormItem> 
                     )} />
                      <FormField control={form.control} name={`items.${index}.customerRef`} render={({ field }) => ( 
                       <FormItem className="lg:col-span-2"> 
                         <FormLabel>Customer Ref</FormLabel> 
-                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> 
                       </FormItem> 
                     )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
@@ -341,7 +347,7 @@ export function QuoteForm() {
                     <FormItem>
                       <FormLabel>Terms & Conditions</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Enter terms and conditions..." className="resize-none h-24" {...field} />
+                        <Textarea placeholder="Enter terms and conditions..." className="resize-none h-24" {...field} value={field.value ?? ''} />
                       </FormControl>
                     </FormItem>
                   )}
@@ -352,7 +358,7 @@ export function QuoteForm() {
                     <FormItem>
                       <FormLabel>Additional Notes</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Add any relevant notes for the client..." className="resize-none h-24" {...field} />
+                        <Textarea placeholder="Add any relevant notes for the client..." className="resize-none h-24" {...field} value={field.value ?? ''} />
                       </FormControl>
                     </FormItem>
                   )}
