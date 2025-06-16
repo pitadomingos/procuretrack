@@ -44,6 +44,7 @@ interface POFormValues {
   currency: string;
   requestedByName: string;
   approverId: string | null;
+  siteId: string | null; // Added siteId here
   pricesIncludeVat: boolean;
   notes: string;
   items: POFormItemStructure[];
@@ -75,7 +76,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Loading PO...', currency: 'MZN', requestedByName: '',
-      approverId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
+      approverId: null, siteId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
     },
     mode: 'onBlur',
   });
@@ -99,6 +100,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       currency: data.currency,
       requestedByName: data.requestedByName || '',
       approverId: data.approverId,
+      siteId: data.siteId ? String(data.siteId) : null,
       pricesIncludeVat: data.pricesIncludeVat,
       notes: data.notes || '',
       items: (data.items || []).map(item => ({
@@ -132,7 +134,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Fetching...', currency: 'MZN', requestedByName: '',
-      approverId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
+      approverId: null, siteId: null, pricesIncludeVat: false, notes: '', items: [defaultItem],
     });
     setIsEditingLoadedPO(false);
     setLoadedPOId(null);
@@ -275,12 +277,13 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     }
     setIsSubmitting(true);
 
-    const payload: Omit<PurchaseOrderPayload, 'id' | 'status' | 'creatorUserId' | 'approvalDate' | 'supplierDetails' | 'creatorName' | 'approverName' | 'approverSignatureUrl'> & { items: POItemPayload[] } = {
+    const payload: Omit<PurchaseOrderPayload, 'id' | 'status' | 'creatorUserId' | 'approvalDate' | 'supplierDetails' | 'creatorName' | 'approverName' | 'approverSignatureUrl'> & { items: POItemPayload[], siteId?: number | null } = {
       poNumber: formData.poNumberDisplay,
       creationDate: new Date(formData.poDate).toISOString(),
       requestedByName: formData.requestedByName,
       supplierId: formData.vendorName,
       approverId: formData.approverId,
+      siteId: formData.siteId ? Number(formData.siteId) : null,
       subTotal: subTotal, vatAmount: vatAmount, grandTotal: grandTotal, currency: formData.currency,
       pricesIncludeVat: formData.pricesIncludeVat, notes: formData.notes,
       items: formData.items.map(item => ({
@@ -412,7 +415,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. QT-001" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="quoteNo" render={({ field }) => ( <FormItem> <FormLabel>Quote No.</FormLabel> <FormControl><Input placeholder="e.g. QT-001" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="poDate" rules={{ required: 'PO Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
 
@@ -429,25 +432,39 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                     </FormItem>
                   )}
                 />
-                <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. supplier@example.com" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr. Sales" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. supplier@example.com" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr. Sales" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
               
               {/* Supplier Row 2: Contact, NUIT, Address */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
-                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem className="md:col-span-3"> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's billing address..." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="billingAddress" render={({ field }) => ( <FormItem className="md:col-span-3"> <FormLabel>Supplier Address (for PDF)</FormLabel> <FormControl><Textarea placeholder="Enter supplier's billing address..." {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
             </div>
 
             {/* PO Configuration Row */}
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+              <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 items-center">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester's name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester's name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="approverId" rules={{ required: 'Approver is required' }} render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                 <FormField
+                  control={form.control}
+                  name="siteId" // This should map to the siteId in form values
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Overall PO Site</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select Site for PO" /></SelectTrigger></FormControl>
+                        <SelectContent>{sites.map(s => (<SelectItem key={s.id} value={s.id.toString()}>{s.name} ({s.siteCode})</SelectItem>))}</SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField control={form.control} name="pricesIncludeVat" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 h-10 mt-auto"> <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl> <div className="space-y-1 leading-none"><FormLabel>Prices VAT inclusive</FormLabel></div> </FormItem> )} />
              </div>
             </div>
@@ -465,7 +482,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
                       <FormItem className="lg:col-span-2"> 
                         <FormLabel>Part Number</FormLabel> 
-                        <FormControl><Input placeholder="Optional" {...field} /></FormControl> 
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> 
                       </FormItem> 
                     )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
@@ -541,6 +558,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                           placeholder="Add any relevant notes..."
                           className="resize-none h-40" 
                           {...field}
+                          value={field.value ?? ''}
                         />
                       </FormControl>
                     </FormItem>
@@ -589,3 +607,4 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   );
 }
     
+

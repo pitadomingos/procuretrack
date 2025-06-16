@@ -35,6 +35,7 @@ export async function PUT(request, { params }) {
       requestedByName,
       supplierId,
       approverId,
+      siteId, // Added siteId for update
       // status, // Status is usually changed via approve/reject actions, not direct edit
       subTotal,
       vatAmount,
@@ -51,11 +52,11 @@ export async function PUT(request, { params }) {
     // Update PurchaseOrder header
     const [poUpdateResult] = await connection.execute(
       `UPDATE PurchaseOrder SET 
-        poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, 
+        poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, siteId = ?,
         subTotal = ?, vatAmount = ?, grandTotal = ?, currency = ?, pricesIncludeVat = ?, notes = ?
        WHERE id = ?`,
       [
-        poNumber, new Date(creationDate), requestedByName, supplierId, approverId,
+        poNumber, new Date(creationDate), requestedByName, supplierId, approverId, siteId ? Number(siteId) : null,
         subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes,
         numericPoId
       ]
@@ -80,7 +81,7 @@ export async function PUT(request, { params }) {
             item.partNumber || null, 
             item.description, 
             item.categoryId ? Number(item.categoryId) : null, 
-            item.siteId ? Number(item.siteId) : null, // siteId in POItem from payload, formerly item.allocation in form
+            item.siteId ? Number(item.siteId) : null, // siteId in POItem from payload
             item.uom, 
             Number(item.quantity), 
             Number(item.unitPrice)
