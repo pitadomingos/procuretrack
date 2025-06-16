@@ -93,8 +93,8 @@ export default function ManageUsersPage() {
     {
       accessorKey: 'siteAccess',
       header: 'Site Access',
-      cell: ({ row }) => {
-        const siteAccess = row.original.siteAccess;
+      cell: (item) => { // Changed 'row' to 'item' for clarity, access directly
+        const siteAccess = item.siteAccess;
         if (!siteAccess || siteAccess.length === 0 || siteAccess[0] === 'N/A (Manage separately)') return 'N/A';
         if (siteAccess.includes('all')) return 'All Sites';
         return siteAccess.join(', ');
@@ -103,8 +103,8 @@ export default function ManageUsersPage() {
     {
       accessorKey: 'isActive',
       header: 'Status',
-      cell: ({ row }) =>
-        row.original.isActive ? (
+      cell: ({ row }) => // Here 'row' is correct as per DataTable type def if using ({ row }) destructuring.
+        row.isActive ? ( // Corrected: row.isActive instead of row.original.isActive
           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
             <CheckCircle className="mr-1 h-3 w-3" /> Active
           </Badge>
