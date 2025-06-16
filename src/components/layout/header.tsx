@@ -98,8 +98,8 @@ export function AppHeader() {
           <Image
             src="/jachris-logo.png" // Assuming logo is in public folder
             alt="Company Logo"
-            width={32} // Adjust width as needed
-            height={32} // Adjust height as needed
+            width={40} // Increased width
+            height={40} // Increased height
             className="rounded-sm" // Optional: add some rounding if desired
             data-ai-hint="company brand logo"
           />
