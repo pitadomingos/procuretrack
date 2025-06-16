@@ -31,7 +31,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
-  const siteId = searchParams.get('siteId');
+  // const siteId = searchParams.get('siteId'); // Overall PO Site ID is removed
   const approverId = searchParams.get('approverId');
   const creatorUserId = searchParams.get('creatorUserId'); // For "Requestor" filter
 
@@ -54,10 +54,12 @@ export async function GET(request) {
         s.supplierName,
         app.name AS approverName,
         u.name AS creatorName 
+        -- po.siteId -- Removed Overall PO Site ID
     FROM PurchaseOrder po
     LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
     LEFT JOIN Approver app ON po.approverId = app.id
     LEFT JOIN User u ON po.creatorUserId = u.id
+    -- LEFT JOIN Site si ON po.siteId = si.id -- Removed join for overall PO Site
     WHERE 1=1
   `;
   const queryParams = [];
@@ -70,10 +72,10 @@ export async function GET(request) {
     query += ' AND YEAR(po.creationDate) = ?';
     queryParams.push(parseInt(year, 10));
   }
-  if (siteId && siteId !== 'all') {
-    query += ' AND po.siteId = ?'; 
-    queryParams.push(parseInt(siteId, 10));
-  }
+  // if (siteId && siteId !== 'all') { // Filter for overall PO siteId removed
+  //   query += ' AND po.siteId = ?'; 
+  //   queryParams.push(parseInt(siteId, 10));
+  // }
   if (approverId && approverId !== 'all') {
     query += ' AND po.approverId = ?';
     queryParams.push(approverId);
@@ -116,7 +118,7 @@ export async function POST(request) {
         pricesIncludeVat,
         notes,
         items,
-        siteId, 
+        // siteId, // Removed Overall PO Site ID
       } = poData;
 
       connection = await pool.getConnection();
@@ -125,9 +127,9 @@ export async function POST(request) {
       const finalCreatorUserId = creatorUserId || null;
 
       const [poResult] = await connection.execute(
-        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, siteId || null, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
+        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // Removed siteId from query
+        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, /* siteId || null, */ status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes] // Removed siteId from params
       );
 
       const newPoId = poResult.insertId;

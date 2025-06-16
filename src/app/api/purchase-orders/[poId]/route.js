@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request, { params }) {
   const { poId } = params;
   try {
+    // Selecting all columns, siteId will be NULL if not present or if dropped
     const [rows] = await pool.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [poId]);
     if (rows.length > 0) {
       return NextResponse.json(rows[0]);
@@ -35,7 +36,7 @@ export async function PUT(request, { params }) {
       requestedByName,
       supplierId,
       approverId,
-      siteId, 
+      // siteId, // Removed overall PO siteId
       subTotal,
       vatAmount,
       grandTotal,
@@ -50,11 +51,12 @@ export async function PUT(request, { params }) {
 
     const [poUpdateResult] = await connection.execute(
       `UPDATE PurchaseOrder SET 
-        poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, siteId = ?,
+        poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, 
         subTotal = ?, vatAmount = ?, grandTotal = ?, currency = ?, pricesIncludeVat = ?, notes = ?
-       WHERE id = ?`,
+       WHERE id = ?`, // siteId removed from SET clause
       [
-        poNumber, new Date(creationDate), requestedByName, supplierId, approverId, siteId ? Number(siteId) : null,
+        poNumber, new Date(creationDate), requestedByName, supplierId, approverId, 
+        // siteId ? Number(siteId) : null, // siteId removed from parameters
         subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes,
         numericPoId
       ]
@@ -81,8 +83,8 @@ export async function PUT(request, { params }) {
             item.uom, 
             Number(item.quantity), 
             Number(item.unitPrice),
-            item.quantityReceived || 0, // Ensure new fields are included
-            item.itemStatus || 'Pending'   // Ensure new fields are included
+            item.quantityReceived || 0, 
+            item.itemStatus || 'Pending'   
           ]
         );
       }
@@ -104,4 +106,3 @@ export async function PUT(request, { params }) {
     }
   }
 }
-

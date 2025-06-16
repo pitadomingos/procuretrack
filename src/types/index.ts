@@ -103,8 +103,8 @@ export interface POItemPayload {
   uom: string;
   quantity: number;
   unitPrice: number;
-  quantityReceived: number; // Added, ensure NOT NULL in DB (DEFAULT 0)
-  itemStatus: string; // Added, ensure NOT NULL in DB (DEFAULT 'Pending')
+  quantityReceived: number; 
+  itemStatus: string; 
 }
 
 export interface POItemForPrint extends POItemPayload {
@@ -120,7 +120,7 @@ export interface PurchaseOrderPayload {
   requestedByName?: string | null;
   supplierId: string | null;
   approverId: string | null;
-  siteId?: number | null;
+  // siteId?: number | null; // Removed Overall PO Site ID
   status: string;
   subTotal: number;
   vatAmount: number;
@@ -215,12 +215,12 @@ export interface RequisitionPayload {
   requisitionDate: string;
   requestedByUserId?: string | null;
   requestedByName: string;
-  siteId: number | null;
+  siteId: number | null; // Site ID for the Requisition itself (department/origin)
   status: 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
   justification?: string;
   items: RequisitionItem[];
   totalEstimatedValue?: number;
-  siteName?: string;
+  siteName?: string; // For display purposes if fetched
 }
 
 export interface Tag {
@@ -261,3 +261,4 @@ export interface FilterOption {
   value: string;
   label: string;
 }
+
