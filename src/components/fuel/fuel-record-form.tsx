@@ -86,7 +86,7 @@ export function FuelRecordForm() {
   const onSubmit = async (formData: FuelRecordFormValues) => {
     setIsSubmitting(true);
 
-    const payload: Omit<FuelRecord, 'id' | 'tagName' | 'siteName' | 'totalCost'> & { recorderUserId?: string } = {
+    const payload: Omit<FuelRecord, 'id' | 'tagName' | 'siteName' | 'totalCost' | 'distanceTravelled'> & { recorderUserId?: string } = {
       fuelDate: new Date(formData.fuelDate).toISOString(),
       reqNo: formData.reqNo,
       invNo: formData.invNo,
@@ -157,26 +157,40 @@ export function FuelRecordForm() {
             </div>
 
             <div className="grid md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="driver" render={({ field }) => ( <FormItem> <FormLabel>Driver</FormLabel> <FormControl><Input placeholder="Driver's name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="odometer" render={({ field }) => ( <FormItem> <FormLabel>Odometer (km)</FormLabel> <FormControl><Input type="number" placeholder="e.g., 123456" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="reqNo" render={({ field }) => ( <FormItem> <FormLabel>Requisition No.</FormLabel> <FormControl><Input placeholder="Optional" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="driver" render={({ field }) => ( <FormItem> <FormLabel>Driver</FormLabel> <FormControl><Input placeholder="Driver's name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="odometer" render={({ field }) => ( 
+                <FormItem> 
+                  <FormLabel>Odometer (km)</FormLabel> 
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="e.g., 123456" 
+                      {...field} 
+                      value={field.value ?? ''} // Ensures controlled input
+                      onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} 
+                    />
+                  </FormControl> 
+                  <FormMessage /> 
+                </FormItem> 
+              )} />
+              <FormField control={form.control} name="reqNo" render={({ field }) => ( <FormItem> <FormLabel>Requisition No.</FormLabel> <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
             
             <div className="grid md:grid-cols-3 gap-4">
-                <FormField control={form.control} name="invNo" render={({ field }) => ( <FormItem> <FormLabel>Invoice No.</FormLabel> <FormControl><Input placeholder="Optional" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="e.g., Diesel, Petrol" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="uom" rules={{ required: "UOM is required"}} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., Liters, Gal" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="invNo" render={({ field }) => ( <FormItem> <FormLabel>Invoice No.</FormLabel> <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="e.g., Diesel, Petrol" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="uom" rules={{ required: "UOM is required"}} render={({ field }) => ( <FormItem> <FormLabel>UOM</FormLabel> <FormControl><Input placeholder="e.g., Liters, Gal" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 items-end">
               <FormField control={form.control} name="quantity" rules={{ required: 'Quantity is required', min: { value: 0.01, message: 'Must be > 0' } }} render={({ field }) => (
                 <FormItem> <FormLabel>Quantity</FormLabel>
-                  <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage />
+                  <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="unitCost" rules={{ required: 'Unit Cost is required', min: { value: 0.01, message: 'Must be > 0' } }} render={({ field }) => (
                 <FormItem> <FormLabel>Unit Cost (MZN)</FormLabel>
-                  <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage />
+                  <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage />
                 </FormItem>
               )} />
               <FormItem>
