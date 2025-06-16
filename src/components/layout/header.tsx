@@ -96,11 +96,12 @@ export function AppHeader() {
         {/* Company Logo */}
         <div className="mx-2">
           <Image
-            src="/headerlogo.png" 
+            src="/headerlogo.png"
             alt="Company Logo"
-            width={40} 
-            height={40} 
+            width={40}
+            height={40}
             className="rounded-sm object-contain"
+            style={{ height: 'auto' }} // Added to help with aspect ratio if width is constrained by CSS
             data-ai-hint="company brand logo"
           />
         </div>
