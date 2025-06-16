@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 interface FetchedStats {
   totalPOs: number;
   completedPOs: number;
+  partiallyCompletedPOs: number; // Added
   pendingApprovalPOs: number;
   openPOs: number;
   totalRequisitions: number;
@@ -45,6 +46,7 @@ export default function DashboardPage() {
           switch (stat.title) {
             case 'Total POs': return { ...stat, value: data.totalPOs.toString() };
             case 'Completed POs': return { ...stat, value: data.completedPOs.toString() };
+            case 'Partially Completed POs': return { ...stat, value: data.partiallyCompletedPOs.toString() }; // Added
             case 'Pending Approval': return { ...stat, value: data.pendingApprovalPOs.toString() };
             case 'Open POs': return { ...stat, value: data.openPOs.toString() };
             case 'Total Requisitions': return { ...stat, value: data.totalRequisitions.toString() };
@@ -74,9 +76,6 @@ export default function DashboardPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
-    // For now, filters don't directly refetch dashboard stats or charts
-    // Charts will refetch based on refreshKey, stats refetch via handleRefreshAllData
-    // To make charts react to filters, filters would need to be passed to them or a global state used.
   };
 
   return (
@@ -89,17 +88,17 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoadingStats ? (
-          Array.from({ length: 8 }).map((_, index) => (
+          Array.from({ length: initialDashboardStatsConfig.length }).map((_, index) => ( // Use initial config length
             <div key={index} className="p-6 rounded-lg border bg-card shadow-sm flex flex-col justify-between h-[140px] items-center text-center">
               <div className="flex flex-row items-center justify-between space-y-0 pb-2 w-full">
-                <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div> {/* Skeleton for title */}
-                <div className="h-5 w-5 bg-muted rounded-full"></div> {/* Skeleton for icon */}
+                <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div> 
+                <div className="h-5 w-5 bg-muted rounded-full"></div> 
               </div>
               <div className="w-full flex flex-col items-center">
-                <div className="h-8 bg-muted rounded w-1/2 mb-1"></div> {/* Skeleton for value */}
-                <div className="h-3 bg-muted rounded w-full mt-1"></div> {/* Skeleton for description */}
+                <div className="h-8 bg-muted rounded w-1/2 mb-1"></div> 
+                <div className="h-3 bg-muted rounded w-full mt-1"></div> 
               </div>
             </div>
           ))

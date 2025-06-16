@@ -1,6 +1,6 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord } from '@/types';
-import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package } from 'lucide-react'; // Renamed TagIcon to TagLucideIcon, Added Package
+import { Archive, BadgeCheck, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon } from 'lucide-react'; // Renamed TagIcon to TagLucideIcon, Added Package
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -16,13 +16,19 @@ export const dashboardStats: StatCardItem[] = [
     description: 'POs fully received and closed.',
   },
   {
-    title: 'Pending Approval', // Changed from Partially Completed for PO context
+    title: 'Partially Completed POs', // New Stat Card
+    value: 'N/A', // Will be dynamic
+    icon: ListChecksIcon, // Using ListChecks for partially completed
+    description: 'POs with some items received.',
+  },
+  {
+    title: 'Pending Approval', 
     value: 'N/A', // Will be dynamic
     icon: Loader,
     description: 'POs awaiting approval actions.',
   },
   {
-    title: 'Open POs', // Approved but not yet fully received/closed
+    title: 'Open POs', // Approved but not yet partially or fully completed/closed
     value: 'N/A', // Will be dynamic
     icon: FolderOpen,
     description: 'POs approved, items pending receipt.',
@@ -54,12 +60,12 @@ export const dashboardStats: StatCardItem[] = [
 ];
 
 export const monthlyStatusData: ChartDataPoint[] = [
-  { name: 'Jan', Completed: 400, Open: 240, PartiallyCompleted: 100 },
-  { name: 'Feb', Completed: 300, Open: 139, PartiallyCompleted: 90 },
-  { name: 'Mar', Completed: 200, Open: 480, PartiallyCompleted: 120 },
-  { name: 'Apr', Completed: 278, Open: 390, PartiallyCompleted: 80 },
-  { name: 'May', Completed: 189, Open: 480, PartiallyCompleted: 70 },
-  { name: 'Jun', Completed: 239, Open: 380, PartiallyCompleted: 110 },
+  { name: 'Jan', Completed: 400, Open: 240, PartiallyCompleted: 100, Pending: 50 },
+  { name: 'Feb', Completed: 300, Open: 139, PartiallyCompleted: 90, Pending: 30 },
+  { name: 'Mar', Completed: 200, Open: 480, PartiallyCompleted: 120, Pending: 60 },
+  { name: 'Apr', Completed: 278, Open: 390, PartiallyCompleted: 80, Pending: 40 },
+  { name: 'May', Completed: 189, Open: 480, PartiallyCompleted: 70, Pending: 20 },
+  { name: 'Jun', Completed: 239, Open: 380, PartiallyCompleted: 110, Pending: 70 },
 ];
 
 export const allocationsData: ChartDataPoint[] = [
@@ -177,29 +183,29 @@ export const mockUsersData: User[] = [
 
 
 export const mockClients: Client[] = [
-  { id: 'client-001', name: 'Vale Mozambique', email: 'procurement@vale.co.mz', contactPerson: 'Mr. Silva', address: 'Vale Office Park, Moatize', nuit: '400000001' },
-  { id: 'client-002', name: 'Mota-Engil', email: 'compras@mota-engil.mz', contactPerson: 'Ms. Ferreira', address: 'Mota-Engil Site, Tete', nuit: '400000002' },
-  { id: 'client-003', name: 'WBHO', email: 'tenders.mz@wbho.co.za', contactPerson: 'Mr. Botha', address: 'WBHO Camp, Nacala Corridor', nuit: '400000003' },
-  { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City', nuit: '400000004' },
+  { id: 'client-001', name: 'Vale Mozambique', email: 'procurement@vale.co.mz', contactPerson: 'Mr. Silva', address: 'Vale Office Park, Moatize' },
+  { id: 'client-002', name: 'Mota-Engil', email: 'compras@mota-engil.mz', contactPerson: 'Ms. Ferreira', address: 'Mota-Engil Site, Tete' },
+  { id: 'client-003', name: 'WBHO', email: 'tenders.mz@wbho.co.za', contactPerson: 'Mr. Botha', address: 'WBHO Camp, Nacala Corridor' },
+  { id: 'client-004', name: 'Local Mining Co-op', email: 'info@localminingcoop.org', contactPerson: 'Sra. Tembe', address: 'Rua da Cooperativa, Tete City' },
 ];
 
 export const mockPurchaseOrders: PurchaseOrderPayload[] = [
   {
     id: 1, poNumber: 'PO-00001', creationDate: '2024-07-01T10:00:00Z', status: 'Approved',
     supplierId: 'ACP01', grandTotal: 1500, currency: 'MZN', requestedByName: 'Alice Smith', approverId: 'approver_001',
-    items: [{id:1, description: 'Item A', quantity:10, unitPrice:100, categoryId:1, uom:'EA'}], subTotal: 1293.10, vatAmount: 206.90, pricesIncludeVat: false, creatorUserId: 'user_002',
+    items: [{id:1, description: 'Item A', quantity:10, unitPrice:100, categoryId:1, uom:'EA', quantityReceived: 0, itemStatus: 'Pending'}], subTotal: 1293.10, vatAmount: 206.90, pricesIncludeVat: false, creatorUserId: 'user_002',
     approverName: 'Cherinne de Klerk', supplierName: 'AC PECAS ,LDA', creatorName: 'Portia Mbuva'
   },
   {
     id: 2, poNumber: 'PO-00002', creationDate: '2024-06-15T14:30:00Z', status: 'Pending Approval',
     supplierId: 'ADV01', grandTotal: 800, currency: 'USD', requestedByName: 'Bob Johnson', approverId: 'approver_002',
-    items: [{id:2, description: 'Service B', quantity:1, unitPrice:800, categoryId:5, uom:'SVC'}], subTotal: 800, vatAmount: 0, pricesIncludeVat: false, creatorUserId: 'user_005',
+    items: [{id:2, description: 'Service B', quantity:1, unitPrice:800, categoryId:5, uom:'SVC', quantityReceived: 0, itemStatus: 'Pending'}], subTotal: 800, vatAmount: 0, pricesIncludeVat: false, creatorUserId: 'user_005',
     approverName: 'Cobus de Klerk', supplierName: 'ADVANCED CONSULTORIA E SERVICOS ,LDA', creatorName: 'Gil Lunguze'
   },
    {
     id: 3, poNumber: 'PO-00003', creationDate: '2023-12-05T11:20:00Z', status: 'Completed',
     supplierId: 'AMT01', grandTotal: 25000, currency: 'MZN', requestedByName: 'Carol White', approverId: 'approver_001',
-    items: [{id:3, description: 'Hardware C', quantity:50, unitPrice:431.03, categoryId:4, uom:'BOX'}], subTotal: 21551.72, vatAmount: 3448.28, pricesIncludeVat: false, creatorUserId: 'user_002',
+    items: [{id:3, description: 'Hardware C', quantity:50, unitPrice:431.03, categoryId:4, uom:'BOX', quantityReceived: 50, itemStatus: 'Fully Received'}], subTotal: 21551.72, vatAmount: 3448.28, pricesIncludeVat: false, creatorUserId: 'user_002',
     approverName: 'Cherinne de Klerk', supplierName: 'AMTECH ENGINEERING SOLUTIONS', creatorName: 'Portia Mbuva'
   },
 ];
@@ -233,7 +239,7 @@ export const mockAllocationsData: Allocation[] = [
 
 export const mockQuotesData: QuotePayload[] = [
   { id: 'Q-MOCK-001', quoteNumber: 'Q-2024-001', quoteDate: '2024-07-15T10:00:00Z', clientId: 'client-001', clientName: 'Vale Mozambique', subTotal: 150000, vatAmount: 24000, grandTotal: 174000, currency: 'MZN', status: 'Draft', items: [{id:'qi1', description:'Service A', quantity:1, unitPrice:150000, partNumber: 'SVC-A', customerRef: 'CR-VALE-001'}] },
-  { id: 'Q-MOCK-002', quoteNumber: 'Q-2024-002', quoteDate: '2024-07-18T14:30:00Z', clientId: 'client-002', clientName: 'Mota-Engil', subTotal: 7500, vatAmount: 0, grandTotal: 7500, currency: 'USD', status: 'Sent', items: [{id:'qi2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}] },
+  { id: 'Q-MOCK-002', quoteNumber: 'Q-2024-002', quoteDate: '2024-07-18T14:30:00Z', clientId: 'client-002', clientName: 'Mota-Engil', subTotal: 7500, vatAmount: 0, grandTotal: 7500, currency: 'USD', status: 'Sent to Client', items: [{id:'qi2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}] },
 ];
 
 export const mockRequisitionsData: RequisitionPayload[] = [

@@ -20,8 +20,17 @@ export interface ActivityLogEntry {
 
 export interface ChartDataPoint {
   name: string; // e.g., month or category
-  [key: string]: number | string; // values for different series
+  Completed?: number;
+  Open?: number; // Represents 'Approved' POs
+  Pending?: number; // Represents 'Pending Approval' POs
+  PartiallyCompleted?: number; // New status
+  'Completed Value'?: number;
+  'Open Value'?: number;
+  'Pending Value'?: number;
+  'Partially Completed Value'?: number; // New status value
+  [key: string]: number | string | undefined; // Allow other dynamic keys
 }
+
 
 // For PO Form state and item structure within the form
 export interface POItem {
@@ -111,6 +120,14 @@ export interface POItemForPrint extends POItemPayload {
   categoryDisplay?: string;
 }
 
+export type PurchaseOrderStatus = 
+  | 'Pending Approval' 
+  | 'Approved' 
+  | 'Partially Completed' 
+  | 'Completed' 
+  | 'Rejected' 
+  | 'Draft'; // Ensure all statuses are covered
+
 export interface PurchaseOrderPayload {
   id?: number;
   poNumber: string;
@@ -119,7 +136,7 @@ export interface PurchaseOrderPayload {
   requestedByName?: string | null;
   supplierId: string | null;
   approverId: string | null;
-  status: string;
+  status: PurchaseOrderStatus;
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
@@ -128,7 +145,6 @@ export interface PurchaseOrderPayload {
   notes?: string | null;
   items: POItemPayload[] | POItemForPrint[];
   approvalDate?: string | null;
-  // siteId removed from here
   rejectionReason?: string | null;
   rejectionDate?: string | null;
   supplierDetails?: Supplier;
@@ -165,11 +181,10 @@ export interface Client {
   address?: string | null;
   city?: string | null;
   country?: string | null;
-  contactPerson?: string | null; // Mapped from CSV "Contact"
-  email?: string | null;         // Mapped from CSV "Email"
-  // nuit and contactNumber removed
-  createdAt?: string; // DATETIME from DB
-  updatedAt?: string; // DATETIME from DB
+  contactPerson?: string | null; 
+  email?: string | null;         
+  createdAt?: string; 
+  updatedAt?: string; 
 }
 
 export interface QuoteItem {
@@ -220,12 +235,12 @@ export interface RequisitionPayload {
   requisitionDate: string;
   requestedByUserId?: string | null;
   requestedByName: string;
-  siteId: number | null; // Site ID for the Requisition itself (department/origin)
+  siteId: number | null; 
   status: 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
   justification?: string;
   items: RequisitionItem[];
   totalEstimatedValue?: number;
-  siteName?: string; // For display purposes if fetched
+  siteName?: string; 
 }
 
 export interface Tag {

@@ -1,13 +1,13 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../../backend/db.js'; 
-import type { ChartDataPoint, PurchaseOrderPayload, POItemPayload } from '@/types';
+import type { ChartDataPoint, PurchaseOrderPayload, POItemPayload, PurchaseOrderStatus } from '@/types';
 
 interface SitePOValueQueryResult {
   site_identifier: string; 
-  status: string; // Original PO status
+  status: PurchaseOrderStatus; 
   total_value: number | string; 
-  po_id: number; // PurchaseOrder ID
+  po_id: number; 
 }
 
 interface POItemDetails {
@@ -20,7 +20,6 @@ export async function GET() {
   try {
     connection = await pool.getConnection();
     
-    // Fetch all relevant POs with their site identifiers and totals
     const poQuery = `
       SELECT 
         po.id as po_id,
@@ -29,7 +28,7 @@ export async function GET() {
         po.grandTotal as total_value
       FROM PurchaseOrder po
       LEFT JOIN Site s ON po.siteId = s.id 
-      WHERE po.status IN ('Pending Approval', 'Approved', 'Completed') -- Filter for relevant statuses
+      WHERE po.status IN ('Pending Approval', 'Approved', 'Completed', 'Partially Completed') 
       ORDER BY site_identifier ASC, po.status ASC;
     `;
     const [poRows]: any[] = await connection.execute(poQuery);
@@ -43,6 +42,7 @@ export async function GET() {
         siteData[siteIdentifier] = { 
           name: siteIdentifier,
           'Completed Value': 0, 
+          'Partially Completed Value': 0,
           'Open Value': 0,      
           'Pending Value': 0    
         };
@@ -51,21 +51,24 @@ export async function GET() {
         }
       }
 
-      const poValue = Number(po.total_value) || 0; // Ensure poValue is 0 if total_value is null, undefined or NaN
+      const poValue = Number(po.total_value) || 0;
 
-      if (po.status && po.status.trim() === 'Pending Approval') {
+      const currentStatus = po.status ? po.status.trim() as PurchaseOrderStatus : 'Draft';
+
+      if (currentStatus === 'Pending Approval') {
         siteData[siteIdentifier]['Pending Value'] = (siteData[siteIdentifier]['Pending Value'] as number) + poValue;
-      } else if (po.status && po.status.trim() === 'Completed') {
+      } else if (currentStatus === 'Completed') {
         siteData[siteIdentifier]['Completed Value'] = (siteData[siteIdentifier]['Completed Value'] as number) + poValue;
-      } else if (po.status && po.status.trim() === 'Approved') {
-        // For 'Approved' POs, check item status
+      } else if (currentStatus === 'Partially Completed') {
+        siteData[siteIdentifier]['Partially Completed Value'] = (siteData[siteIdentifier]['Partially Completed Value'] as number) + poValue;
+      } else if (currentStatus === 'Approved') {
         const [itemRows]: any[] = await connection.execute(
           'SELECT quantity, quantityReceived FROM POItem WHERE poId = ?', 
           [po.po_id]
         );
         
         let allItemsFullyReceived = true;
-        if (itemRows.length === 0) { // If an approved PO has no items, consider it open
+        if (itemRows.length === 0) { 
           allItemsFullyReceived = false; 
         }
 
@@ -82,7 +85,6 @@ export async function GET() {
           siteData[siteIdentifier]['Open Value'] = (siteData[siteIdentifier]['Open Value'] as number) + poValue;
         }
       }
-      // Other statuses like 'Rejected', 'Draft' are ignored by the initial poQuery filter
     }
     
     const chartData = siteOrder.sort().map(siteIdentifier => siteData[siteIdentifier]);

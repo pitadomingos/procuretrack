@@ -46,7 +46,7 @@ export function MonthlyStatusChart() {
     <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline">Monthly PO Status</CardTitle>
-        <CardDescription>Completed, Open (Approved), and Pending POs by month.</CardDescription>
+        <CardDescription>Completed, Partially Completed, Open (Approved), and Pending POs by month.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -84,7 +84,8 @@ export function MonthlyStatusChart() {
               />
               <Legend wrapperStyle={{ fontSize: '12px' }}/>
               <Bar dataKey="Completed" stackId="a" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Open" stackId="a" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="PartiallyCompleted" name="Partially Completed" stackId="a" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Open" stackId="a" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} name="Open (Approved)"/>
               <Bar dataKey="Pending" stackId="a" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} name="Pending Approval" />
             </BarChart>
           </ResponsiveContainer>
