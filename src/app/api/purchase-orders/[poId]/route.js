@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request, { params }) {
   const { poId } = params;
   try {
-    // Selecting all columns, siteId will be NULL if not present or if dropped
+    // Selecting all columns, including siteId from PurchaseOrder table
     const [rows] = await pool.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [poId]);
     if (rows.length > 0) {
       return NextResponse.json(rows[0]);
@@ -36,7 +36,7 @@ export async function PUT(request, { params }) {
       requestedByName,
       supplierId,
       approverId,
-      // siteId, // Removed overall PO siteId
+      siteId, // Added overall PO siteId
       subTotal,
       vatAmount,
       grandTotal,
@@ -49,14 +49,15 @@ export async function PUT(request, { params }) {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
+    const finalSiteId = siteId ? Number(siteId) : null; // Ensure siteId is number or null
+
     const [poUpdateResult] = await connection.execute(
       `UPDATE PurchaseOrder SET 
-        poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, 
+        poNumber = ?, creationDate = ?, requestedByName = ?, supplierId = ?, approverId = ?, siteId = ?,
         subTotal = ?, vatAmount = ?, grandTotal = ?, currency = ?, pricesIncludeVat = ?, notes = ?
-       WHERE id = ?`, // siteId removed from SET clause
+       WHERE id = ?`, // Added siteId to SET clause
       [
-        poNumber, new Date(creationDate), requestedByName, supplierId, approverId, 
-        // siteId ? Number(siteId) : null, // siteId removed from parameters
+        poNumber, new Date(creationDate), requestedByName, supplierId, approverId, finalSiteId,
         subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes,
         numericPoId
       ]
@@ -79,7 +80,7 @@ export async function PUT(request, { params }) {
             item.partNumber || null, 
             item.description, 
             item.categoryId ? Number(item.categoryId) : null, 
-            item.siteId ? Number(item.siteId) : null, 
+            item.siteId ? Number(item.siteId) : null, // Item-level siteId
             item.uom, 
             Number(item.quantity), 
             Number(item.unitPrice),

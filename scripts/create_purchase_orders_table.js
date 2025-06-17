@@ -12,7 +12,7 @@ async function createPurchaseOrderTable() {
           requestedByName VARCHAR(255) NULL,     -- Free-text requester name
           supplierId VARCHAR(255),              -- References Supplier.supplierCode
           approverId VARCHAR(255),              -- References Approver.id (This is for who is ASSIGNED to approve)
-          -- siteId INT NULL,                   -- Overall PO Site ID removed as per new requirement
+          siteId INT NULL,                      -- Overall PO Site ID (Re-added based on user DB image)
           status VARCHAR(255) NOT NULL,
           subTotal DECIMAL(10, 2),
           vatAmount DECIMAL(10, 2),
@@ -23,12 +23,12 @@ async function createPurchaseOrderTable() {
           approvalDate DATETIME NULL,           -- Date when the PO was approved
           FOREIGN KEY (creatorUserId) REFERENCES User(id) ON DELETE SET NULL,
           FOREIGN KEY (supplierId) REFERENCES Supplier(supplierCode) ON DELETE RESTRICT,
-          FOREIGN KEY (approverId) REFERENCES Approver(id) ON DELETE RESTRICT
-          -- FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL -- FK for siteId removed
+          FOREIGN KEY (approverId) REFERENCES Approver(id) ON DELETE RESTRICT,
+          FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL -- FK for overall siteId (Re-added)
       );
     `;
     await db.pool.execute(createTableQuery);
-    console.log('PurchaseOrder table created or verified successfully with revised schema (overall siteId column removed).');
+    console.log('PurchaseOrder table created or verified successfully with overall siteId column.');
   } catch (error) {
     console.error('Error creating/updating PurchaseOrder table:', error);
   } finally {
@@ -37,4 +37,3 @@ async function createPurchaseOrderTable() {
 }
 
 createPurchaseOrderTable();
-

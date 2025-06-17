@@ -55,6 +55,7 @@ interface POFormValues {
   currency: string;
   requestedByName: string;
   approverId: string | null;
+  overallSiteId: string | null; // Added for overall PO site
   pricesIncludeVat: boolean;
   notes: string;
   items: POFormItemStructure[];
@@ -77,7 +78,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   const [loadedPOId, setLoadedPOId] = useState<string | null>(null);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
+  const [sites, setSitesData] = useState<Site[]>([]); // Renamed to avoid conflict
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [approvers, setApproversData] = useState<Approver[]>([]);
 
@@ -86,7 +87,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Loading PO...', currency: 'MZN', requestedByName: '',
-      approverId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
+      approverId: null, overallSiteId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
     },
     mode: 'onBlur',
   });
@@ -110,6 +111,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       currency: data.currency,
       requestedByName: data.requestedByName || '',
       approverId: data.approverId,
+      overallSiteId: data.siteId ? data.siteId.toString() : null, // Populate overallSiteId
       pricesIncludeVat: data.pricesIncludeVat,
       notes: data.notes || '',
       items: (data.items || []).map(item => ({
@@ -117,7 +119,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         partNumber: item.partNumber || '',
         description: item.description,
         categoryId: item.categoryId,
-        siteId: item.siteId,
+        siteId: item.siteId, // This is item-level siteId
         uom: item.uom,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
@@ -145,7 +147,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Fetching...', currency: 'MZN', requestedByName: '',
-      approverId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
+      approverId: null, overallSiteId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
     });
     setIsEditingLoadedPO(false);
     setLoadedPOId(null);
@@ -177,7 +179,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         const fetchedApprovers: Approver[] = approversRes.ok ? await approversRes.json() : [];
 
         setSuppliers(fetchedSuppliers);
-        setSites(fetchedSites);
+        setSitesData(fetchedSites);
         setCategories(fetchedCategories);
         setApproversData(fetchedApprovers);
 
@@ -209,7 +211,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     };
     fetchCoreDataAndInitializeForm();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poIdToEditProp, toast]); // Removed loadPODataIntoForm and resetFormForNew from deps
+  }, [poIdToEditProp, toast]); 
 
 
   const watchedItems = form.watch('items');
@@ -291,6 +293,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       requestedByName: formData.requestedByName,
       supplierId: formData.vendorName,
       approverId: formData.approverId,
+      siteId: formData.overallSiteId ? Number(formData.overallSiteId) : null, // Add overallSiteId
       subTotal: subTotal, vatAmount: vatAmount, grandTotal: grandTotal, currency: formData.currency,
       pricesIncludeVat: formData.pricesIncludeVat, notes: formData.notes,
       items: formData.items.map(item => ({
@@ -314,7 +317,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       } else {
         response = await fetch('/api/purchase-orders', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, status: 'Pending Approval', creatorUserId: null }), // creatorUserId to be set by auth
+          body: JSON.stringify({ ...payload, status: 'Pending Approval', creatorUserId: null }),
         });
         successMessage = `Purchase Order ${payload.poNumber} created successfully.`;
       }
@@ -382,7 +385,6 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   };
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
-
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (isLoadingInitialData && !poIdToEditProp) {
@@ -452,11 +454,24 @@ export function POForm({ poIdToEditProp }: POFormProps) {
 
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
-                <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester's name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="approverId" rules={{ required: 'Approver is required' }} render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                <FormField control={form.control} name="pricesIncludeVat" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 h-10 mt-auto"> <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl> <div className="space-y-1 leading-none"><FormLabel>Prices VAT inclusive</FormLabel></div> </FormItem> )} />
+              <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 items-center"> {/* Changed to 5 columns for better layout */}
+                <FormField
+                  control={form.control} name="overallSiteId" rules={{ required: 'Overall PO Site is required' }}
+                  render={({ field }) => (
+                    <FormItem className="lg:col-span-1">
+                      <FormLabel>Overall PO Site</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Select Site" /></SelectTrigger></FormControl>
+                        <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem className="lg:col-span-1"> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By is required' }} render={({ field }) => ( <FormItem className="lg:col-span-1"> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester's name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="approverId" rules={{ required: 'Approver is required' }} render={({ field }) => ( <FormItem className="lg:col-span-1"> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                <FormField control={form.control} name="pricesIncludeVat" render={({ field }) => ( <FormItem className="lg:col-span-1 flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 h-10 mt-auto"> <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl> <div className="space-y-1 leading-none"><FormLabel>Prices VAT inclusive</FormLabel></div> </FormItem> )} />
              </div>
             </div>
 
@@ -492,9 +507,9 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Site is required' }} render={({ field }) => (
+                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Item Site is required' }} render={({ field }) => ( // Item-specific site
                       <FormItem className="lg:col-span-1">
-                        <FormLabel>Site</FormLabel>
+                        <FormLabel>Item Site</FormLabel>
                         <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
                           <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>

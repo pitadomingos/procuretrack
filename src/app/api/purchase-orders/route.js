@@ -10,17 +10,20 @@ export async function GET(request) {
   const year = searchParams.get('year');
   const approverId = searchParams.get('approverId');
   const creatorUserId = searchParams.get('creatorUserId'); 
+  const overallSiteId = searchParams.get('siteId'); // For header-level site filtering
 
   let query = `
     SELECT
         po.id, po.poNumber, po.creationDate, po.status, po.subTotal, po.vatAmount,
         po.grandTotal, po.currency, po.pricesIncludeVat, po.notes, po.requestedByName, 
-        po.creatorUserId, po.approverId, po.supplierId,
-        s.supplierName, app.name AS approverName, u.name AS creatorName 
+        po.creatorUserId, po.approverId, po.supplierId, po.siteId AS overallSiteId, -- Added overallSiteId
+        s.supplierName, app.name AS approverName, u.name AS creatorName,
+        overall_site.siteCode AS overallSiteName -- Added overall site name/code
     FROM PurchaseOrder po
     LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
     LEFT JOIN Approver app ON po.approverId = app.id
     LEFT JOIN User u ON po.creatorUserId = u.id
+    LEFT JOIN Site overall_site ON po.siteId = overall_site.id -- Join for overall site
     WHERE 1=1
   `;
   const queryParams = [];
@@ -41,6 +44,11 @@ export async function GET(request) {
     query += ' AND po.creatorUserId = ?';
     queryParams.push(creatorUserId);
   }
+  if (overallSiteId && overallSiteId !== 'all') { // Filter by overall PO siteId
+    query += ' AND po.siteId = ?';
+    queryParams.push(parseInt(overallSiteId, 10));
+  }
+
 
   query += ' ORDER BY po.creationDate DESC';
 
@@ -63,7 +71,7 @@ export async function POST(request) {
       const poData = await request.json();
       const {
         poNumber, creationDate, creatorUserId, requestedByName, supplierId,    
-        approverId, status, subTotal, vatAmount, grandTotal, currency,
+        approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, // Added siteId here
         pricesIncludeVat, notes, items,
       } = poData;
 
@@ -71,11 +79,12 @@ export async function POST(request) {
       await connection.beginTransaction();
 
       const finalCreatorUserId = creatorUserId || null;
+      const finalSiteId = siteId ? Number(siteId) : null; // Ensure siteId is number or null
 
       const [poResult] = await connection.execute(
-        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
+        `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // Added siteId to query
+        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, finalSiteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes] // Added finalSiteId to params
       );
 
       const newPoId = poResult.insertId;
@@ -84,7 +93,7 @@ export async function POST(request) {
         for (const item of items) {
           await connection.execute(
             `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // Item-level siteId remains here
             [newPoId, item.partNumber, item.description, item.categoryId, item.siteId || null, item.uom, Number(item.quantity), Number(item.unitPrice), item.quantityReceived || 0, item.itemStatus || 'Pending']
           );
         }
@@ -106,11 +115,12 @@ export async function POST(request) {
     }
   } else if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/purchase-orders POST: Received multipart/form-data request for CSV upload.');
+    // CSV Upload logic remains largely the same, might need to handle overall siteId if present in CSV
     try {
       const formData = await request.formData();
       const file = formData.get('file');
       
-      if (!file || typeof file === 'string') { // Check if file is a File object
+      if (!file || typeof file === 'string') { 
         console.error('[API_ERROR] /api/purchase-orders POST CSV: No file uploaded or file is not a File object.');
         return NextResponse.json({ error: 'No file uploaded or invalid file type' }, { status: 400 });
       }
@@ -125,7 +135,7 @@ export async function POST(request) {
       await new Promise((resolve, reject) => {
         stream
           .pipe(csv({
-            mapHeaders: ({ header }) => header.trim() // Trim headers
+            mapHeaders: ({ header }) => header.trim() 
           }))
           .on('headers', (headers) => {
             console.log('[API_INFO] /api/purchase-orders POST CSV: Detected CSV Headers:', headers);
@@ -139,8 +149,6 @@ export async function POST(request) {
           })
           .on('end', () => {
             console.log(`[API_INFO] /api/purchase-orders POST CSV: CSV parsing finished. ${results.length} records found.`);
-            // TODO: Add logic for validating and inserting PO header data from CSV.
-            // This typically involves creating POs and then potentially linking to PO items if another CSV is for items.
             resolve();
           })
           .on('error', (parseError) => {
