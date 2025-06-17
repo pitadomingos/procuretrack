@@ -347,20 +347,21 @@ export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>)
 
 // Function to add a new quote to MOCK_QUOTES_DB (for use in API routes)
 export function addMockQuote(quote: QuotePayload): QuotePayload {
-    // The quote.id should be provided by the form now
     if (!quote.id) {
-        console.warn("addMockQuote critical error: Quote received without an ID from form/client.");
+        console.warn("[MockData][addMockQuote] Critical error: Quote received without an ID from form/client.");
         // Fallback ID generation, though this shouldn't be hit if form provides ID
         quote.id = `MOCK-QID-CRITICAL-FALLBACK-${Date.now()}`;
     }
     const existingIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quote.id);
     if (existingIndex !== -1) {
-        console.log(`addMockQuote: Updating existing quote with ID ${quote.id}`);
+        console.log(`[MockData][addMockQuote] Updating existing quote. ID: ${quote.id}. MOCK_QUOTES_DB current size: ${MOCK_QUOTES_DB.length}`);
         MOCK_QUOTES_DB[existingIndex] = quote;
     } else {
-        console.log(`addMockQuote: Adding new quote with ID ${quote.id}. Current DB size: ${MOCK_QUOTES_DB.length}`);
+        console.log(`[MockData][addMockQuote] Adding new quote. ID: ${quote.id}. MOCK_QUOTES_DB current size: ${MOCK_QUOTES_DB.length}`);
         MOCK_QUOTES_DB.push(quote);
-        console.log(`addMockQuote: New DB size: ${MOCK_QUOTES_DB.length}`);
+        console.log(`[MockData][addMockQuote] Added. MOCK_QUOTES_DB new size: ${MOCK_QUOTES_DB.length}. Current IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
     }
     return quote;
 }
+
+    

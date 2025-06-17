@@ -9,8 +9,9 @@ export async function GET(
 ) {
   const { id: quoteId } = params;
   console.log(`[API_INFO] /api/quotes/${quoteId} GET: Received request for quote ID: ${quoteId}`);
-  console.log(`[API_INFO] /api/quotes/${quoteId} GET: Current MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}`);
-  MOCK_QUOTES_DB.forEach(q => console.log(`[API_DEBUG] /api/quotes/${quoteId} GET: DB Quote ID: ${q.id}, Number: ${q.quoteNumber}`));
+  
+  const currentMockDbIds = MOCK_QUOTES_DB.map(q => q.id);
+  console.log(`[API_INFO] /api/quotes/${quoteId} GET: Checking MOCK_QUOTES_DB. Current size: ${MOCK_QUOTES_DB.length}. Current IDs: [${currentMockDbIds.join(', ')}]`);
 
 
   try {
@@ -45,3 +46,5 @@ export async function PUT(
   // This would need to be implemented using updateMockQuote from lib/mock-data
   return NextResponse.json({ error: 'PUT method for single quote not fully implemented for shared mock DB yet.' }, { status: 501 });
 }
+
+    
