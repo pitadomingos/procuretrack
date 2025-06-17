@@ -5,11 +5,11 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
-import type { QuotePayload, Approver } from '@/types'; // Added Approver
+import type { QuotePayload, Approver } from '@/types'; 
 import { ArrowLeft, Printer, Loader2, ThumbsUp, ThumbsDown, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { mockApproversData, MOCK_QUOTES_DB, updateMockQuote } from '@/lib/mock-data'; // For fetching approver names and updating mock DB
+import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names if API doesn't populate it
 
 function PrintQuotePageContent() {
   const router = useRouter();
@@ -29,27 +29,28 @@ function PrintQuotePageContent() {
     setLoading(true);
     setError(null);
     try {
-      // Directly use the shared MOCK_QUOTES_DB for fetching
-      const data = MOCK_QUOTES_DB.find(q => q.id === quoteId);
-      
-      if (!data) {
-        // Fallback if not found (e.g., direct navigation to a non-existent mock ID)
-        const quoteRes = await fetch(`/api/quotes/${quoteId}`); 
-        if (!quoteRes.ok) {
-          const errorData = await quoteRes.json().catch(() => ({ message: 'Failed to fetch quote details.' }));
-          throw new Error(errorData.message || `Failed to fetch quote: ${quoteRes.statusText}`);
+      const quoteRes = await fetch(`/api/quotes/${quoteId}`); 
+
+      if (!quoteRes.ok) {
+        let errorDetail = `Server responded with ${quoteRes.status} ${quoteRes.statusText || '(No status text)'}`;
+        try {
+          const errorData = await quoteRes.json();
+          errorDetail = errorData.error || errorData.message || errorDetail; // Prioritize .error, then .message
+        } catch (jsonError) {
+          console.warn("Could not parse error response as JSON:", jsonError);
         }
-        const fallbackData: QuotePayload = await quoteRes.json();
-        setQuoteData(fallbackData);
-      } else {
-        const populatedData = {...data};
-         if (populatedData.approverId) {
-            const approver = mockApproversData.find(appr => appr.id === populatedData.approverId);
-            populatedData.approverName = approver?.name;
-        }
-        setQuoteData(populatedData);
+        throw new Error(`Failed to fetch quote: ${errorDetail}`);
       }
 
+      const data: QuotePayload = await quoteRes.json();
+      
+      // Populate approverName client-side if needed (API should ideally provide this if populated)
+      const populatedData = {...data};
+      if (populatedData.approverId && !populatedData.approverName) { // Only if API didn't send it
+          const approver = mockApproversData.find(appr => appr.id === populatedData.approverId);
+          populatedData.approverName = approver?.name;
+      }
+      setQuoteData(populatedData);
 
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
@@ -97,7 +98,6 @@ function PrintQuotePageContent() {
       }
       const result = await response.json();
       toast({ title: "Quote Approved", description: result.message || `${quoteData.quoteNumber} marked as Approved.`});
-      // Refetch data to show updated status
       fetchQuoteDataForPrint();
     } catch (err: any) {
       toast({ title: "Error Approving Quote", description: err.message, variant: "destructive" });
@@ -117,7 +117,6 @@ function PrintQuotePageContent() {
       }
       const result = await response.json();
       toast({ title: "Quote Rejected", description: result.message || `${quoteData.quoteNumber} marked as Rejected.`});
-      // Refetch data to show updated status
       fetchQuoteDataForPrint();
     } catch (err: any) {
       toast({ title: "Error Rejecting Quote", description: err.message, variant: "destructive" });
@@ -128,11 +127,7 @@ function PrintQuotePageContent() {
   
   const handleEditQuote = () => {
     if (!quoteData || !quoteId) return;
-    // This will need a new page or modal for editing quotes.
-    // For now, link to create-document with a query param (similar to PO editing)
-    // Ensure the QuoteForm can handle an editQuoteId prop if this is the desired UX.
-    // Currently, QuoteForm does not have an editQuoteId prop.
-    router.push(`/create-document?editQuoteId=${quoteId}`); // Needs QuoteForm to support this
+    router.push(`/create-document?editQuoteId=${quoteId}`); 
     toast({ title: "Edit Quote", description: "Redirecting to edit (functionality may be partial).", variant: "default"});
   };
 
