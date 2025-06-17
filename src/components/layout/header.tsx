@@ -19,6 +19,7 @@ import { Bell, UserCircle, LogOut, Settings, ChevronLeft, Sun, Moon, Computer } 
 import { usePathname } from 'next/navigation';
 import { navItems } from '@/config/site';
 import { useTheme } from 'next-themes';
+import { ClientOnly } from '@/components/shared/ClientOnly';
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -27,8 +28,6 @@ export function AppHeader() {
   const [avatarFallbackContent, setAvatarFallbackContent] = useState("U"); 
 
   useEffect(() => {
-    // This ensures the fallback content is set on the client after initial render,
-    // helping to avoid hydration mismatches if server pre-renders a different default.
     setAvatarFallbackContent("PD");
   }, []);
 
@@ -58,8 +57,12 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-      <SidebarTrigger className="md:hidden" />
-      <SidebarTrigger className="hidden md:flex" />
+      <ClientOnly>
+        <SidebarTrigger className="md:hidden" />
+      </ClientOnly>
+      <ClientOnly>
+        <SidebarTrigger className="hidden md:flex" />
+      </ClientOnly>
       <div className="flex-1 flex items-center gap-2">
         {breadcrumbBase && (
           <>
