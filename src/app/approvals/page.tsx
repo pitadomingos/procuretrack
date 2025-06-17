@@ -160,8 +160,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentType', 
       header: 'Type',
-      cell: ({ row }) => {
-        const item = row.original;
+      cell: (item) => { // Changed from ({ row }) to (item)
         return item.documentType === 'PO' ? 
           <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span> : 
           <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
@@ -170,32 +169,32 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: ({ row }) => <span className="font-medium">{row.original.documentNumber}</span>
+      cell: (item) => <span className="font-medium">{item.documentNumber}</span> // Changed from ({ row }) to (item)
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: ({ row }) => format(new Date(row.original.creationDate), 'PP')
+      cell: (item) => format(new Date(item.creationDate), 'PP') // Changed from ({ row }) to (item)
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: ({ row }) => row.original.submittedBy || 'N/A'
+      cell: (item) => item.submittedBy || 'N/A' // Changed from ({ row }) to (item)
     },
     { 
       accessorKey: 'entityName', 
       header: 'Supplier/Client',
-      cell: ({ row }) => row.original.entityName || 'N/A'
+      cell: (item) => item.entityName || 'N/A' // Changed from ({ row }) to (item)
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: ({ row }) => `${row.original.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.original.currency}`
+      cell: (item) => `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency}` // Changed from ({ row }) to (item)
     },
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: ({ row }) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
+      cell: (item) => <span className="text-orange-600 font-semibold">{item.status}</span> // Changed from ({ row }) to (item)
     },
   ];
 
@@ -295,7 +294,7 @@ export default function ApprovalsPage() {
 
       {selectedItemForReject && (
         <RejectPOModal // This modal might need to be made more generic if rejection reasons differ significantly
-          poId={typeof selectedItemForReject.id === 'number' ? selectedItemForReject.id : -1} // Hack for PO ID, needs proper handling
+          poId={typeof selectedItemForReject.id === 'number' ? selectedItemForReject.id : -1} // Hack for PO ID, needs proper handling for quote ID
           poNumber={selectedItemForReject.documentNumber}
           open={isRejectModalOpen}
           onOpenChange={setIsRejectModalOpen}

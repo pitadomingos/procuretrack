@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { pool } from '../../../../../../backend/db.js';
 
 export async function POST(
   request: Request,
