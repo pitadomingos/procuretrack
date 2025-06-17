@@ -17,9 +17,9 @@ interface FetchedStats {
   pendingApprovalPOs: number;
   openPOs: number; // Represents 'Approved' POs
   totalRequisitions: number;
-  clientQuotesCount: string | number;
-  fuelRecordsCount: string | number;
-  grnCount: string | number;
+  clientQuotesCount: number; // Changed from string | number to number
+  fuelRecordsCount: string | number; // Kept as is for now
+  grnCount: string | number; // Kept as is for now
 }
 
 export default function DashboardPage() {
@@ -46,12 +46,12 @@ export default function DashboardPage() {
             case 'Pending Approval POs': return { ...stat, value: data.pendingApprovalPOs.toString() };
             case 'Open POs (Approved)': return { ...stat, value: data.openPOs.toString() };
             case 'Total Requisitions': return { ...stat, value: data.totalRequisitions.toString() };
-            case 'Client Quotes': return { ...stat, value: data.clientQuotesCount.toString() };
+            case 'Client Quotes': return { ...stat, value: data.clientQuotesCount.toString() }; // Now uses the fetched count
             case 'Fuel Records': return { ...stat, value: data.fuelRecordsCount.toString() };
             case 'Goods Received Notes': return { ...stat, value: data.grnCount.toString() };
             default: return stat;
           }
-        }).filter(stat => stat.title !== 'Completed POs' && stat.title !== 'Partially Completed POs') // Remove old stats
+        }).filter(stat => stat.title !== 'Completed POs' && stat.title !== 'Partially Completed POs')
       );
     } catch (err: any) {
       setStatsError(err.message || 'An unexpected error occurred while fetching stats.');
@@ -72,6 +72,7 @@ export default function DashboardPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
+    // Potentially pass filters to fetchDashboardStats if API supports it
     setRefreshKey(prevKey => prevKey + 1);
   };
 
@@ -87,7 +88,7 @@ export default function DashboardPage() {
 
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoadingStats ? (
-          Array.from({ length: dashboardStats.length }).map((_, index) => ( // Use current dashboardStats length for skeletons
+          Array.from({ length: dashboardStats.length }).map((_, index) => (
             <div key={index} className="p-6 rounded-lg border bg-card shadow-sm flex flex-col justify-between h-[140px] items-center text-center">
               <div className="flex flex-row items-center justify-between space-y-0 pb-2 w-full">
                 <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div> 

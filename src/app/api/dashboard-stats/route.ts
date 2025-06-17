@@ -18,27 +18,28 @@ export async function GET() {
       totalPOs += count;
       if (row.status === 'Pending Approval') pendingApprovalPOs = count;
       else if (row.status === 'Approved') openPOs = count;
-      // 'Completed' and 'Partially Completed' are no longer direct PO statuses
     });
 
     // Requisition Stats
     const [requisitionRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Requisition');
     const totalRequisitions = Number(requisitionRows[0]?.count || 0);
     
+    // Client Quotes Count
+    const [quoteRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Quote');
+    const clientQuotesCount = Number(quoteRows[0]?.count || 0);
+    
     // Placeholders for other stats
-    const clientQuotesCount = "N/A"; 
     const fuelRecordsCount = "N/A";  
-    const grnCount = "N/A"; // GRN count will be based on actual GRN records when implemented
+    const grnCount = "N/A"; 
 
     return NextResponse.json({
       totalPOs,
       pendingApprovalPOs,
-      openPOs, // 'Approved' POs
+      openPOs, 
       totalRequisitions,
-      clientQuotesCount,
+      clientQuotesCount, // Now a real count
       fuelRecordsCount,
       grnCount,
-      // Removed: completedPOs, partiallyCompletedPOs (as these are GRN concepts now)
     });
 
   } catch (error: any) {
