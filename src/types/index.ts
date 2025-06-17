@@ -218,6 +218,8 @@ export interface QuoteItem {
   quoteId?: string; // Foreign key to QuotePayload
 }
 
+export type QuoteStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Sent to Client' | 'Archived';
+
 export interface QuotePayload {
   id?: string;
   quoteNumber: string;
@@ -233,10 +235,12 @@ export interface QuotePayload {
   termsAndConditions?: string;
   notes?: string;
   items: QuoteItem[];
-  status: 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Sent to Client' | 'Archived';
+  status: QuoteStatus;
   approverId?: string | null;
   approverName?: string; // For display
-  approvalDate?: string | null; // ISO string
+  approvalDate?: string | null | undefined; // ISO string, can be null
+  createdAt?: string; // ISO string
+  updatedAt?: string; // ISO string
 }
 
 export interface RequisitionItem {

@@ -1,10 +1,8 @@
-
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
 import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
   let connection;
@@ -79,6 +77,7 @@ export async function POST(request: Request) {
           notes: record['Notes'],
           status: (record['Status'] || 'Draft') as QuotePayload['status'],
           approverId: record['ApproverID'] || record['ApproverId'] || record['approverId'] || null,
+          approvalDate: record['ApprovalDate'] ? new Date(record['ApprovalDate']).toISOString() : null,
         };
         
         console.log(`[API_DEBUG] /api/quotes POST CSV: Processing record #${index + 1}: ${JSON.stringify(quoteData).substring(0,300)}...`);
@@ -92,14 +91,15 @@ export async function POST(request: Request) {
         
         try {
           await connection.execute(
-            `INSERT INTO Quote (id, quoteNumber, quoteDate, clientId, creatorEmail, subTotal, vatAmount, grandTotal, currency, termsAndConditions, notes, status, approverId, createdAt, updatedAt)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            `INSERT INTO Quote (id, quoteNumber, quoteDate, clientId, creatorEmail, subTotal, vatAmount, grandTotal, currency, termsAndConditions, notes, status, approverId, approvalDate, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
              ON DUPLICATE KEY UPDATE
-               quoteDate=VALUES(quoteDate), clientId=VALUES(clientId), creatorEmail=VALUES(creatorEmail), subTotal=VALUES(subTotal), vatAmount=VALUES(vatAmount), grandTotal=VALUES(grandTotal), currency=VALUES(currency), termsAndConditions=VALUES(termsAndConditions), notes=VALUES(notes), status=VALUES(status), approverId=VALUES(approverId), updatedAt=NOW()`,
+               quoteDate=VALUES(quoteDate), clientId=VALUES(clientId), creatorEmail=VALUES(creatorEmail), subTotal=VALUES(subTotal), vatAmount=VALUES(vatAmount), grandTotal=VALUES(grandTotal), currency=VALUES(currency), termsAndConditions=VALUES(termsAndConditions), notes=VALUES(notes), status=VALUES(status), approverId=VALUES(approverId), approvalDate=VALUES(approvalDate), updatedAt=NOW()`,
             [
               quoteData.id, quoteData.quoteNumber, new Date(quoteData.quoteDate as string).toISOString().slice(0, 19).replace('T', ' '), quoteData.clientId, quoteData.creatorEmail,
               quoteData.subTotal, quoteData.vatAmount, quoteData.grandTotal, quoteData.currency,
-              quoteData.termsAndConditions, quoteData.notes, quoteData.status, quoteData.approverId
+              quoteData.termsAndConditions, quoteData.notes, quoteData.status, quoteData.approverId,
+              quoteData.approvalDate ? new Date(quoteData.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null
             ]
           );
           successfulImports++;
@@ -166,8 +166,8 @@ export async function POST(request: Request) {
           quoteDataFromForm.termsAndConditions,
           quoteDataFromForm.notes,
           quoteDataFromForm.status,
-          quoteDataFromForm.approverId,
-          quoteDataFromForm.approvalDate ? new Date(quoteDataFromForm.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null,
+          quoteDataFromForm.approverId, // Now included
+          quoteDataFromForm.approvalDate ? new Date(quoteDataFromForm.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null, // Now included
         ]
       );
       console.log(`[API_INFO] /api/quotes POST JSON: Quote header inserted for ID: ${quoteDataFromForm.id}.`);
@@ -205,6 +205,8 @@ export async function POST(request: Request) {
       } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
         errorMessage = `Failed to create quote. Invalid reference to Client or Approver.`;
         errorDetails = `Client ID '${quoteDataFromForm?.clientId}' or Approver ID '${quoteDataFromForm?.approverId}' might not exist. Specific error: ${error.message}`;
+      } else if (error.code === 'ER_BAD_NULL_ERROR' && error.message.includes('approverId')) {
+        errorMessage = `Failed to create quote. Approver ID cannot be null if trying to set it as foreign key and it's not allowed.`;
       }
       
       console.error(`[API_ERROR_DETAILS] /api/quotes POST JSON: Code: ${error.code}, Message: ${error.message}, Stack: ${error.stack}`);

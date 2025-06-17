@@ -17,13 +17,16 @@ async function createQuotesTable() {
           termsAndConditions TEXT NULL,
           notes TEXT NULL,
           status VARCHAR(50) DEFAULT 'Draft',
+          approverId VARCHAR(255) NULL,          -- Added for assigned approver
+          approvalDate DATETIME NULL,             -- Added for approval timestamp
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          FOREIGN KEY (clientId) REFERENCES Client(id) ON DELETE RESTRICT
+          FOREIGN KEY (clientId) REFERENCES Client(id) ON DELETE RESTRICT,
+          FOREIGN KEY (approverId) REFERENCES Approver(id) ON DELETE SET NULL -- Added FK for approverId
       );
     `;
     await db.pool.execute(createTableQuery);
-    console.log('Quote table created or already exists successfully.');
+    console.log('Quote table created or already exists successfully with approverId and approvalDate.');
   } catch (error) {
     console.error('Error creating Quote table:', error);
   } finally {
@@ -32,3 +35,4 @@ async function createQuotesTable() {
 }
 
 createQuotesTable();
+

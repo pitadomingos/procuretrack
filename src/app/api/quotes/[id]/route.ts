@@ -35,10 +35,10 @@ export async function GET(
 
     const quoteData: QuotePayload = {
       ...quoteRows[0],
-      // Ensure numeric fields are numbers
       subTotal: parseFloat(quoteRows[0].subTotal || 0),
       vatAmount: parseFloat(quoteRows[0].vatAmount || 0),
       grandTotal: parseFloat(quoteRows[0].grandTotal || 0),
+      approvalDate: quoteRows[0].approvalDate ? new Date(quoteRows[0].approvalDate).toISOString() : null,
     };
 
     const [itemRows]: any[] = await connection.execute('SELECT * FROM QuoteItem WHERE quoteId = ?', [quoteId]);
@@ -82,8 +82,7 @@ export async function PUT(
         await connection.rollback();
         return NextResponse.json({ error: `Quote with ID ${quoteId} not found for update.` }, { status: 404 });
     }
-    // Add logic here to check if quote status allows editing (e.g., only 'Draft' or 'Pending Approval')
-
+    
     await connection.execute(
       `UPDATE Quote SET 
         quoteNumber = ?, quoteDate = ?, clientId = ?, creatorEmail = ?, 
@@ -94,20 +93,20 @@ export async function PUT(
       [
         quoteData.quoteNumber, new Date(quoteData.quoteDate).toISOString().slice(0, 19).replace('T', ' '), quoteData.clientId, quoteData.creatorEmail,
         quoteData.subTotal, quoteData.vatAmount, quoteData.grandTotal, quoteData.currency,
-        quoteData.termsAndConditions, quoteData.notes, quoteData.status, quoteData.approverId,
+        quoteData.termsAndConditions, quoteData.notes, quoteData.status, 
+        quoteData.approverId,
         quoteData.approvalDate ? new Date(quoteData.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null,
         quoteId
       ]
     );
 
-    // Delete old items and insert new ones
     await connection.execute('DELETE FROM QuoteItem WHERE quoteId = ?', [quoteId]);
     if (quoteData.items && quoteData.items.length > 0) {
       for (const item of quoteData.items) {
         await connection.execute(
           `INSERT INTO QuoteItem (id, quoteId, partNumber, customerRef, description, quantity, unitPrice)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [item.id, quoteId, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
+          [item.id || crypto.randomUUID(), quoteId, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
         );
       }
     }
@@ -115,28 +114,28 @@ export async function PUT(
     await connection.commit();
     console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Successfully updated quote.`);
     
-    // Fetch the updated quote to return it
-    const quoteQuery = `
-      SELECT q.*, c.name as clientName, c.email as clientEmail FROM Quote q
+    const getUpdatedQuery = `
+      SELECT q.*, c.name as clientName, c.email as clientEmail, app.name as approverName 
+      FROM Quote q
       LEFT JOIN Client c ON q.clientId = c.id
+      LEFT JOIN Approver app ON q.approverId = app.id
       WHERE q.id = ?
     `;
-    const [updatedQuoteRows]: any[] = await connection.execute(quoteQuery, [quoteId]);
+    const [updatedQuoteRows]: any[] = await connection.execute(getUpdatedQuery, [quoteId]);
     const updatedQuoteData = updatedQuoteRows[0];
     const [updatedItemRows]: any[] = await connection.execute('SELECT * FROM QuoteItem WHERE quoteId = ?', [quoteId]);
     updatedQuoteData.items = updatedItemRows;
+     updatedQuoteData.approvalDate = updatedQuoteData.approvalDate ? new Date(updatedQuoteData.approvalDate).toISOString() : null;
+
 
     return NextResponse.json(updatedQuoteData);
 
   } catch (error: any) {
     if (connection) await connection.rollback();
     console.error(`[API_ERROR] /api/quotes/${quoteId} PUT:`, error);
-    return NextResponse.json({ error: `Failed to update quote with ID ${quoteId}.`, details: error.message }, { status: 500 });
+    return NextResponse.json({ error: `Failed to update quote with ID ${quoteId}.`, details: error.message, code: error.code }, { status: 500 });
   } finally {
     if (connection) connection.release();
   }
 }
-
-// DELETE endpoint can be added here if needed
-// export async function DELETE(...) { ... }
     
