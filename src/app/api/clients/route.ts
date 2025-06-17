@@ -2,33 +2,11 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
 import type { Client } from '@/types';
-import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { randomUUID } from 'crypto'; // For generating IDs
 
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// Helper to run multer middleware
-const runMiddleware = (req: any, res: any, fn: any) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
-
-// Ensure Next.js doesn't parse the body for file uploads for this route
-export const config = {
-  api: {
-    bodyParser: false, 
-  },
-};
+// Multer and related config are no longer needed with request.formData()
 
 export async function GET() {
   try {
@@ -38,7 +16,7 @@ export async function GET() {
     console.error('[API_ERROR] /api/clients GET: Error fetching clients from DB:', error);
     console.error('[API_ERROR_DETAILS] /api/clients GET: Error message:', error.message);
     console.error('[API_ERROR_DETAILS] /api/clients GET: Error name:', error.name);
-    console.error('[API_ERROR_DETAILS] /api/clients GET: Error code:', error.code); // For DB specific errors
+    console.error('[API_ERROR_DETAILS] /api/clients GET: Error code (if DB error):', error.code);
     console.error('[API_ERROR_DETAILS] /api/clients GET: Error stack:', error.stack);
     return NextResponse.json(
         { 
@@ -54,21 +32,16 @@ export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('multipart/form-data')) {
-    // CSV Upload
-    // @ts-ignore
-    const req = request as Request & { file?: any };
-    const res = new NextResponse(); 
-
+    // CSV Upload using request.formData()
     try {
-      await runMiddleware(req, res, upload.single('file'));
+      const formData = await request.formData();
+      const file = formData.get('file') as File | null;
       
-      // @ts-ignore
-      if (!req.file) {
+      if (!file) {
         return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
       }
       
-      // @ts-ignore
-      const fileBuffer = req.file.buffer;
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results: any[] = [];
       const stream = Readable.from(fileBuffer);
 
@@ -128,7 +101,7 @@ export async function POST(request: Request) {
             successfulInserts++;
           } catch (dbError: any) {
             failedInserts++;
-            errors.push(`Failed to insert/update record ID ${clientId} (${clientName}): ${dbError.message}`);
+            errors.push(`Failed to insert/update record ID ${clientId} (${clientName || 'N/A'}): ${dbError.message}`);
           }
         }
         await connection.commit();
@@ -149,9 +122,6 @@ export async function POST(request: Request) {
 
     } catch (error: any) {
       console.error('[API_ERROR] /api/clients POST CSV: Error handling client CSV upload:', error);
-      if (error instanceof multer.MulterError) {
-        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
-      }
       return NextResponse.json({ error: 'Failed to handle client CSV upload.', details: error.message }, { status: 500 });
     }
 
