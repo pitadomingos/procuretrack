@@ -150,6 +150,7 @@ export interface PurchaseOrderPayload {
   approverName?: string;
   approverSignatureUrl?: string;
   quoteNo?: string;
+  siteId?: number | null; // Added overall PO siteId
 }
 
 
@@ -268,6 +269,8 @@ export interface RequisitionPayload {
   siteName?: string; // Denormalized for display
 }
 
+export type TagStatus = 'Active' | 'Inactive' | 'Under Maintenance' | 'Sold' | 'Decommissioned';
+
 export interface Tag {
   id: string;
   tagNumber: string;
@@ -280,6 +283,9 @@ export interface Tag {
   type?: string | null;
   siteId: number | null;
   siteName?: string; // Denormalized for display
+  status: TagStatus; // Added status field
+  createdAt?: string; // Added from DB schema
+  updatedAt?: string; // Added from DB schema
 }
 
 export interface FuelRecord {

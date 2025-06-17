@@ -13,6 +13,8 @@ export async function GET(
       SELECT 
         t.id, t.tagNumber, t.registration, t.make, t.model, 
         t.tankCapacity, t.year, t.chassisNo, t.type, t.siteId,
+        t.status, -- Added status
+        t.createdAt, t.updatedAt, -- Added timestamps
         s.siteCode AS siteName 
       FROM Tag t
       LEFT JOIN Site s ON t.siteId = s.id
@@ -35,7 +37,7 @@ export async function PUT(
 ) {
   const { id } = params;
   try {
-    const tagData = await request.json() as Omit<Tag, 'id' | 'siteName'>;
+    const tagData = await request.json() as Omit<Tag, 'id' | 'siteName' | 'createdAt' | 'updatedAt'>;
 
     if (!tagData.tagNumber) {
       return NextResponse.json({ error: 'Tag Number is required.' }, { status: 400 });
@@ -45,6 +47,7 @@ export async function PUT(
       UPDATE Tag 
       SET tagNumber = ?, registration = ?, make = ?, model = ?, 
           tankCapacity = ?, year = ?, chassisNo = ?, type = ?, siteId = ?,
+          status = ?, -- Added status
           updatedAt = NOW()
       WHERE id = ?
     `;
@@ -58,6 +61,7 @@ export async function PUT(
       tagData.chassisNo || null,
       tagData.type || null,
       tagData.siteId ? Number(tagData.siteId) : null,
+      tagData.status || 'Active', // Default to 'Active' if not provided
       id
     ]);
 

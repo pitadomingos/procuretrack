@@ -11,6 +11,8 @@ export async function GET() {
       SELECT 
         t.id, t.tagNumber, t.registration, t.make, t.model, 
         t.tankCapacity, t.year, t.chassisNo, t.type, t.siteId,
+        t.status, -- Added status
+        t.createdAt, t.updatedAt, -- Added timestamps
         s.siteCode AS siteName 
       FROM Tag t
       LEFT JOIN Site s ON t.siteId = s.id
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
           })
           .on('end', () => {
             console.log(`[API_INFO] /api/tags POST CSV: CSV parsing finished. ${results.length} records found.`);
-            // TODO: Add logic for validating and inserting tag data into the database.
+            // TODO: Add logic for validating and inserting tag data (including status) into the database.
             resolve();
           })
           .on('error', (parseError) => {
@@ -86,15 +88,15 @@ export async function POST(request: Request) {
   } else if (contentType && contentType.includes('application/json')) {
     console.log('[API_INFO] /api/tags POST: Received application/json request.');
     try {
-      const tagData = await request.json() as Tag;
+      const tagData = await request.json() as Omit<Tag, 'createdAt' | 'updatedAt' | 'siteName'>;
 
       if (!tagData.id || !tagData.tagNumber) {
         return NextResponse.json({ error: 'Tag ID and Tag Number are required.' }, { status: 400 });
       }
       
       const query = `
-        INSERT INTO Tag (id, tagNumber, registration, make, model, tankCapacity, year, chassisNo, type, siteId, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        INSERT INTO Tag (id, tagNumber, registration, make, model, tankCapacity, year, chassisNo, type, siteId, status, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
       `;
       await pool.execute(query, [
         tagData.id,
@@ -107,6 +109,7 @@ export async function POST(request: Request) {
         tagData.chassisNo || null,
         tagData.type || null,
         tagData.siteId ? Number(tagData.siteId) : null,
+        tagData.status || 'Active', // Default to 'Active' if not provided
       ]);
 
       const [newTagRows]: any[] = await pool.execute('SELECT t.*, s.siteCode as siteName FROM Tag t LEFT JOIN Site s ON t.siteId = s.id WHERE t.id = ?', [tagData.id]);

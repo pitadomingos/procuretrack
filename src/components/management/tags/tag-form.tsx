@@ -24,10 +24,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Tag, Site } from '@/types';
+import type { Tag, Site, TagStatus } from '@/types';
 import { useEffect, useState, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+const tagStatuses: TagStatus[] = ['Active', 'Inactive', 'Under Maintenance', 'Sold', 'Decommissioned'];
 
 const tagFormSchema = z.object({
   id: z.string().min(1, 'Tag ID is required').max(255),
@@ -47,8 +49,9 @@ const tagFormSchema = z.object({
   type: z.string().max(100).optional().nullable(),
   siteId: z.preprocess(
     (val) => (val === '' || val === null || val === undefined ? null : Number(val)),
-    z.number().int().nullable() // Site ID is required by schema, but can be null if no site is selected initially
-  ).refine(val => val !== null, { message: "Site assignment is required." }),
+    z.number().int().nullable() // Site ID can be null if not assigned
+  ),
+  status: z.enum(tagStatuses, { required_error: "Status is required."}),
 });
 
 type TagFormValues = z.infer<typeof tagFormSchema>;
@@ -78,6 +81,7 @@ export function TagForm({ open, onOpenChange, tagToEdit, onSuccess }: TagFormPro
       chassisNo: '',
       type: '',
       siteId: null,
+      status: 'Active',
     },
   });
 
@@ -107,6 +111,7 @@ export function TagForm({ open, onOpenChange, tagToEdit, onSuccess }: TagFormPro
           chassisNo: tagToEdit.chassisNo || '',
           type: tagToEdit.type || '',
           siteId: tagToEdit.siteId ? Number(tagToEdit.siteId) : null,
+          status: tagToEdit.status || 'Active',
         });
       } else {
         form.reset({
@@ -120,6 +125,7 @@ export function TagForm({ open, onOpenChange, tagToEdit, onSuccess }: TagFormPro
           chassisNo: '',
           type: '',
           siteId: null,
+          status: 'Active',
         });
       }
     }
@@ -134,6 +140,7 @@ export function TagForm({ open, onOpenChange, tagToEdit, onSuccess }: TagFormPro
       const payload = {
         ...values,
         siteId: values.siteId ? Number(values.siteId) : null,
+        status: values.status,
       };
 
       const response = await fetch(url, {
@@ -171,6 +178,21 @@ export function TagForm({ open, onOpenChange, tagToEdit, onSuccess }: TagFormPro
                 <FormField control={form.control} name="id" render={({ field }) => ( <FormItem><FormLabel>Tag ID</FormLabel><FormControl><Input placeholder="Unique ID" {...field} readOnly={!!tagToEdit} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="tagNumber" render={({ field }) => ( <FormItem><FormLabel>Tag Number *</FormLabel><FormControl><Input placeholder="e.g., LDV001" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
+             <FormField
+              control={form.control} name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || 'Active'}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {tagStatuses.map(status => (<SelectItem key={status} value={status}>{status}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField control={form.control} name="type" render={({ field }) => ( <FormItem><FormLabel>Type</FormLabel><FormControl><Input placeholder="e.g., LDV, Truck, Generator" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>)} />
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="make" render={({ field }) => ( <FormItem><FormLabel>Make</FormLabel><FormControl><Input placeholder="e.g., Toyota" {...field} value={field.value ?? ''}/></FormControl><FormMessage /></FormItem>)} />
@@ -188,10 +210,11 @@ export function TagForm({ open, onOpenChange, tagToEdit, onSuccess }: TagFormPro
               control={form.control} name="siteId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Assigned Site *</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(Number(value))} value={field.value?.toString() || ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select a site" /></SelectTrigger></FormControl>
+                  <FormLabel>Assigned Site</FormLabel>
+                  <Select onValueChange={(value) => field.onChange(value === 'null' ? null : Number(value))} value={field.value?.toString() || 'null'}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Select a site (Optional)" /></SelectTrigger></FormControl>
                     <SelectContent>
+                      <SelectItem value="null">None</SelectItem>
                       {sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.name} ({site.siteCode})</SelectItem>))}
                     </SelectContent>
                   </Select>

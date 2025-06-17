@@ -7,9 +7,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TagForm } from '@/components/management/tags/tag-form';
-import type { Tag } from '@/types';
-import { PlusCircle, Pencil, Trash2, Loader2, AlertTriangle, UploadCloud } from 'lucide-react';
+import type { Tag, TagStatus } from '@/types';
+import { PlusCircle, Pencil, Trash2, Loader2, AlertTriangle, UploadCloud, CheckCircle, XCircle, Construction, Car, Ban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+
+const getStatusBadge = (status: TagStatus | string) => {
+  switch (status) {
+    case 'Active':
+      return <Badge variant="default" className="bg-green-500 hover:bg-green-600"><CheckCircle className="mr-1 h-3 w-3" /> Active</Badge>;
+    case 'Inactive':
+      return <Badge variant="secondary"><XCircle className="mr-1 h-3 w-3" /> Inactive</Badge>;
+    case 'Under Maintenance':
+      return <Badge variant="outline" className="text-orange-600 border-orange-600"><Construction className="mr-1 h-3 w-3" /> Maintenance</Badge>;
+    case 'Sold':
+      return <Badge variant="outline" className="text-blue-600 border-blue-600"><Car className="mr-1 h-3 w-3" /> Sold</Badge>;
+    case 'Decommissioned':
+      return <Badge variant="destructive"><Ban className="mr-1 h-3 w-3" /> Decommissioned</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+};
+
 
 export default function ManageTagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
@@ -124,7 +143,6 @@ export default function ManageTagsPage() {
   };
 
   const columns: ColumnDef<Tag>[] = [
-    { accessorKey: 'id', header: 'ID' },
     { accessorKey: 'tagNumber', header: 'Tag Number' },
     { accessorKey: 'type', header: 'Type' },
     { accessorKey: 'make', header: 'Make' },
@@ -132,7 +150,7 @@ export default function ManageTagsPage() {
     { accessorKey: 'registration', header: 'Registration' },
     { accessorKey: 'year', header: 'Year' },
     { accessorKey: 'siteName', header: 'Assigned Site' }, 
-    { accessorKey: 'tankCapacity', header: 'Tank Cap. (L)' },
+    { accessorKey: 'status', header: 'Status', cell: (tag) => getStatusBadge(tag.status) },
   ];
 
   return (
