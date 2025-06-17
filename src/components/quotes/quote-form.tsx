@@ -22,7 +22,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { randomUUID } from 'crypto';
+// Removed: import { randomUUID } from 'crypto';
 
 
 const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
@@ -65,7 +65,7 @@ export function QuoteForm() {
       currency: 'MZN',
       termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
       notes: '',
-      items: [defaultItem],
+      items: [{...defaultItem, id: crypto.randomUUID()}],
       approverId: null,
     },
     mode: 'onBlur',
@@ -165,16 +165,15 @@ export function QuoteForm() {
     }
     setIsSubmitting(true);
     
-    const generatedQuoteId = randomUUID(); // Generate ID client-side for new quotes
+    const generatedQuoteId = crypto.randomUUID(); // Use browser's crypto.randomUUID()
     const quoteStatus = (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? 'Pending Approval' : 'Draft';
     
     const payload: QuotePayload = {
-      id: generatedQuoteId, // Use client-generated ID
+      id: generatedQuoteId, 
       quoteNumber: formData.quoteNumberDisplay,
       quoteDate: new Date(formData.quoteDate).toISOString(),
       clientId: formData.clientId,
-      // clientName and clientEmail will be derived by the backend or joined
-      creatorEmail: MOCK_CREATOR_EMAIL, // Replace with actual logged-in user email
+      creatorEmail: MOCK_CREATOR_EMAIL,
       subTotal: subTotal,
       vatAmount: vatAmount,
       grandTotal: grandTotal,
@@ -182,7 +181,7 @@ export function QuoteForm() {
       termsAndConditions: formData.termsAndConditions,
       notes: formData.notes,
       items: formData.items.map(item => ({
-        id: item.id || randomUUID(), // Ensure item ID for new items
+        id: item.id || crypto.randomUUID(), 
         partNumber: item.partNumber,
         customerRef: item.customerRef,
         description: item.description,
@@ -194,7 +193,6 @@ export function QuoteForm() {
     };
 
     try {
-      // For now, we only support creating new quotes. Editing will use PUT to /api/quotes/[id]
       const response = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,7 +206,7 @@ export function QuoteForm() {
 
       const result = await response.json();
       toast({ title: 'Quote Saved', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
-      router.push(`/quotes/${result.quoteId}/print`); // Use ID returned by API
+      router.push(`/quotes/${result.quoteId}/print`); 
 
     } catch (error: any) {
       toast({ title: 'Error Saving Quote', description: error.message || 'An unexpected error occurred.', variant: "destructive" });
@@ -395,4 +393,4 @@ export function QuoteForm() {
     </Card>
   );
 }
-    
+
