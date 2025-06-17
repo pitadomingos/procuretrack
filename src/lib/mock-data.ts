@@ -5,19 +5,19 @@ import { Archive, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers,
 export const dashboardStats: StatCardItem[] = [
   {
     title: 'Total POs',
-    value: 'N/A', 
+    value: 'N/A',
     icon: Archive,
     description: 'All purchase orders created.',
   },
   {
-    title: 'Pending Approval POs', 
-    value: 'N/A', 
+    title: 'Pending Approval POs',
+    value: 'N/A',
     icon: Loader,
     description: 'POs awaiting approval actions.',
   },
   {
-    title: 'Open POs (Approved)', 
-    value: 'N/A', 
+    title: 'Open POs (Approved)',
+    value: 'N/A',
     icon: FolderOpen,
     description: 'POs approved and awaiting receipt.',
   },
@@ -191,9 +191,8 @@ export const mockPurchaseOrders: PurchaseOrderPayload[] = [
     items: [{id:2, description: 'Service B', quantity:1, unitPrice:800, categoryId:5, uom:'SVC', quantityReceived: 0, itemStatus: 'Pending'}], subTotal: 800, vatAmount: 0, pricesIncludeVat: false, creatorUserId: 'user_005',
     approverName: 'Cobus de Klerk', supplierName: 'ADVANCED CONSULTORIA E SERVICOS ,LDA', creatorName: 'Gil Lunguze'
   },
-   { // This PO shows an example where its header status might be 'Approved' but items are received.
-     // However, per new logic, 'Completed' PO status is removed. GRN will track item completion.
-    id: 3, poNumber: 'PO-00003', creationDate: '2023-12-05T11:20:00Z', status: 'Approved', // Changed from 'Completed' to 'Approved'
+   {
+    id: 3, poNumber: 'PO-00003', creationDate: '2023-12-05T11:20:00Z', status: 'Approved',
     supplierId: 'AMT01', grandTotal: 25000, currency: 'MZN', requestedByName: 'Carol White', approverId: 'approver_001',
     items: [{id:3, description: 'Hardware C', quantity:50, unitPrice:431.03, categoryId:4, uom:'BOX', quantityReceived: 50, itemStatus: 'Fully Received'}], subTotal: 21551.72, vatAmount: 3448.28, pricesIncludeVat: false, creatorUserId: 'user_002',
     approverName: 'Cherinne de Klerk', supplierName: 'AMTECH ENGINEERING SOLUTIONS', creatorName: 'Portia Mbuva'
@@ -207,7 +206,7 @@ export const mockApproversFilter: FilterOption[] = [
 
 export const mockRequestorsFilter: FilterOption[] = [
   { value: 'all', label: 'All Requestors' },
-  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'User') 
+  ...mockUsersData.filter(u => u.role === 'Creator' || u.role === 'Manager' || u.role === 'Admin' || u.role === 'User')
                  .map(u => ({ value: u.id, label: u.name })),
 ].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value)));
 
@@ -228,8 +227,8 @@ export const mockAllocationsData: Allocation[] = [
 // Exportable MOCK_QUOTES_DB for shared access
 export let MOCK_QUOTES_DB: QuotePayload[] = [
   {
-    id: 'Q-MOCK-001',
-    quoteNumber: 'Q-2024-001',
+    id: 'Q-MOCK-PREV-001',
+    quoteNumber: 'Q-2024-PREV-001',
     quoteDate: '2024-07-15T10:00:00Z',
     clientId: 'client-001',
     clientName: 'Vale Mozambique',
@@ -237,16 +236,16 @@ export let MOCK_QUOTES_DB: QuotePayload[] = [
     vatAmount: 24000,
     grandTotal: 174000,
     currency: 'MZN',
-    status: 'Pending Approval', // Changed to Pending Approval
-    approverId: 'approver_001',   // Assigned an approver
-    items: [{id:'qi1', description:'Service A', quantity:1, unitPrice:150000, partNumber: 'SVC-A', customerRef: 'CR-VALE-001'}],
+    status: 'Pending Approval',
+    approverId: 'approver_001',
+    items: [{id:'qi-prev-1', description:'Service A', quantity:1, unitPrice:150000, partNumber: 'SVC-A', customerRef: 'CR-VALE-001'}],
     termsAndConditions: 'Standard Payment Terms: 30 days.',
     notes: 'This is a sample quote pending approval.',
     creatorEmail: 'creator@jachris.com',
   },
   {
-    id: 'Q-MOCK-002',
-    quoteNumber: 'Q-2024-002',
+    id: 'Q-MOCK-PREV-002',
+    quoteNumber: 'Q-2024-PREV-002',
     quoteDate: '2024-07-18T14:30:00Z',
     clientId: 'client-002',
     clientName: 'Mota-Engil',
@@ -255,14 +254,14 @@ export let MOCK_QUOTES_DB: QuotePayload[] = [
     grandTotal: 7500,
     currency: 'USD',
     status: 'Sent to Client',
-    items: [{id:'qi2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}],
+    items: [{id:'qi-prev-2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}],
     termsAndConditions: 'Payment due upon receipt.',
     notes: 'Urgent consulting services.',
     creatorEmail: 'creator@jachris.com',
   },
   {
-    id: 'Q-MOCK-003',
-    quoteNumber: 'Q-2024-003',
+    id: 'Q-MOCK-PREV-003',
+    quoteNumber: 'Q-2024-PREV-003',
     quoteDate: '2024-07-20T10:00:00Z',
     clientId: 'client-003',
     clientName: 'WBHO',
@@ -271,10 +270,10 @@ export let MOCK_QUOTES_DB: QuotePayload[] = [
     grandTotal: 290000,
     currency: 'MZN',
     status: 'Pending Approval',
-    approverId: 'approver_003', // Assigned to Pita Domingos for example
+    approverId: 'approver_003',
     items: [
-      {id:'qi3a', description:'Heavy Equipment Rental - Excavator', quantity:100, unitPrice:2000, partNumber: 'RENT-EXC-01', customerRef: 'REF-WBHO-EXC'},
-      {id:'qi3b', description:'Heavy Equipment Rental - Dumper', quantity:50, unitPrice:1000, partNumber: 'RENT-DMP-01', customerRef: 'REF-WBHO-DMP'},
+      {id:'qi-prev-3a', description:'Heavy Equipment Rental - Excavator', quantity:100, unitPrice:2000, partNumber: 'RENT-EXC-01', customerRef: 'REF-WBHO-EXC'},
+      {id:'qi-prev-3b', description:'Heavy Equipment Rental - Dumper', quantity:50, unitPrice:1000, partNumber: 'RENT-DMP-01', customerRef: 'REF-WBHO-DMP'},
     ],
     termsAndConditions: 'Net 60. Rental agreement applies.',
     notes: 'Quote for equipment rental for Nacala project.',
@@ -311,7 +310,7 @@ export const mockRequisitionsData: RequisitionPayload[] = [
             { id: 'reqi-2-1', partNumber: 'SAF-HAT-YEL', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5, estimatedUnitPrice: 1000, notes: 'Standard safety helmets' },
         ],
         totalEstimatedValue: 5000,
-        siteName: 'TML', 
+        siteName: 'TML',
     },
 ];
 
@@ -348,15 +347,20 @@ export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>)
 
 // Function to add a new quote to MOCK_QUOTES_DB (for use in API routes)
 export function addMockQuote(quote: QuotePayload): QuotePayload {
-    // Ensure it has an ID if not provided
+    // The quote.id should be provided by the form now
     if (!quote.id) {
-        quote.id = `MOCK-QID-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+        console.warn("addMockQuote critical error: Quote received without an ID from form/client.");
+        // Fallback ID generation, though this shouldn't be hit if form provides ID
+        quote.id = `MOCK-QID-CRITICAL-FALLBACK-${Date.now()}`;
     }
     const existingIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quote.id);
     if (existingIndex !== -1) {
-        MOCK_QUOTES_DB[existingIndex] = quote; // Update if exists
+        console.log(`addMockQuote: Updating existing quote with ID ${quote.id}`);
+        MOCK_QUOTES_DB[existingIndex] = quote;
     } else {
+        console.log(`addMockQuote: Adding new quote with ID ${quote.id}. Current DB size: ${MOCK_QUOTES_DB.length}`);
         MOCK_QUOTES_DB.push(quote);
+        console.log(`addMockQuote: New DB size: ${MOCK_QUOTES_DB.length}`);
     }
     return quote;
 }

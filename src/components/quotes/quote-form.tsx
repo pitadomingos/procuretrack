@@ -16,19 +16,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Save, Eye } from 'lucide-react';
+import { PlusCircle, Trash2, Save, Eye, Loader2 } from 'lucide-react'; // Added Loader2
 import type { Client, QuoteItem, QuotePayload, Approver } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { mockApproversData } from '@/lib/mock-data'; // Using mock data for now
+import { mockApproversData } from '@/lib/mock-data';
 
 const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
 interface QuoteFormValues {
   clientId: string | null;
-  clientNameDisplay: string; 
+  clientNameDisplay: string;
   clientEmailDisplay: string;
   quoteDate: string;
   quoteNumberDisplay: string;
@@ -40,7 +40,7 @@ interface QuoteFormValues {
 }
 
 const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
-const NO_APPROVER_VALUE = "__none__"; // Special value for "None" option
+const NO_APPROVER_VALUE = "__none__";
 
 export function QuoteForm() {
   const { toast } = useToast();
@@ -78,8 +78,8 @@ export function QuoteForm() {
     try {
       const [clientsRes, nextQuoteNumRes, approversRes] = await Promise.all([
         fetch('/api/clients'),
-        fetch('/api/quotes/next-quote-number'), // Mocked API
-        fetch('/api/approvers') // Assuming API for approvers
+        fetch('/api/quotes/next-quote-number'),
+        fetch('/api/approvers')
       ]);
 
       if (clientsRes.ok) {
@@ -101,16 +101,14 @@ export function QuoteForm() {
         const approversData = await approversRes.json();
         setApprovers(approversData);
       } else {
-        // Fallback to mock data if API fails or not ready
         console.warn('Failed to fetch approvers from API, using mock data.');
-        setApprovers(mockApproversData); 
-        // toast({ title: "Error", description: "Could not load approvers.", variant: "destructive" });
+        setApprovers(mockApproversData);
       }
 
     } catch (error) {
       toast({ title: "Error Loading Data", description: "Could not load initial form data.", variant: "destructive" });
       form.setValue('quoteNumberDisplay', 'Q-ERROR');
-      setApprovers(mockApproversData); // Fallback for approvers on general error
+      setApprovers(mockApproversData);
     }
   }, [form, toast]);
 
@@ -147,6 +145,7 @@ export function QuoteForm() {
       form.setValue('clientNameDisplay', selectedClient.name);
       form.setValue('clientEmailDisplay', selectedClient.email || '');
     } else {
+      form.setValue('clientId', null);
       form.setValue('clientNameDisplay', '');
       form.setValue('clientEmailDisplay', '');
     }
@@ -164,15 +163,17 @@ export function QuoteForm() {
     setIsSubmitting(true);
 
     const selectedClient = clients.find(c => c.id === formData.clientId);
-    const quoteStatus = formData.approverId ? 'Pending Approval' : 'Draft';
+    const quoteStatus = (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? 'Pending Approval' : 'Draft';
+    const clientGeneratedQuoteId = `Q-MOCK-${Date.now()}`; // Generate a unique ID for the quote
 
     const payload: QuotePayload = {
+      id: clientGeneratedQuoteId, // Use the generated ID
       quoteNumber: formData.quoteNumberDisplay,
       quoteDate: new Date(formData.quoteDate).toISOString(),
       clientId: formData.clientId,
       clientName: selectedClient?.name,
       clientEmail: selectedClient?.email,
-      creatorEmail: MOCK_CREATOR_EMAIL, 
+      creatorEmail: MOCK_CREATOR_EMAIL,
       subTotal: subTotal,
       vatAmount: vatAmount,
       grandTotal: grandTotal,
@@ -180,7 +181,7 @@ export function QuoteForm() {
       termsAndConditions: formData.termsAndConditions,
       notes: formData.notes,
       items: formData.items.map(item => ({
-        id: item.id, 
+        id: item.id,
         partNumber: item.partNumber,
         customerRef: item.customerRef,
         description: item.description,
@@ -188,7 +189,7 @@ export function QuoteForm() {
         unitPrice: Number(item.unitPrice),
       })),
       status: quoteStatus,
-      approverId: formData.approverId,
+      approverId: (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? formData.approverId : null,
     };
 
     try {
@@ -202,10 +203,11 @@ export function QuoteForm() {
         const errorData = await response.json().catch(() => ({ error: 'Failed to save quote. Server error.' }));
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
-      
-      const result = await response.json(); 
-      toast({ title: 'Quote Saved (Simulated)', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}.` });
-      
+
+      const result = await response.json();
+      toast({ title: 'Quote Saved (Simulated)', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
+
+      // Ensure result.quoteId is the one we expect (it should be payload.id)
       router.push(`/quotes/${result.quoteId}/print`);
 
     } catch (error: any) {
@@ -214,7 +216,7 @@ export function QuoteForm() {
       setIsSubmitting(false);
     }
   };
-  
+
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : (watchedCurrency === 'USD' ? '$' : watchedCurrency);
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -226,7 +228,7 @@ export function QuoteForm() {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmitAndPreview)} className="space-y-8">
-            
+
             <div className="grid md:grid-cols-3 gap-4">
               <FormField
                 control={form.control} name="clientId" rules={{ required: 'Client is required' }}
@@ -293,42 +295,42 @@ export function QuoteForm() {
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-sm">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-end">
-                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2"> 
-                        <FormLabel>Part Number</FormLabel> 
-                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => (
+                      <FormItem className="lg:col-span-2">
+                        <FormLabel>Part Number</FormLabel>
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl>
+                      </FormItem>
                     )} />
-                     <FormField control={form.control} name={`items.${index}.customerRef`} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2"> 
-                        <FormLabel>Customer Ref</FormLabel> 
-                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> 
-                      </FormItem> 
+                     <FormField control={form.control} name={`items.${index}.customerRef`} render={({ field }) => (
+                      <FormItem className="lg:col-span-2">
+                        <FormLabel>Customer Ref</FormLabel>
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl>
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-3"> 
-                        <FormLabel>Description</FormLabel> 
-                        <FormControl><Input placeholder="Service or item description" {...field} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => (
+                      <FormItem className="lg:col-span-3">
+                        <FormLabel>Description</FormLabel>
+                        <FormControl><Input placeholder="Service or item description" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> 
-                        <FormLabel>Quantity</FormLabel> 
-                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => (
+                      <FormItem className="lg:col-span-1">
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2"> 
-                        <FormLabel>Unit Price ({currencySymbol})</FormLabel> 
-                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => (
+                      <FormItem className="lg:col-span-2">
+                        <FormLabel>Unit Price ({currencySymbol})</FormLabel>
+                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormItem className="lg:col-span-2"> 
-                      <FormLabel>Item Total ({currencySymbol})</FormLabel> 
-                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotal)}</div> 
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Item Total ({currencySymbol})</FormLabel>
+                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotal)}</div>
                     </FormItem>
                   </div>
                   <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2" title="Remove Item"><Trash2 className="h-4 w-4" /></Button>
@@ -336,7 +338,7 @@ export function QuoteForm() {
               );
             })}
             <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID() })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
-            
+
             <Separator className="my-6"/>
 
             <div className="grid md:grid-cols-3 gap-6 mt-8 items-start">
@@ -373,7 +375,7 @@ export function QuoteForm() {
 
               <div className="md:col-span-1 flex flex-col gap-3 w-full pt-6">
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid}>
-                  {isSubmitting ? <Save className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                   {isSubmitting ? 'Saving...' : 'Save & Preview Quote'}
                 </Button>
               </div>

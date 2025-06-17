@@ -3,9 +3,7 @@ import { NextResponse } from 'next/server';
 import type { QuotePayload, Approver } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import { mockApproversData, MOCK_QUOTES_DB, addMockQuote, updateMockQuote } from '@/lib/mock-data'; // Using mock data
-
-// Mock database for quotes is now imported from mock-data
+import { mockApproversData, MOCK_QUOTES_DB, addMockQuote, updateMockQuote } from '@/lib/mock-data';
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
@@ -21,7 +19,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'No file uploaded for quotes' }, { status: 400 });
       }
       console.log(`[API_INFO] /api/quotes POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-      
+
       const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results: any[] = [];
       const stream = Readable.from(fileBuffer);
@@ -31,7 +29,7 @@ export async function POST(request: Request) {
       await new Promise<void>((resolve, reject) => {
         stream
           .pipe(csv({
-            mapHeaders: ({ header }) => header.trim() // Trim headers
+            mapHeaders: ({ header }) => header.trim()
           }))
           .on('headers', (headers) => {
             console.log('[API_INFO] /api/quotes POST CSV: Detected CSV Headers:', headers);
@@ -48,16 +46,16 @@ export async function POST(request: Request) {
             results.forEach(quoteHeader => {
                 const newQuote: QuotePayload = {
                     id: quoteHeader['ID'] || `MOCK-QID-CSV-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-                    quoteNumber: quoteHeader['QuoteNumber'] || `Q-CSV-${(quoteHeader['ID'] || '').slice(-5)}`, 
+                    quoteNumber: quoteHeader['QuoteNumber'] || `Q-CSV-${(quoteHeader['ID'] || Date.now()).toString().slice(-5)}`,
                     quoteDate: quoteHeader['QuoteDate'] ? new Date(quoteHeader['QuoteDate']).toISOString() : new Date().toISOString(),
                     clientId: quoteHeader['ClientID'],
                     currency: quoteHeader['Currency'] || 'MZN',
                     termsAndConditions: quoteHeader['TermsAndConditions'],
                     notes: quoteHeader['Notes'],
-                    subTotal: parseFloat(quoteHeader['SubTotal'] || 0), 
+                    subTotal: parseFloat(quoteHeader['SubTotal'] || 0),
                     vatAmount: parseFloat(quoteHeader['VATAmount'] || 0),
                     grandTotal: parseFloat(quoteHeader['GrandTotal'] || 0),
-                    items: [], // Items would typically be handled separately or in a more complex CSV
+                    items: [],
                     status: (quoteHeader['Status'] || 'Draft') as QuotePayload['status'],
                     approverId: quoteHeader['ApproverID'] || null,
                     creatorEmail: quoteHeader['CreatorEmail'] || 'csv_import@jachris.com',
@@ -87,10 +85,10 @@ export async function POST(request: Request) {
   } else if (contentType && contentType.includes('application/json')) {
     console.log('[API_INFO] /api/quotes POST: Received application/json request.');
     try {
-      const quoteData = await request.json() as QuotePayload;
-      // Use addMockQuote to handle ID generation and adding to the shared array
-      const newQuote = addMockQuote(quoteData); 
-      console.log('Mocked saving quote (JSON):', newQuote);
+      const quoteDataFromForm = await request.json() as QuotePayload;
+      // addMockQuote handles ID generation if not present, but form should send it
+      const newQuote = addMockQuote(quoteDataFromForm);
+      console.log(`[API_INFO] /api/quotes POST JSON: Mocked saving quote. ID: ${newQuote.id}, Number: ${newQuote.quoteNumber}. MOCK_QUOTES_DB length: ${MOCK_QUOTES_DB.length}`);
       return NextResponse.json({ message: 'Quote saved successfully (simulated)', quoteId: newQuote.id }, { status: 201 });
     } catch (error: any) {
       console.error('[API_ERROR] /api/quotes POST JSON: Error creating quote:', error);
@@ -130,9 +128,10 @@ export async function GET(request: Request) {
   }
 
   try {
+    console.log(`[API_INFO] /api/quotes GET: Returning ${filteredQuotes.length} quotes. MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}`);
     return NextResponse.json(filteredQuotes.sort((a, b) => new Date(b.quoteDate).getTime() - new Date(a.quoteDate).getTime()));
   } catch (error) {
-    console.error('Error fetching quotes (mock):', error);
+    console.error('[API_ERROR] /api/quotes GET: Error fetching quotes (mock):', error);
     return NextResponse.json({ error: 'Failed to fetch quotes' }, { status: 500 });
   }
 }

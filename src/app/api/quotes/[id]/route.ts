@@ -1,84 +1,47 @@
 
 import { NextResponse } from 'next/server';
-import type { QuotePayload, Approver, QuoteItem } from '@/types';
-import { mockApproversData, MOCK_QUOTES_DB, updateMockQuote } from '@/lib/mock-data'; // Use shared MOCK_QUOTES_DB
+import type { QuotePayload, Approver } from '@/types';
+import { mockApproversData, MOCK_QUOTES_DB } from '@/lib/mock-data'; // Use shared MOCK_QUOTES_DB
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params;
-  try {
-    const quoteFromMockDB = MOCK_QUOTES_DB.find(q => q.id === id);
+  const { id: quoteId } = params;
+  console.log(`[API_INFO] /api/quotes/${quoteId} GET: Received request for quote ID: ${quoteId}`);
+  console.log(`[API_INFO] /api/quotes/${quoteId} GET: Current MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}`);
+  MOCK_QUOTES_DB.forEach(q => console.log(`[API_DEBUG] /api/quotes/${quoteId} GET: DB Quote ID: ${q.id}, Number: ${q.quoteNumber}`));
 
-    let quoteToReturn: QuotePayload;
+
+  try {
+    const quoteFromMockDB = MOCK_QUOTES_DB.find(q => q.id === quoteId);
 
     if (quoteFromMockDB) {
-      quoteToReturn = { ...quoteFromMockDB };
+      console.log(`[API_INFO] /api/quotes/${quoteId} GET: Found quote in MOCK_QUOTES_DB:`, quoteFromMockDB.quoteNumber);
+      const quoteToReturn = { ...quoteFromMockDB };
+      if (quoteToReturn.approverId) {
+          const approver = mockApproversData.find(appr => appr.id === quoteToReturn.approverId);
+          quoteToReturn.approverName = approver?.name;
+      }
+      return NextResponse.json(quoteToReturn);
     } else {
-      // Fallback for previewing a "newly created" mock quote
-      // Construct a default quote structure with calculated totals
-      const defaultItems: QuoteItem[] = [
-        { id: 'item-prev-1', description: 'Sample Service A', quantity: 10, unitPrice: 150.75, partNumber: 'SVC-A', customerRef: 'REF001' },
-        { id: 'item-prev-2', description: 'Sample Product B', quantity: 2, unitPrice: 1200.50, partNumber: 'PROD-B', customerRef: 'REF002' },
-      ];
-      const currency = 'MZN';
-      let calculatedSubTotal = 0;
-      defaultItems.forEach(item => {
-        calculatedSubTotal += (item.quantity || 0) * (item.unitPrice || 0);
-      });
-      const calculatedVatAmount = currency === 'MZN' ? calculatedSubTotal * 0.16 : 0;
-      const calculatedGrandTotal = calculatedSubTotal + calculatedVatAmount;
-
-      quoteToReturn = {
-          id: id, 
-          quoteNumber: `Q-PREVIEW-${id.slice(-5)}`,
-          quoteDate: new Date().toISOString(),
-          clientId: 'client-preview-001', 
-          clientName: 'Preview Client Inc.',
-          clientEmail: 'preview@example.com',
-          creatorEmail: 'creator@jachris.com', // Mock creator
-          subTotal: parseFloat(calculatedSubTotal.toFixed(2)),
-          vatAmount: parseFloat(calculatedVatAmount.toFixed(2)),
-          grandTotal: parseFloat(calculatedGrandTotal.toFixed(2)),
-          currency: currency,
-          termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days. This is a preview.',
-          notes: 'This quotation is a preview generated for a newly created mock entry.',
-          items: defaultItems,
-          status: 'Draft', // Default status for this preview
-          approverId: mockApproversData[0]?.id || null, 
-      };
+      console.warn(`[API_WARN] /api/quotes/${quoteId} GET: Quote with ID ${quoteId} not found in MOCK_QUOTES_DB.`);
+      return NextResponse.json({ error: `Quote with ID ${quoteId} not found.` }, { status: 404 });
     }
 
-    // If approverId exists, try to fetch approver name (mocked for now)
-    if (quoteToReturn.approverId) {
-        const approver = mockApproversData.find(appr => appr.id === quoteToReturn.approverId);
-        quoteToReturn.approverName = approver?.name;
-    }
-    
-    return NextResponse.json(quoteToReturn);
-    
   } catch (error: any) {
-    console.error(`Error fetching quote (mock) with ID ${id}:`, error);
-    return NextResponse.json({ error: `Failed to fetch quote with ID ${id}.`, details: error.message }, { status: 500 });
+    console.error(`[API_ERROR] /api/quotes/${quoteId} GET: Error fetching quote (mock):`, error);
+    return NextResponse.json({ error: `Failed to fetch quote with ID ${quoteId}.`, details: error.message }, { status: 500 });
   }
 }
 
-// Optional: PUT and DELETE methods for single quote (if needed for form editing persistence in mock)
+// PUT and DELETE methods for single quote (if needed for form editing persistence in mock)
+// These would also need to use the shared MOCK_QUOTES_DB and updateMockQuote function from lib/mock-data.ts
+// For now, focusing on GET.
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const { id } = params;
-  try {
-    const quoteData = await request.json() as QuotePayload;
-    const updatedQuote = updateMockQuote(id, quoteData);
-    if (updatedQuote) {
-      return NextResponse.json(updatedQuote);
-    }
-    return NextResponse.json({ error: 'Quote not found for update' }, { status: 404 });
-  } catch (error: any) {
-    console.error(`Error updating quote (mock) with ID ${id}:`, error);
-    return NextResponse.json({ error: 'Failed to update quote', details: error.message }, { status: 500 });
-  }
+  // This would need to be implemented using updateMockQuote from lib/mock-data
+  return NextResponse.json({ error: 'PUT method for single quote not fully implemented for shared mock DB yet.' }, { status: 501 });
 }
