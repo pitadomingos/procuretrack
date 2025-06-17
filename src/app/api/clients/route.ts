@@ -14,6 +14,7 @@ export async function GET() {
     return NextResponse.json(rows);
   } catch (error: any) {
     console.error('[API_ERROR] /api/clients GET: Error fetching clients from DB:', error);
+    // Log more detailed error information if available
     console.error('[API_ERROR_DETAILS] /api/clients GET: Error message:', error.message);
     console.error('[API_ERROR_DETAILS] /api/clients GET: Error name:', error.name);
     console.error('[API_ERROR_DETAILS] /api/clients GET: Error code (if DB error):', error.code);

@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react'; // Added useState, useEffect
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -24,12 +24,9 @@ export function AppHeader() {
   const pathname = usePathname();
   const { setTheme } = useTheme();
 
-  // State for AvatarFallback to manage hydration
-  // Initialize with "U" as per the error log for server-rendered output
   const [avatarFallbackContent, setAvatarFallbackContent] = useState("U"); 
 
   useEffect(() => {
-    // After component mounts on the client, update to "PD"
     setAvatarFallbackContent("PD");
   }, []);
 
@@ -59,8 +56,8 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
-      <SidebarTrigger className="md:hidden" /> {/* Mobile trigger always visible */}
-      <SidebarTrigger className="hidden md:flex" /> {/* Desktop trigger */}
+      <SidebarTrigger className="md:hidden" />
+      <SidebarTrigger className="hidden md:flex" />
       <div className="flex-1 flex items-center gap-2">
         {breadcrumbBase && (
           <>
@@ -103,7 +100,6 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Company Logo */}
         <div className="mx-2">
           <Image
             src="/headerlogo.png"
@@ -111,7 +107,6 @@ export function AppHeader() {
             width={40}
             height={40}
             className="rounded-sm object-contain"
-            style={{ height: 'auto' }} 
             data-ai-hint="company brand logo"
           />
         </div>
