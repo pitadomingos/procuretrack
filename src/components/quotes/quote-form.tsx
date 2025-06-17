@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Save, Eye, Loader2, Edit } from 'lucide-react';
+import { PlusCircle, Trash2, Save, Eye, Loader2, Edit, Search } from 'lucide-react';
 import type { Client, QuoteItem, QuotePayload, Approver } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -36,9 +36,10 @@ interface QuoteFormValues {
   notes: string;
   items: Omit<QuoteItem, 'quoteId'>[];
   approverId: string | null;
+  approvalDate?: string | null | undefined; // Added for completeness in form state
 }
 
-const MOCK_CREATOR_EMAIL = 'creator@jachris.com'; // Replace with actual logged-in user email
+const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
 const NO_APPROVER_VALUE = "__none__";
 
 interface QuoteFormProps {
@@ -52,11 +53,14 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [approvers, setApprovers] = useState<Approver[]>([]);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
+  const [isLoadingQuoteForEdit, setIsLoadingQuoteForEdit] = useState(false);
+
   const [isEditingLoadedQuote, setIsEditingLoadedQuote] = useState(false);
   const [loadedQuoteId, setLoadedQuoteId] = useState<string | null>(null);
+
+  const [clients, setClients] = useState<Client[]>([]);
+  const [approvers, setApprovers] = useState<Approver[]>([]);
 
   const form = useForm<QuoteFormValues>({
     defaultValues: {
@@ -90,11 +94,12 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
       termsAndConditions: data.termsAndConditions || 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
       notes: data.notes || '',
       items: (data.items || []).map(item => ({
-        ...defaultItem, // ensure all default fields are present
+        ...defaultItem,
         ...item,
-        id: item.id || crypto.randomUUID(), // Ensure item ID exists
+        id: item.id || crypto.randomUUID(),
       })),
       approverId: data.approverId || null,
+      approvalDate: data.approvalDate ? format(parseISO(data.approvalDate), 'yyyy-MM-dd') : null,
     });
 
     const selectedClient = currentClients.find(c => c.id === data.clientId);
@@ -107,28 +112,30 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
     setLoadedQuoteId(data.id || null);
   }, [form]);
   
-  const resetFormForNew = useCallback(async () => {
+  const resetFormForNew = useCallback(async (fetchNextNumber = true) => {
     form.reset({
       clientId: null, clientNameDisplay: '', clientEmailDisplay: '',
       quoteDate: format(new Date(), 'yyyy-MM-dd'),
-      quoteNumberDisplay: 'Fetching...', currency: 'MZN',
+      quoteNumberDisplay: fetchNextNumber ? 'Fetching...' : form.getValues('quoteNumberDisplay'),
+      currency: 'MZN',
       termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
       notes: '', items: [{...defaultItem, id: crypto.randomUUID()}],
       approverId: null,
     });
     setIsEditingLoadedQuote(false);
     setLoadedQuoteId(null);
-    try {
-      const response = await fetch('/api/quotes/next-quote-number');
-      if (!response.ok) throw new Error('Failed to fetch next quote number');
-      const data = await response.json();
-      form.setValue('quoteNumberDisplay', data.nextQuoteNumber || 'Q-ERROR');
-    } catch (error) {
-      form.setValue('quoteNumberDisplay', 'Q-ERROR');
-      toast({ title: "Error", description: "Could not load next quote number.", variant: "destructive" });
+    if (fetchNextNumber) {
+      try {
+        const response = await fetch('/api/quotes/next-quote-number');
+        if (!response.ok) throw new Error('Failed to fetch next quote number');
+        const data = await response.json();
+        form.setValue('quoteNumberDisplay', data.nextQuoteNumber || 'Q-ERROR');
+      } catch (error) {
+        form.setValue('quoteNumberDisplay', 'Q-ERROR');
+        toast({ title: "Error", description: "Could not load next quote number.", variant: "destructive" });
+      }
     }
   }, [form, toast]);
-
 
   useEffect(() => {
     const fetchCoreDataAndInitializeForm = async () => {
@@ -147,10 +154,12 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
         setApprovers(fetchedApprovers);
 
         if (quoteIdToEditProp) {
+          setIsLoadingQuoteForEdit(true);
           const quoteRes = await fetch(`/api/quotes/${quoteIdToEditProp}`);
           if (!quoteRes.ok) throw new Error(`Failed to fetch Quote ${quoteIdToEditProp}`);
           const quoteDataToEdit: QuotePayload = await quoteRes.json();
           loadQuoteDataIntoForm(quoteDataToEdit, fetchedClients);
+          setIsLoadingQuoteForEdit(false);
         } else {
           await resetFormForNew();
         }
@@ -163,7 +172,6 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
     };
     fetchCoreDataAndInitializeForm();
   }, [quoteIdToEditProp, toast, loadQuoteDataIntoForm, resetFormForNew]);
-
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -199,6 +207,44 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
       form.setValue('clientEmailDisplay', '');
     }
   };
+  
+  const handleLoadQuoteForEditing = async () => {
+    const quoteNumberToLoad = form.getValues('quoteNumberDisplay');
+    if (!quoteNumberToLoad || ['Loading Q...', 'Fetching...', 'Q-ERROR'].includes(quoteNumberToLoad)) {
+      toast({ title: "Quote Number Required", description: "Please enter a Quote number to load.", variant: "destructive" });
+      return;
+    }
+    setIsLoadingQuoteForEdit(true);
+    try {
+      const idRes = await fetch(`/api/quotes/get-by-quote-number/${encodeURIComponent(quoteNumberToLoad)}`);
+      if (!idRes.ok) {
+        const errorData = await idRes.json().catch(() => ({}));
+        throw new Error(errorData.error || `Quote Number ${quoteNumberToLoad} not found.`);
+      }
+      const { id: foundQuoteId } = await idRes.json();
+
+      if (!foundQuoteId) throw new Error(`Quote Number ${quoteNumberToLoad} not found.`);
+
+      const quoteDataRes = await fetch(`/api/quotes/${foundQuoteId}`);
+      if (!quoteDataRes.ok) throw new Error(`Failed to fetch details for Quote ID ${foundQuoteId}.`);
+      const quoteDataToLoad: QuotePayload = await quoteDataRes.json();
+      
+      // Check if editable (e.g., Draft or Pending Approval)
+      if (quoteDataToLoad.status !== 'Draft' && quoteDataToLoad.status !== 'Pending Approval') {
+          toast({ title: "Cannot Edit", description: `Quote ${quoteNumberToLoad} is in '${quoteDataToLoad.status}' status and cannot be edited here. View it from the list.`, variant: "destructive"});
+          setIsLoadingQuoteForEdit(false);
+          return;
+      }
+
+      loadQuoteDataIntoForm(quoteDataToLoad, clients);
+      toast({ title: "Quote Loaded", description: `Quote ${quoteNumberToLoad} loaded for editing.` });
+    } catch (error) {
+      toast({ title: "Error Loading Quote", description: `${error instanceof Error ? error.message : String(error)}`, variant: "destructive" });
+    } finally {
+      setIsLoadingQuoteForEdit(false);
+    }
+  };
+
 
   const onSubmitAndPreview = async (formData: QuoteFormValues) => {
     if (!formData.clientId) {
@@ -236,9 +282,7 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
       })),
       status: quoteStatus,
       approverId: (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? formData.approverId : null,
-      // Ensure approvalDate is only sent if status is already Approved, which shouldn't happen here.
-      // Or let the backend handle setting approvalDate on approval.
-      approvalDate: isEditingLoadedQuote ? form.getValues().approvalDate : undefined, 
+      approvalDate: isEditingLoadedQuote ? formData.approvalDate : undefined, 
     };
 
     try {
@@ -263,9 +307,13 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
       successMessage = `Quote ${payload.quoteNumber} ${isEditingLoadedQuote ? 'updated' : 'saved'} successfully with status: ${payload.status}. Navigating to preview.`;
       toast({ title: 'Success!', description: successMessage });
       
-      // Use the ID from the response if it's a new quote, otherwise use loadedQuoteId
       const finalQuoteId = method === 'POST' ? result.quoteId : loadedQuoteId;
-      router.push(`/quotes/${finalQuoteId}/print`); 
+      if (finalQuoteId) {
+        router.push(`/quotes/${finalQuoteId}/print`); 
+      } else {
+        // If new, reset form
+        await resetFormForNew();
+      }
 
     } catch (error: any) {
       console.error("Error saving quote (frontend):", error);
@@ -282,8 +330,11 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : (watchedCurrency === 'USD' ? '$' : watchedCurrency);
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
-  if (isLoadingInitialData) {
+  if (isLoadingInitialData && !quoteIdToEditProp) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
+  }
+  if (isLoadingQuoteForEdit && quoteIdToEditProp) {
+     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading Quote for editing...</div>;
   }
 
   return (
@@ -311,7 +362,25 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
                   </FormItem>
                 )}
               />
-              <FormField control={form.control} name="quoteNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>Quote Number</FormLabel> <FormControl><Input {...field} readOnly /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField
+                  control={form.control} name="quoteNumberDisplay" rules={{ required: 'Quote Number is required' }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quote Number</FormLabel>
+                       <div className="flex gap-2">
+                        <FormControl>
+                          <Input placeholder="Quote Number or type to load" {...field} readOnly={isEditingLoadedQuote} />
+                        </FormControl>
+                        {!isEditingLoadedQuote && (
+                           <Button type="button" variant="outline" onClick={handleLoadQuoteForEditing} disabled={isLoadingQuoteForEdit} className="shrink-0">
+                            {isLoadingQuoteForEdit ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />} Load
+                           </Button>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               <FormField control={form.control} name="quoteDate" rules={{ required: 'Quote Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Quote Date *</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
 
@@ -442,12 +511,12 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
               </div>
 
               <div className="md:col-span-1 flex flex-col gap-3 w-full pt-6">
-                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid || isLoadingInitialData}>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid || isLoadingInitialData || isLoadingQuoteForEdit}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedQuote ? <Edit className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />)}
                   {isSubmitting ? (isEditingLoadedQuote ? 'Updating...' : 'Saving...') : (isEditingLoadedQuote ? 'Update & Preview Quote' : 'Save & Preview Quote')}
                 </Button>
                  {!isEditingLoadedQuote && (
-                  <Button type="button" variant="ghost" size="lg" className="w-full" onClick={resetFormForNew} disabled={isSubmitting || isLoadingInitialData}>
+                  <Button type="button" variant="ghost" size="lg" className="w-full" onClick={() => resetFormForNew(false)} disabled={isSubmitting || isLoadingInitialData || isLoadingQuoteForEdit}>
                     Clear / New Quote
                   </Button>
                 )}
@@ -459,11 +528,10 @@ export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
       <CardFooter>
         <p className="text-xs text-muted-foreground">
          {isEditingLoadedQuote
-            ? `Editing Quote: ${form.getValues('quoteNumberDisplay')}.`
-            : "Select an approver to submit for approval, or leave blank to save as Draft."}
+            ? `Editing Quote: ${form.getValues('quoteNumberDisplay')}. Quote Number is read-only.`
+            : "Enter Quote details. Use 'Load' for existing editable Quotes or create a new one. Select an approver to submit for approval, or leave blank to save as Draft."}
         </p>
       </CardFooter>
     </Card>
   );
 }
-
