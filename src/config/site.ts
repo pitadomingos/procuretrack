@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode, ClipboardCheck, UserCheck, FileQuestion } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode, ClipboardCheck, UserCheck, FileQuestion, MessageSquareQuestion } from 'lucide-react';
 
 export interface NavItem {
   title: string;
@@ -26,11 +26,6 @@ export const navItems: NavItem[] = [
     href: '/approvals',
     icon: UserCheck, // UserCheck can represent general approvals
   },
-  // { // Removed separate Quote Approvals
-  //   title: 'My Quote Approvals',
-  //   href: '/quote-approvals',
-  //   icon: FileQuestion,
-  // },
   {
     title: 'Activity Log',
     href: '/activity-log',
@@ -50,6 +45,11 @@ export const navItems: NavItem[] = [
     title: 'Management',
     href: '/management',
     icon: Settings,
+  },
+  {
+    title: 'Feedback Survey',
+    href: '/survey',
+    icon: MessageSquareQuestion,
   },
   {
     title: 'To-Do / Progress',

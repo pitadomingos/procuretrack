@@ -350,4 +350,13 @@ export interface ManagementStats {
   clientsCount: number;
 }
 
+export interface SurveyFormValues {
+  easeOfUse: string;
+  featureSatisfaction: string;
+  responsiveness: string;
+  recommendationLikelihood: string;
+  mostUsedFeatures: string;
+  suggestions: string;
+}
+
     

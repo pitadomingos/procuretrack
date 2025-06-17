@@ -20,6 +20,23 @@ import { usePathname } from 'next/navigation';
 import { navItems } from '@/config/site';
 import { useTheme } from 'next-themes';
 import { ClientOnly } from '@/components/shared/ClientOnly';
+import { StarRating } from '@/components/shared/star-rating'; // Import StarRating
+
+// Mock ratings for demonstration
+const mockPageRatings: Record<string, { initialRating: number; totalVoters: number }> = {
+  '/': { initialRating: 4, totalVoters: 120 },
+  '/create-document': { initialRating: 3.5, totalVoters: 85 },
+  '/approvals': { initialRating: 4.2, totalVoters: 95 },
+  '/activity-log': { initialRating: 3, totalVoters: 40 },
+  '/analytics': { initialRating: 4.5, totalVoters: 60 },
+  '/reports': { initialRating: 0, totalVoters: 0 }, // No ratings yet
+  '/management': { initialRating: 3.8, totalVoters: 70 },
+  '/survey': { initialRating: 0, totalVoters: 0 },
+  '/todo-progress': { initialRating: 4.8, totalVoters: 25 },
+  '/user-manual': { initialRating: 4, totalVoters: 15 },
+  '/system-documentation': { initialRating: 4, totalVoters: 10 },
+};
+
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -39,6 +56,10 @@ export function AppHeader() {
   let pageTitle = currentNavItem ? currentNavItem.title : "ProcureTrack";
   let breadcrumbBase = null;
 
+  // Determine current page rating data
+  const currentPageKey = currentNavItem?.href || pathname;
+  const currentRatingData = mockPageRatings[currentPageKey] || { initialRating: 0, totalVoters: 0 };
+
   if (pathname.startsWith('/management/') && pathname !== '/management') {
     const managementSubPath = pathname.split('/').pop();
     if (managementSubPath) {
@@ -54,9 +75,15 @@ export function AppHeader() {
     };
   }
 
+  const handleRating = (newRating: number) => {
+    console.log(`Page ${currentPageKey} rated ${newRating} stars.`);
+    // In a real app, you would send this rating to a backend
+    // For now, the StarRating component updates its internal mock store
+  };
+
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8 print-hidden">
       <ClientOnly>
         <SidebarTrigger className="md:hidden" />
       </ClientOnly>
@@ -73,7 +100,19 @@ export function AppHeader() {
             <span className="text-sm text-muted-foreground">/</span>
           </>
         )}
-        <h1 className="text-lg font-semibold font-headline md:text-xl">{pageTitle}</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+            <h1 className="text-lg font-semibold font-headline md:text-xl">{pageTitle}</h1>
+            <div className="mt-1 sm:mt-0">
+                <StarRating
+                key={currentPageKey} // Important for re-rendering if page changes
+                pageKey={currentPageKey}
+                initialRating={currentRatingData.initialRating}
+                totalVoters={currentRatingData.totalVoters}
+                onRate={handleRating}
+                size="sm"
+                />
+            </div>
+        </div>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
         <Button variant="ghost" size="icon" className="rounded-full">
