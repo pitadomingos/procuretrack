@@ -5,31 +5,30 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
-import type { ApprovalQueueItem } from '@/types';
-import { Eye, Loader2, ThumbsDown, MessageSquareText, CheckCircle2, RefreshCw, AlertTriangle } from 'lucide-react';
+import type { UnifiedApprovalItem, POApprovalQueueItem, QuoteApprovalQueueItem } from '@/types';
+import { Eye, Loader2, ThumbsDown, MessageSquareText, CheckCircle2, RefreshCw, AlertTriangle, FileText, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { RejectPOModal } from '@/components/approvals/RejectPOModal';
-import { ReviewPOModal } from '@/components/approvals/ReviewPOModal';
+import { RejectPOModal } from '@/components/approvals/RejectPOModal'; // Can be generalized or duplicated for Quotes if needed
+import { ReviewPOModal } from '@/components/approvals/ReviewPOModal'; // PO specific, might need generalization or conditional logic for Quotes
 
 // --- AUTHENTICATION PLACEHOLDER ---
 const MOCK_LOGGED_IN_APPROVER_EMAIL = 'pita.domingos@jachris.com'; // Should match an email in your Approver table
 
 export default function ApprovalsPage() {
-  const [pendingPOs, setPendingPOs] = useState<ApprovalQueueItem[]>([]);
+  const [pendingItems, setPendingItems] = useState<UnifiedApprovalItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const [selectedPOForReject, setSelectedPOForReject] = useState<ApprovalQueueItem | null>(null);
+  const [selectedItemForReject, setSelectedItemForReject] = useState<UnifiedApprovalItem | null>(null);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
-  const [selectedPOForReview, setSelectedPOForReview] = useState<ApprovalQueueItem | null>(null);
+  const [selectedPOForReview, setSelectedPOForReview] = useState<UnifiedApprovalItem | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   
-  const [isApprovingPoId, setIsApprovingPoId] = useState<number | null>(null);
-
+  const [isProcessingItemId, setIsProcessingItemId] = useState<string | number | null>(null);
 
   const fetchPendingApprovals = useCallback(async () => {
     setLoading(true);
@@ -38,18 +37,60 @@ export default function ApprovalsPage() {
       if (!MOCK_LOGGED_IN_APPROVER_EMAIL) {
         throw new Error("Approver email is not defined (authentication placeholder).");
       }
-      const response = await fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch pending approvals. Server returned an unreadable error.' }));
-        throw new Error(errorData.message || `Failed to load approvals: ${response.statusText}`);
+
+      const [poResponse, quoteResponse] = await Promise.all([
+        fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`),
+        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`)
+      ]);
+
+      let allPendingItems: UnifiedApprovalItem[] = [];
+
+      if (poResponse.ok) {
+        const poData: POApprovalQueueItem[] = await poResponse.json();
+        const mappedPOs: UnifiedApprovalItem[] = poData.map(po => ({
+          id: po.id,
+          documentType: 'PO',
+          documentNumber: po.poNumber,
+          creationDate: po.creationDate,
+          submittedBy: po.creatorName || po.requestedByName || 'N/A',
+          entityName: po.supplierName || 'N/A',
+          totalAmount: po.grandTotal,
+          currency: po.currency,
+          status: po.status,
+        }));
+        allPendingItems = allPendingItems.concat(mappedPOs);
+      } else {
+        const poErrorData = await poResponse.json().catch(() => ({ message: 'Failed to fetch PO approvals.' }));
+        console.warn('Error fetching PO approvals:', poErrorData.message);
+        // Optionally notify user or just proceed with other data
       }
-      const data: ApprovalQueueItem[] = await response.json();
-      setPendingPOs(data);
+
+      if (quoteResponse.ok) {
+        const quoteData: QuoteApprovalQueueItem[] = await quoteResponse.json();
+        const mappedQuotes: UnifiedApprovalItem[] = quoteData.map(quote => ({
+          id: quote.id,
+          documentType: 'Quote',
+          documentNumber: quote.quoteNumber,
+          creationDate: quote.quoteDate,
+          submittedBy: quote.creatorEmail || 'N/A',
+          entityName: quote.clientName || 'N/A',
+          totalAmount: quote.grandTotal,
+          currency: quote.currency,
+          status: quote.status,
+        }));
+        allPendingItems = allPendingItems.concat(mappedQuotes);
+      } else {
+        const quoteErrorData = await quoteResponse.json().catch(() => ({ message: 'Failed to fetch Quote approvals.' }));
+        console.warn('Error fetching Quote approvals:', quoteErrorData.message);
+      }
+      
+      allPendingItems.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime());
+      setPendingItems(allPendingItems);
+
     } catch (err: any) {
       console.error('Error fetching pending approvals:', err);
-      setError(err.message || 'Failed to load approvals.');
-      toast({ title: "Error", description: `Could not load approvals: ${err.message}`, variant: "destructive" });
+      setError(err.message || 'Failed to load some or all approval items.');
+      toast({ title: "Error", description: `Could not load all approvals: ${err.message}`, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -59,100 +100,106 @@ export default function ApprovalsPage() {
     fetchPendingApprovals();
   }, [fetchPendingApprovals]);
 
-  const handleOpenRejectModal = (po: ApprovalQueueItem) => {
-    setSelectedPOForReject(po);
+  const handleOpenRejectModal = (item: UnifiedApprovalItem) => {
+    setSelectedItemForReject(item);
     setIsRejectModalOpen(true);
   };
 
-  const handleOpenReviewModal = (po: ApprovalQueueItem) => {
-    setSelectedPOForReview(po);
-    setIsReviewModalOpen(true);
+  const handleOpenReviewModal = (item: UnifiedApprovalItem) => {
+    // Review modal is PO specific for now
+    if (item.documentType === 'PO') {
+      setSelectedPOForReview(item);
+      setIsReviewModalOpen(true);
+    } else {
+      toast({ title: "Info", description: "Review comments for Quotes can be added manually after viewing."})
+    }
   };
 
-  const handleApprovePO = async (po: ApprovalQueueItem) => {
-    if (po.status !== 'Pending Approval') {
-      toast({ title: "Cannot Approve", description: `PO ${po.poNumber} is not pending approval.`, variant: "destructive" });
+  const handleApproveItem = async (item: UnifiedApprovalItem) => {
+    if (item.status !== 'Pending Approval') {
+      toast({ title: "Cannot Approve", description: `${item.documentType} ${item.documentNumber} is not pending approval.`, variant: "destructive" });
       return;
     }
     
-    setIsApprovingPoId(po.id);
+    setIsProcessingItemId(item.id);
+    const apiUrl = item.documentType === 'PO' 
+      ? `/api/purchase-orders/${item.id}/approve` 
+      : `/api/quotes/${item.id}/approve`;
+
     try {
-      const response = await fetch(`/api/purchase-orders/${po.id}/approve`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ 
-            error: 'Approval failed.', 
-            details: `Server responded with status: ${response.status} ${response.statusText}`,
-        }));
-        let clientErrorMessage = errorData.error || `Approval failed for PO ${po.id}.`;
-        if (errorData.details) clientErrorMessage += ` Details: ${errorData.details}`;
-        throw new Error(clientErrorMessage);
+        const errorData = await response.json().catch(() => ({ error: 'Approval failed.' }));
+        throw new Error(errorData.error || `Approval failed for ${item.documentType} ${item.id}.`);
       }
 
       const result = await response.json();
       toast({
         title: "Success!",
-        description: result.message || `Purchase Order ${po.poNumber} approved.`,
+        description: result.message || `${item.documentType} ${item.documentNumber} approved.`,
       });
-      fetchPendingApprovals(); // Refresh data to show new status
+      fetchPendingApprovals(); 
     } catch (err: any) {
-      console.error(`Error approving PO (client-side catch):`, err); 
-      let errorMessage = 'Could not approve the PO.';
-      if (err instanceof Error && err.message) {
-        errorMessage = err.message;
-      }
-      toast({
-        title: 'Error Approving PO',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      toast({ title: `Error Approving ${item.documentType}`, description: err.message, variant: 'destructive' });
     } finally {
-      setIsApprovingPoId(null);
+      setIsProcessingItemId(null);
     }
   };
+  
+  const handleRejectConfirmed = () => { // Callback from RejectPOModal
+    fetchPendingApprovals();
+    setSelectedItemForReject(null);
+  };
 
-  const columns: ColumnDef<ApprovalQueueItem>[] = [
+
+  const columns: ColumnDef<UnifiedApprovalItem>[] = [
     { 
-      accessorKey: 'poNumber', 
-      header: 'PO Number',
-      cell: (item) => <span className="font-medium">{item.poNumber}</span>
+      accessorKey: 'documentType', 
+      header: 'Type',
+      cell: ({ row }) => {
+        const item = row.original;
+        return item.documentType === 'PO' ? 
+          <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span> : 
+          <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
+      }
+    },
+    { 
+      accessorKey: 'documentNumber', 
+      header: 'Doc. Number',
+      cell: ({ row }) => <span className="font-medium">{row.original.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (item) => format(new Date(item.creationDate), 'PP')
+      cell: ({ row }) => format(new Date(row.original.creationDate), 'PP')
     },
     { 
-      accessorKey: 'creatorName', 
-      header: 'Creator',
-      cell: (item) => item.creatorName || 'N/A'
+      accessorKey: 'submittedBy', 
+      header: 'Submitted By',
+      cell: ({ row }) => row.original.submittedBy || 'N/A'
     },
     { 
-      accessorKey: 'supplierName', 
-      header: 'Supplier',
-      cell: (item) => item.supplierName || 'N/A'
+      accessorKey: 'entityName', 
+      header: 'Supplier/Client',
+      cell: ({ row }) => row.original.entityName || 'N/A'
     },
     { 
-      accessorKey: 'requestedByName', 
-      header: 'Requested By',
-      cell: (item) => item.requestedByName || 'N/A'
-    },
-    { 
-      accessorKey: 'grandTotal', 
+      accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (item) => `${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency}`
+      cell: ({ row }) => `${row.original.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.original.currency}`
     },
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (item) => <span className="text-orange-600 font-semibold">{item.status}</span>
+      cell: ({ row }) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
     },
   ];
 
-  if (loading && !pendingPOs.length) { // Show initial loading state
+  if (loading && !pendingItems.length) { 
     return (
       <div className="flex flex-col justify-center items-center h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -161,7 +208,7 @@ export default function ApprovalsPage() {
     );
   }
 
-  if (error && !pendingPOs.length) { // Show error only if there's no data to display
+  if (error && !pendingItems.length) { 
     return (
       <div className="flex flex-col justify-center items-center h-[calc(100vh-200px)] text-destructive p-4">
         <AlertTriangle className="h-10 w-10 mb-3" />
@@ -182,7 +229,7 @@ export default function ApprovalsPage() {
           <div>
             <CardTitle className="font-headline text-2xl">My Pending Approvals</CardTitle>
             <CardDescription>
-              Purchase Orders awaiting your approval. (Showing for: <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>)
+              Documents awaiting your approval. (Showing for: <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>)
             </CardDescription>
           </div>
           <Button onClick={fetchPendingApprovals} variant="outline" size="sm" disabled={loading}>
@@ -191,84 +238,83 @@ export default function ApprovalsPage() {
           </Button>
         </CardHeader>
         <CardContent>
-          {loading && pendingPOs.length > 0 && ( // Show subtle loading indicator when refreshing existing data
+          {loading && pendingItems.length > 0 && ( 
             <div className="flex items-center justify-center py-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
               <span>Refreshing data...</span>
             </div>
           )}
-          {error && pendingPOs.length > 0 && ( // Show non-blocking error if data is already present
+          {error && pendingItems.length > 0 && ( 
             <div className="mb-4 p-3 border-l-4 border-destructive bg-destructive/10 text-destructive-foreground flex items-start text-sm">
               <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-semibold">Failed to refresh:</p>
+                <p className="font-semibold">Failed to refresh fully:</p>
                 <p>{error}</p>
               </div>
             </div>
           )}
           <DataTable
             columns={columns}
-            data={pendingPOs}
-            renderRowActions={(po) => (
+            data={pendingItems}
+            renderRowActions={(item) => (
               <div className="space-x-1">
-                <Link href={`/purchase-orders/${po.id}/print`} passHref legacyBehavior={false}>
-                  <Button variant="ghost" size="sm" title="View PO Details">
+                <Link href={item.documentType === 'PO' ? `/purchase-orders/${item.id}/print` : `/quotes/${item.id}/print`} passHref legacyBehavior={false}>
+                  <Button variant="ghost" size="sm" title={`View ${item.documentType} Details`}>
                     <Eye className="mr-1 h-4 w-4 text-muted-foreground" /> View
                   </Button>
                 </Link>
                 <Button 
                     variant="outline" 
                     size="sm" 
-                    title="Approve PO" 
-                    onClick={() => handleApprovePO(po)}
-                    disabled={isApprovingPoId === po.id}
+                    title={`Approve ${item.documentType}`}
+                    onClick={() => handleApproveItem(item)}
+                    disabled={isProcessingItemId === item.id}
                     className="text-green-600 hover:text-green-700 border-green-600 hover:border-green-700 hover:bg-green-50"
                 >
-                  {isApprovingPoId === po.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} 
+                  {isProcessingItemId === item.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} 
                   Approve
                 </Button>
-                <Button variant="outline" size="sm" title="Review PO" onClick={() => handleOpenReviewModal(po)} className="text-blue-600 hover:text-blue-700 border-blue-600 hover:border-blue-700 hover:bg-blue-50">
-                  <MessageSquareText className="mr-1 h-4 w-4" /> Review
-                </Button>
-                <Button variant="outline" size="sm" title="Reject PO" onClick={() => handleOpenRejectModal(po)} className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700 hover:bg-red-50">
+                {item.documentType === 'PO' && ( // Review modal is currently PO specific
+                  <Button variant="outline" size="sm" title="Review PO" onClick={() => handleOpenReviewModal(item)} className="text-blue-600 hover:text-blue-700 border-blue-600 hover:border-blue-700 hover:bg-blue-50">
+                    <MessageSquareText className="mr-1 h-4 w-4" /> Review
+                  </Button>
+                )}
+                 <Button variant="outline" size="sm" title={`Reject ${item.documentType}`} onClick={() => handleOpenRejectModal(item)} className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700 hover:bg-red-50">
                   <ThumbsDown className="mr-1 h-4 w-4" /> Reject
                 </Button>
               </div>
             )}
           />
-           {pendingPOs.length === 0 && !loading && !error && (
+           {pendingItems.length === 0 && !loading && !error && (
              <div className="text-center py-8 text-muted-foreground">
-                No purchase orders are currently pending your approval.
+                No documents are currently pending your approval.
              </div>
            )}
         </CardContent>
       </Card>
 
-      {selectedPOForReject && (
-        <RejectPOModal
-          poId={selectedPOForReject.id}
-          poNumber={selectedPOForReject.poNumber}
+      {selectedItemForReject && (
+        <RejectPOModal // This modal might need to be made more generic if rejection reasons differ significantly
+          poId={typeof selectedItemForReject.id === 'number' ? selectedItemForReject.id : -1} // Hack for PO ID, needs proper handling
+          poNumber={selectedItemForReject.documentNumber}
           open={isRejectModalOpen}
           onOpenChange={setIsRejectModalOpen}
-          onRejected={() => {
-            fetchPendingApprovals(); 
-            setSelectedPOForReject(null);
-          }}
+          onRejected={handleRejectConfirmed}
         />
       )}
 
-      {selectedPOForReview && (
+      {selectedPOForReview && selectedPOForReview.documentType === 'PO' && (
         <ReviewPOModal
-          poId={selectedPOForReview.id}
-          poNumber={selectedPOForReview.poNumber}
-          creatorName={selectedPOForReview.creatorName}
+          poId={selectedPOForReview.id as number} // Cast as PO Review is PO specific
+          poNumber={selectedPOForReview.documentNumber}
+          creatorName={selectedPOForReview.submittedBy}
           open={isReviewModalOpen}
           onOpenChange={setIsReviewModalOpen}
         />
       )}
        <div className="text-center text-xs text-muted-foreground mt-4">
         <strong>Note:</strong> Full authentication and user-specific approval queues will be implemented in a future update.
-        Email notifications for review feedback are simulated.
+        Email notifications for review feedback are simulated. The "Reject" modal is currently PO-styled.
       </div>
     </div>
   );

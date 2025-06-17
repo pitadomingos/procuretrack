@@ -22,15 +22,15 @@ export const navItems: NavItem[] = [
     icon: FilePlus2,
   },
   {
-    title: 'My PO Approvals', // Renamed for clarity
+    title: 'My Approvals', // Consolidated approvals
     href: '/approvals',
-    icon: UserCheck,
+    icon: UserCheck, // UserCheck can represent general approvals
   },
-  {
-    title: 'My Quote Approvals', // New item for quote approvals
-    href: '/quote-approvals',
-    icon: FileQuestion, // Using FileQuestion as a distinct icon
-  },
+  // { // Removed separate Quote Approvals
+  //   title: 'My Quote Approvals',
+  //   href: '/quote-approvals',
+  //   icon: FileQuestion,
+  // },
   {
     title: 'Activity Log',
     href: '/activity-log',
