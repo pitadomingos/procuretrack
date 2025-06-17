@@ -1,32 +1,8 @@
 
-import { pool } from '../../../../../../backend/db.js'; // Corrected relative path
+import { pool } from '../../../../../../backend/db.js'; 
 import { NextResponse } from 'next/server';
-import multer from 'multer';
 import csv from 'csv-parser';
-import { Readable } from 'stream'; // Import Readable stream
-
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage }); 
-
-// Helper function to run multer middleware
-const runMiddleware = (req, res, fn) => {
- return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
- });
-};
-
-// Ensure the request is not body-parsed by Next.js
-export const config = {
- api: {
-    bodyParser: false,
- },
-};
+import { Readable } from 'stream'; 
 
 export async function GET(request, { params }) {
   const { poId } = params;
@@ -35,48 +11,72 @@ export async function GET(request, { params }) {
     const [rows] = await pool.execute('SELECT * FROM POItem WHERE poId = ?', [poId]);
     return NextResponse.json(rows);
   } catch (error) {
-    console.error(`Error fetching PO items for PO ${poId}:`, error);
-    return NextResponse.json({ error: `Failed to fetch PO items for PO ${poId}` }, { status: 500 });
+    console.error(`[API_ERROR] /api/purchase-orders/${poId}/items GET: Error fetching PO items:`, error);
+    return NextResponse.json({ error: `Failed to fetch PO items for PO ${poId}`, details: error.message }, { status: 500 });
   }
 }
 
-// POST handler for uploading PO items
 export async function POST(request, { params }) {
-  const res = new NextResponse(); 
   const { poId } = params; 
+  const contentType = request.headers.get('content-type');
 
+  if (!(contentType && contentType.includes('multipart/form-data'))) {
+    console.warn(`[API_WARN] /api/purchase-orders/${poId}/items POST: Unsupported Content-Type: ${contentType}`);
+    return NextResponse.json({ error: 'Unsupported Content-Type, expected multipart/form-data.' }, { status: 415 });
+  }
+
+  console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST: Received multipart/form-data request for CSV upload.`);
   try {
-    // Run the multer middleware
-    await runMiddleware(request, res, upload.single('file'));
+    const formData = await request.formData();
+    const file = formData.get('file');
 
-    const file = request.file; // Access the uploaded file
-
-    if (!file) {
-      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+    if (!file || typeof file === 'string') { // Check if file is a File object
+      console.error(`[API_ERROR] /api/purchase-orders/${poId}/items POST CSV: No file uploaded or file is not a File object.`);
+      return NextResponse.json({ error: 'No file uploaded or invalid file type' }, { status: 400 });
     }
-
+    console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+    
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
     const results = [];
-    const stream = Readable.from(file.buffer); // Create a readable stream from the buffer
+    const stream = Readable.from(fileBuffer);
+    let firstRecordLogged = false;
 
+    console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST CSV: Starting CSV parsing...`);
     await new Promise((resolve, reject) => {
       stream
-        .pipe(csv())
-        .on('data', (data) => results.push(data))
-        .on('end', () => {
-            console.log(`Parsed PO item CSV data for PO ID ${poId}:`, results);
-            // TODO: Add logic for validating and inserting PO item data into POItem table,
-            // ensuring each item is correctly linked to the poId.
-            resolve();
+        .pipe(csv({
+          mapHeaders: ({ header }) => header.trim() // Trim headers
+        }))
+        .on('headers', (headers) => {
+          console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST CSV: Detected CSV Headers:`, headers);
         })
-        .on('error', (error) => reject(error));
+        .on('data', (data) => {
+          if (!firstRecordLogged) {
+            console.log(`[API_DEBUG] /api/purchase-orders/${poId}/items POST CSV: First parsed data record from CSV:`, data);
+            firstRecordLogged = true;
+          }
+          results.push(data);
+        })
+        .on('end', () => {
+          console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST CSV: CSV parsing finished. ${results.length} items found.`);
+          // TODO: Add logic for validating and inserting PO item data into POItem table,
+          // ensuring each item is correctly linked to the poId.
+          resolve();
+        })
+        .on('error', (parseError) => {
+          console.error(`[API_ERROR] /api/purchase-orders/${poId}/items POST CSV: Error during CSV parsing:`, parseError);
+          reject(parseError);
+        });
     });
+
+    if (results.length === 0) {
+      console.warn(`[API_WARN] /api/purchase-orders/${poId}/items POST CSV: CSV file is empty or could not be parsed into records.`);
+      return NextResponse.json({ message: `PO Items CSV file for PO ID ${poId} is empty or yielded no records.` }, { status: 400 });
+    }
 
     return NextResponse.json({ message: `PO Items CSV uploaded and parsed successfully for PO ID ${poId}. ${results.length} items found. (Data not saved to DB yet)`, data: results });
   } catch (error) {
-    console.error(`Error handling PO item file upload for PO ID ${poId}:`, error);
-    if (error instanceof multer.MulterError) {
-        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
-    }
-    return NextResponse.json({ error: 'Failed to handle PO item file upload' }, { status: 500 });
+    console.error(`[API_ERROR] /api/purchase-orders/${poId}/items POST CSV: Error handling PO item file upload:`, error);
+    return NextResponse.json({ error: 'Failed to handle PO item file upload', details: error.message }, { status: 500 });
   }
 }

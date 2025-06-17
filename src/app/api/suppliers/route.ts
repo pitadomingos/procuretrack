@@ -2,32 +2,8 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
 import type { Supplier } from '@/types';
-import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// Helper to run multer middleware
-const runMiddleware = (req: any, res: any, fn: any) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
-
-// Ensure Next.js doesn't parse the body for file uploads for this route
-export const config = {
-  api: {
-    bodyParser: false, // Important for multer
-  },
-};
 
 export async function GET() {
   try {
@@ -43,49 +19,73 @@ export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('multipart/form-data')) {
-    // CSV Upload
-    // @ts-ignore
-    const req = request as Request & { file?: any };
-    const res = new NextResponse(); 
-
+    console.log('[API_INFO] /api/suppliers POST: Received multipart/form-data request for CSV upload.');
     try {
-      await runMiddleware(req, res, upload.single('file'));
+      const formData = await request.formData();
+      const file = formData.get('file') as File | null;
       
-      // @ts-ignore
-      if (!req.file) {
+      if (!file) {
+        console.error('[API_ERROR] /api/suppliers POST CSV: No file found in formData.');
         return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
       }
+      console.log(`[API_INFO] /api/suppliers POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
       
-      // @ts-ignore
-      const fileBuffer = req.file.buffer;
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results: any[] = [];
       const stream = Readable.from(fileBuffer);
+      let firstRecordLogged = false;
 
+      console.log('[API_INFO] /api/suppliers POST CSV: Starting CSV parsing...');
       await new Promise<void>((resolve, reject) => {
         stream
-          .pipe(csv())
-          .on('data', (data) => results.push(data))
+          .pipe(csv({
+            mapHeaders: ({ header }) => header.trim() // Trim headers
+          }))
+          .on('headers', (headers) => {
+            console.log('[API_INFO] /api/suppliers POST CSV: Detected CSV Headers:', headers);
+          })
+          .on('data', (data) => {
+            if (!firstRecordLogged) {
+              console.log('[API_DEBUG] /api/suppliers POST CSV: First parsed data record from CSV:', data);
+              firstRecordLogged = true;
+            }
+            results.push(data);
+          })
           .on('end', () => {
-            console.log('Parsed CSV data for suppliers:', results);
-            // TODO: Add logic for validating and inserting supplier data into the database
+            console.log(`[API_INFO] /api/suppliers POST CSV: CSV parsing finished. ${results.length} records found.`);
+            // TODO: Add logic for validating and inserting supplier data into the database.
             // For now, just logging.
             resolve();
           })
-          .on('error', (error) => reject(error));
+          .on('error', (parseError) => {
+            console.error('[API_ERROR] /api/suppliers POST CSV: Error during CSV parsing:', parseError);
+            reject(parseError);
+          });
       });
+
+      if (results.length === 0) {
+        console.warn('[API_WARN] /api/suppliers POST CSV: CSV file is empty or could not be parsed into records.');
+        return NextResponse.json({ message: 'CSV file is empty or yielded no records.' }, { status: 400 });
+      }
+
+      // Placeholder for actual database operations
+      // For example, you would loop through `results` and insert/update the database.
+      // let successfulInserts = 0;
+      // let failedInserts = 0;
+      // const errors: string[] = [];
+      // await connection.beginTransaction(); // If using DB transactions
+      // try { ... } catch { await connection.rollback(); } finally { connection.release(); }
+      // await connection.commit();
 
       return NextResponse.json({ message: `Suppliers CSV uploaded and parsed successfully. ${results.length} records found. (Data not saved to DB yet)` }, { status: 200 });
 
     } catch (error: any) {
-      console.error('Error handling supplier CSV upload:', error);
-      if (error instanceof multer.MulterError) {
-        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
-      }
+      console.error('[API_ERROR] /api/suppliers POST CSV: Error handling supplier CSV upload (outer try-catch):', error);
       return NextResponse.json({ error: 'Failed to handle supplier CSV upload.', details: error.message }, { status: 500 });
     }
 
   } else if (contentType && contentType.includes('application/json')) {
-    // JSON Payload for single supplier creation
+    console.log('[API_INFO] /api/suppliers POST: Received application/json request.');
     try {
       const supplierData = await request.json() as Supplier;
 
@@ -114,13 +114,14 @@ export async function POST(request: Request) {
       return NextResponse.json(newSupplierRows[0], { status: 201 });
 
     } catch (error: any) {
-      console.error('Error creating supplier (JSON):', error);
+      console.error('[API_ERROR] /api/suppliers POST JSON: Error creating supplier:', error);
       if (error.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'Supplier with this Code already exists.' }, { status: 409 });
       }
       return NextResponse.json({ error: 'Failed to create supplier (JSON)', details: error.message }, { status: 500 });
     }
   } else {
+    console.warn(`[API_WARN] /api/suppliers POST: Unsupported Content-Type: ${contentType}`);
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }

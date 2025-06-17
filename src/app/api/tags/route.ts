@@ -2,32 +2,8 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
 import type { Tag } from '@/types';
-import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// Helper to run multer middleware
-const runMiddleware = (req: any, res: any, fn: any) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
-
-// Ensure Next.js doesn't parse the body for file uploads for this route
-export const config = {
-  api: {
-    bodyParser: false, 
-  },
-};
 
 export async function GET() {
   try {
@@ -52,50 +28,63 @@ export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('multipart/form-data')) {
-    // CSV Upload
-    // @ts-ignore 
-    const req = request as Request & { file?: any };
-    const res = new NextResponse(); 
-
+    console.log('[API_INFO] /api/tags POST: Received multipart/form-data request for CSV upload.');
     try {
-      await runMiddleware(req, res, upload.single('file'));
+      const formData = await request.formData();
+      const file = formData.get('file') as File | null;
       
-      // @ts-ignore
-      if (!req.file) {
+      if (!file) {
+        console.error('[API_ERROR] /api/tags POST CSV: No file found in formData.');
         return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
       }
+      console.log(`[API_INFO] /api/tags POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
       
-      // @ts-ignore
-      const fileBuffer = req.file.buffer;
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results: any[] = [];
       const stream = Readable.from(fileBuffer);
+      let firstRecordLogged = false;
 
+      console.log('[API_INFO] /api/tags POST CSV: Starting CSV parsing...');
       await new Promise<void>((resolve, reject) => {
         stream
-          .pipe(csv())
-          .on('data', (data) => results.push(data))
+          .pipe(csv({
+            mapHeaders: ({ header }) => header.trim() // Trim headers
+          }))
+          .on('headers', (headers) => {
+            console.log('[API_INFO] /api/tags POST CSV: Detected CSV Headers:', headers);
+          })
+          .on('data', (data) => {
+            if (!firstRecordLogged) {
+              console.log('[API_DEBUG] /api/tags POST CSV: First parsed data record from CSV:', data);
+              firstRecordLogged = true;
+            }
+            results.push(data);
+          })
           .on('end', () => {
-            console.log('Parsed CSV data for tags:', results);
-            // TODO: Add logic for validating and inserting tag data into the database
-            // For example, iterate through results and call DB insert for each valid tag.
-            // Handle potential errors, duplicates, etc.
+            console.log(`[API_INFO] /api/tags POST CSV: CSV parsing finished. ${results.length} records found.`);
+            // TODO: Add logic for validating and inserting tag data into the database.
             resolve();
           })
-          .on('error', (error) => reject(error));
+          .on('error', (parseError) => {
+            console.error('[API_ERROR] /api/tags POST CSV: Error during CSV parsing:', parseError);
+            reject(parseError);
+          });
       });
+
+      if (results.length === 0) {
+        console.warn('[API_WARN] /api/tags POST CSV: CSV file is empty or could not be parsed into records.');
+        return NextResponse.json({ message: 'CSV file is empty or yielded no records.' }, { status: 400 });
+      }
 
       return NextResponse.json({ message: `Tags CSV uploaded and parsed successfully. ${results.length} records found. (Data not saved to DB yet)` }, { status: 200 });
 
     } catch (error: any) {
-      console.error('Error handling tag CSV upload:', error);
-      if (error instanceof multer.MulterError) {
-        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
-      }
+      console.error('[API_ERROR] /api/tags POST CSV: Error handling tag CSV upload (outer try-catch):', error);
       return NextResponse.json({ error: 'Failed to handle tag CSV upload.', details: error.message }, { status: 500 });
     }
 
   } else if (contentType && contentType.includes('application/json')) {
-    // JSON Payload for single tag creation
+    console.log('[API_INFO] /api/tags POST: Received application/json request.');
     try {
       const tagData = await request.json() as Tag;
 
@@ -127,13 +116,14 @@ export async function POST(request: Request) {
       return NextResponse.json(newTagRows[0], { status: 201 });
 
     } catch (error: any) {
-      console.error('Error creating tag (JSON):', error);
+      console.error('[API_ERROR] /api/tags POST JSON: Error creating tag:', error);
       if (error.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'Tag with this ID or Tag Number already exists.' }, { status: 409 });
       }
       return NextResponse.json({ error: 'Failed to create tag (JSON)', details: error.message }, { status: 500 });
     }
   } else {
+    console.warn(`[API_WARN] /api/tags POST: Unsupported Content-Type: ${contentType}`);
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }

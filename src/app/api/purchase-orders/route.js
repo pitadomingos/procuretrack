@@ -1,65 +1,26 @@
 
-
 import { pool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
-import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-const runMiddleware = (req, res, fn) => {
- return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
- });
-};
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
-  // const siteId = searchParams.get('siteId'); // Overall PO Site ID is removed
   const approverId = searchParams.get('approverId');
-  const creatorUserId = searchParams.get('creatorUserId'); // For "Requestor" filter
+  const creatorUserId = searchParams.get('creatorUserId'); 
 
   let query = `
     SELECT
-        po.id,
-        po.poNumber,
-        po.creationDate,
-        po.status,
-        po.subTotal,
-        po.vatAmount,
-        po.grandTotal,
-        po.currency,
-        po.pricesIncludeVat,
-        po.notes,
-        po.requestedByName, 
-        po.creatorUserId,   
-        po.approverId,
-        po.supplierId,
-        s.supplierName,
-        app.name AS approverName,
-        u.name AS creatorName 
-        -- po.siteId -- Removed Overall PO Site ID
+        po.id, po.poNumber, po.creationDate, po.status, po.subTotal, po.vatAmount,
+        po.grandTotal, po.currency, po.pricesIncludeVat, po.notes, po.requestedByName, 
+        po.creatorUserId, po.approverId, po.supplierId,
+        s.supplierName, app.name AS approverName, u.name AS creatorName 
     FROM PurchaseOrder po
     LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
     LEFT JOIN Approver app ON po.approverId = app.id
     LEFT JOIN User u ON po.creatorUserId = u.id
-    -- LEFT JOIN Site si ON po.siteId = si.id -- Removed join for overall PO Site
     WHERE 1=1
   `;
   const queryParams = [];
@@ -72,10 +33,6 @@ export async function GET(request) {
     query += ' AND YEAR(po.creationDate) = ?';
     queryParams.push(parseInt(year, 10));
   }
-  // if (siteId && siteId !== 'all') { // Filter for overall PO siteId removed
-  //   query += ' AND po.siteId = ?'; 
-  //   queryParams.push(parseInt(siteId, 10));
-  // }
   if (approverId && approverId !== 'all') {
     query += ' AND po.approverId = ?';
     queryParams.push(approverId);
@@ -91,7 +48,7 @@ export async function GET(request) {
     const [rows] = await pool.execute(query, queryParams);
     return NextResponse.json(rows);
   } catch (error) {
-    console.error('Error fetching purchase orders:', error);
+    console.error('[API_ERROR] /api/purchase-orders GET: Error fetching purchase orders:', error);
     return NextResponse.json({ error: 'Failed to fetch purchase orders', details: error.message }, { status: 500 });
   }
 }
@@ -100,25 +57,14 @@ export async function POST(request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('application/json')) {
+    console.log('[API_INFO] /api/purchase-orders POST: Received application/json request.');
     let connection;
     try {
       const poData = await request.json();
       const {
-        poNumber,
-        creationDate,
-        creatorUserId, 
-        requestedByName, 
-        supplierId,    
-        approverId,    
-        status,
-        subTotal,
-        vatAmount,
-        grandTotal,
-        currency,
-        pricesIncludeVat,
-        notes,
-        items,
-        // siteId, // Removed Overall PO Site ID
+        poNumber, creationDate, creatorUserId, requestedByName, supplierId,    
+        approverId, status, subTotal, vatAmount, grandTotal, currency,
+        pricesIncludeVat, notes, items,
       } = poData;
 
       connection = await pool.getConnection();
@@ -128,8 +74,8 @@ export async function POST(request) {
 
       const [poResult] = await connection.execute(
         `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // Removed siteId from query
-        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, /* siteId || null, */ status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes] // Removed siteId from params
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes]
       );
 
       const newPoId = poResult.insertId;
@@ -151,7 +97,7 @@ export async function POST(request) {
       if (connection) {
         await connection.rollback();
       }
-      console.error('Error creating purchase order from JSON:', dbError);
+      console.error('[API_ERROR] /api/purchase-orders POST JSON: Error creating purchase order:', dbError);
       return NextResponse.json({ error: 'Failed to create purchase order due to a server error.', details: dbError.message }, { status: 500 });
     } finally {
       if (connection) {
@@ -159,34 +105,62 @@ export async function POST(request) {
       }
     }
   } else if (contentType && contentType.includes('multipart/form-data')) {
-    const res = new NextResponse();
+    console.log('[API_INFO] /api/purchase-orders POST: Received multipart/form-data request for CSV upload.');
     try {
-      await runMiddleware(request, res, upload.single('file'));
-      const file = request.file;
-      if (!file) {
-        return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+      const formData = await request.formData();
+      const file = formData.get('file');
+      
+      if (!file || typeof file === 'string') { // Check if file is a File object
+        console.error('[API_ERROR] /api/purchase-orders POST CSV: No file uploaded or file is not a File object.');
+        return NextResponse.json({ error: 'No file uploaded or invalid file type' }, { status: 400 });
       }
+      console.log(`[API_INFO] /api/purchase-orders POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results = [];
-      const stream = Readable.from(file.buffer);
+      const stream = Readable.from(fileBuffer);
+      let firstRecordLogged = false;
+
+      console.log('[API_INFO] /api/purchase-orders POST CSV: Starting CSV parsing...');
       await new Promise((resolve, reject) => {
         stream
-          .pipe(csv())
-          .on('data', (data) => results.push(data))
+          .pipe(csv({
+            mapHeaders: ({ header }) => header.trim() // Trim headers
+          }))
+          .on('headers', (headers) => {
+            console.log('[API_INFO] /api/purchase-orders POST CSV: Detected CSV Headers:', headers);
+          })
+          .on('data', (data) => {
+            if (!firstRecordLogged) {
+              console.log('[API_DEBUG] /api/purchase-orders POST CSV: First parsed data record from CSV:', data);
+              firstRecordLogged = true;
+            }
+            results.push(data);
+          })
           .on('end', () => {
-            console.log('Parsed CSV data for purchase orders:', results);
+            console.log(`[API_INFO] /api/purchase-orders POST CSV: CSV parsing finished. ${results.length} records found.`);
+            // TODO: Add logic for validating and inserting PO header data from CSV.
+            // This typically involves creating POs and then potentially linking to PO items if another CSV is for items.
             resolve();
           })
-          .on('error', reject);
+          .on('error', (parseError) => {
+            console.error('[API_ERROR] /api/purchase-orders POST CSV: Error during CSV parsing:', parseError);
+            reject(parseError);
+          });
       });
+
+      if (results.length === 0) {
+        console.warn('[API_WARN] /api/purchase-orders POST CSV: CSV file is empty or could not be parsed into records.');
+        return NextResponse.json({ message: 'Purchase Order CSV file is empty or yielded no records.' }, { status: 400 });
+      }
+
       return NextResponse.json({ message: `Purchase order CSV uploaded and parsed successfully. ${results.length} POs found. (Data not saved to DB yet)`, data: results });
     } catch (error) {
-      console.error('Error handling purchase order file upload:', error);
-      if (error instanceof multer.MulterError) {
-        return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
-      }
-      return NextResponse.json({ error: 'Failed to handle purchase order file upload' }, { status: 500 });
+      console.error('[API_ERROR] /api/purchase-orders POST CSV: Error handling purchase order file upload:', error);
+      return NextResponse.json({ error: 'Failed to handle purchase order file upload', details: error.message }, { status: 500 });
     }
   } else {
+    console.warn(`[API_WARN] /api/purchase-orders POST: Unsupported Content-Type: ${contentType}`);
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }

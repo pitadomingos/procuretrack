@@ -1,7 +1,6 @@
 
 import { NextResponse } from 'next/server';
 import type { QuotePayload, Approver } from '@/types';
-import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names
@@ -9,57 +8,44 @@ import { mockApproversData } from '@/lib/mock-data'; // For fetching approver na
 // Mock database for quotes
 const MOCK_QUOTES_DB: QuotePayload[] = [];
 
-// Configure multer for file uploads (memory storage)
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// Helper to run multer middleware
-const runMiddleware = (req: any, res: any, fn: any) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
-
-// Ensure Next.js doesn't parse the body for file uploads
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('multipart/form-data')) {
-    // CSV Upload for Quote Headers
-    // @ts-ignore
-    const req = request as Request & { file?: any };
-    const res = new NextResponse(); // Dummy response for middleware
-
+    console.log('[API_INFO] /api/quotes POST: Received multipart/form-data request for CSV upload.');
     try {
-      await runMiddleware(req, res, upload.single('file'));
+      const formData = await request.formData();
+      const file = formData.get('file') as File | null;
 
-      // @ts-ignore
-      if (!req.file) {
+      if (!file) {
+        console.error('[API_ERROR] /api/quotes POST CSV: No file found in formData.');
         return NextResponse.json({ error: 'No file uploaded for quotes' }, { status: 400 });
       }
+      console.log(`[API_INFO] /api/quotes POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
       
-      // @ts-ignore
-      const fileBuffer = req.file.buffer;
+      const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results: any[] = [];
       const stream = Readable.from(fileBuffer);
+      let firstRecordLogged = false;
 
+      console.log('[API_INFO] /api/quotes POST CSV: Starting CSV parsing...');
       await new Promise<void>((resolve, reject) => {
         stream
-          .pipe(csv())
-          .on('data', (data) => results.push(data))
+          .pipe(csv({
+            mapHeaders: ({ header }) => header.trim() // Trim headers
+          }))
+          .on('headers', (headers) => {
+            console.log('[API_INFO] /api/quotes POST CSV: Detected CSV Headers:', headers);
+          })
+          .on('data', (data) => {
+            if (!firstRecordLogged) {
+              console.log('[API_DEBUG] /api/quotes POST CSV: First parsed data record from CSV:', data);
+              firstRecordLogged = true;
+            }
+            results.push(data);
+          })
           .on('end', () => {
-            console.log('Parsed Quote Header CSV data:', results);
+            console.log(`[API_INFO] /api/quotes POST CSV: CSV parsing finished. ${results.length} records found.`);
             results.forEach(quoteHeader => {
                 const newQuoteId = `MOCK-QID-CSV-${Date.now()}-${Math.random().toString(36).substring(7)}`;
                 MOCK_QUOTES_DB.push({
@@ -80,17 +66,26 @@ export async function POST(request: Request) {
             });
             resolve();
           })
-          .on('error', (error) => reject(error));
+          .on('error', (parseError) => {
+            console.error('[API_ERROR] /api/quotes POST CSV: Error during CSV parsing:', parseError);
+            reject(parseError);
+          });
       });
+
+      if (results.length === 0) {
+        console.warn('[API_WARN] /api/quotes POST CSV: CSV file is empty or could not be parsed into records.');
+        return NextResponse.json({ message: 'CSV file is empty or yielded no records for quotes.' }, { status: 400 });
+      }
+
       return NextResponse.json({ message: `Quote headers CSV uploaded and parsed. ${results.length} headers processed. (Data not fully saved to DB yet, items need manual entry)` }, { status: 200 });
 
     } catch (error: any) {
-      console.error('Error handling quote CSV upload:', error);
+      console.error('[API_ERROR] /api/quotes POST CSV: Error handling quote CSV upload (outer try-catch):', error);
       return NextResponse.json({ error: 'Failed to handle quote CSV upload.', details: error.message }, { status: 500 });
     }
 
   } else if (contentType && contentType.includes('application/json')) {
-    // JSON Payload for single quote creation (from form)
+    console.log('[API_INFO] /api/quotes POST: Received application/json request.');
     try {
       const quoteData = await request.json() as QuotePayload;
       const newQuoteId = `MOCK-QID-${Date.now()}`;
@@ -103,10 +98,11 @@ export async function POST(request: Request) {
       console.log('Mocked saving quote (JSON):', newQuote);
       return NextResponse.json({ message: 'Quote saved successfully (simulated)', quoteId: newQuoteId }, { status: 201 });
     } catch (error: any) {
-      console.error('Error creating quote (JSON):', error);
+      console.error('[API_ERROR] /api/quotes POST JSON: Error creating quote:', error);
       return NextResponse.json({ error: 'Failed to create quote.', details: error.message }, { status: 500 });
     }
   } else {
+    console.warn(`[API_WARN] /api/quotes POST: Unsupported Content-Type: ${contentType}`);
     return NextResponse.json({ error: 'Unsupported Content-Type for Quotes POST' }, { status: 415 });
   }
 }
