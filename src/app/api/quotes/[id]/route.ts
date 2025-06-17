@@ -21,41 +21,44 @@ export async function GET(
   ensureMockDb();
   const { id } = params;
   try {
-    // Simulate finding the quote by ID from the MOCK_QUOTES_DB
-    // For now, let's assume the ID is the one just "created" from the POST mock.
-    // In a real scenario, you'd fetch from the database.
-    // For this mock, we'll find it in the (potentially empty) MOCK_QUOTES_DB_REFERENCE
-    // or construct a generic one if not found, which is what the previous code did.
-    // Let's try to make it slightly more consistent with the POST mock.
-    
-    const quoteFromPostMock = MOCK_QUOTES_DB_REFERENCE.find(q => q.id === id); // This array is likely empty.
+    const quoteFromMockDB = MOCK_QUOTES_DB_REFERENCE.find(q => q.id === id);
 
     let quoteToReturn: QuotePayload;
 
-    if (quoteFromPostMock) {
-      quoteToReturn = { ...quoteFromPostMock };
+    if (quoteFromMockDB) {
+      quoteToReturn = { ...quoteFromMockDB };
     } else {
-      // Fallback to a generic MOCK_CREATED_QUOTE for preview demonstration if not found in memory
+      // Fallback for previewing a "newly created" mock quote
+      // Construct a default quote structure with calculated totals
+      const defaultItems = [
+        { id: 'item-prev-1', description: 'Sample Service A', quantity: 10, unitPrice: 150.75, partNumber: 'SVC-A', customerRef: 'REF001' },
+        { id: 'item-prev-2', description: 'Sample Product B', quantity: 2, unitPrice: 1200.50, partNumber: 'PROD-B', customerRef: 'REF002' },
+      ];
+      const currency = 'MZN';
+      let calculatedSubTotal = 0;
+      defaultItems.forEach(item => {
+        calculatedSubTotal += (item.quantity || 0) * (item.unitPrice || 0);
+      });
+      const calculatedVatAmount = currency === 'MZN' ? calculatedSubTotal * 0.16 : 0;
+      const calculatedGrandTotal = calculatedSubTotal + calculatedVatAmount;
+
       quoteToReturn = {
           id: id, 
-          quoteNumber: `Q-PREVIEW-${id.slice(-4)}`,
+          quoteNumber: `Q-PREVIEW-${id.slice(-5)}`,
           quoteDate: new Date().toISOString(),
-          clientId: 'client-001', // Default mock client
-          clientName: 'Vale Mozambique',
-          clientEmail: 'procurement@vale.co.mz',
-          creatorEmail: 'creator@jachris.com',
-          subTotal: 1000,
-          vatAmount: 160,
-          grandTotal: 1160,
-          currency: 'MZN',
-          termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
-          notes: 'This is a sample quote for preview purposes.',
-          items: [
-              { id: 'item-1', description: 'Consulting Services - Phase 1', quantity: 10, unitPrice: 100 },
-              { id: 'item-2', description: 'Custom Software Module', quantity: 1, unitPrice: 0 },
-          ],
-          status: 'Pending Approval', // Default status for preview
-          approverId: mockApproversData[0]?.id || null, // Assign first mock approver for testing
+          clientId: 'client-preview-001', 
+          clientName: 'Preview Client Inc.',
+          clientEmail: 'preview@example.com',
+          creatorEmail: 'creator@jachris.com', // Mock creator
+          subTotal: parseFloat(calculatedSubTotal.toFixed(2)),
+          vatAmount: parseFloat(calculatedVatAmount.toFixed(2)),
+          grandTotal: parseFloat(calculatedGrandTotal.toFixed(2)),
+          currency: currency,
+          termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days. This is a preview.',
+          notes: 'This quotation is a preview generated for a newly created mock entry.',
+          items: defaultItems,
+          status: 'Draft', // Default status for this preview
+          approverId: mockApproversData[0]?.id || null, 
       };
     }
 
@@ -72,3 +75,4 @@ export async function GET(
     return NextResponse.json({ error: `Failed to fetch quote with ID ${id}.`, details: error.message }, { status: 500 });
   }
 }
+
