@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getAllMockQuotes, mockApproversData, mockClients } from '@/lib/mock-data'; // Use in-memory mock
+import { getAllMockQuotes, mockApproversData, mockClients } from '@/lib/mock-data';
 import type { QuotePayload } from '@/types';
 
 interface QuoteApprovalQueueItem {
@@ -14,7 +14,7 @@ interface QuoteApprovalQueueItem {
   status: string;
 }
 
-export async function GET(request: Request) { // Stays async for consistency, though mock is sync
+export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const approverEmail = searchParams.get('approverEmail');
 
@@ -28,7 +28,7 @@ export async function GET(request: Request) { // Stays async for consistency, th
       return NextResponse.json({ error: `No active approver found with email ${approverEmail}` }, { status: 404 });
     }
 
-    const allQuotes = getAllMockQuotes(); // Sync call
+    const allQuotes = getAllMockQuotes();
     const pendingQuotes = allQuotes.filter(
       quote => quote.approverId === approver.id && quote.status === 'Pending Approval'
     );

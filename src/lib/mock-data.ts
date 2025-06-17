@@ -1,8 +1,6 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord, QuoteItem } from '@/types';
 import { Archive, Loader, FolderOpen, Users as UsersIcon, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon, FileQuestion } from 'lucide-react';
-// Removed: import fs from 'fs/promises';
-// Removed: import path from 'path';
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -95,7 +93,7 @@ export const months: FilterOption[] = [
 ];
 
 export const currentYear = new Date().getFullYear();
-export const years: FilterOption[] = Array.from({ length: 5 }, (_, i) => ({
+export const years: FilterOption[] = Array.from({ length: 10 }, (_, i) => ({
   value: (currentYear - i).toString(),
   label: (currentYear - i).toString(),
 }));
@@ -218,6 +216,7 @@ export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
 ];
 
+
 // In-memory store for Quotes
 const INITIAL_MOCK_QUOTES: QuotePayload[] = [
   {
@@ -254,53 +253,84 @@ const INITIAL_MOCK_QUOTES: QuotePayload[] = [
   },
 ];
 
-// Initialize MOCK_QUOTES_DB with a copy of the initial seed data
-// This allows mutations without affecting the original seed constant.
-export let MOCK_QUOTES_DB: QuotePayload[] = JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
+
+// --- Quote Mock DB with HMR Resilience (Development Only) ---
+declare global {
+  // eslint-disable-next-line no-var
+  var __MOCK_QUOTES_DB__: QuotePayload[] | undefined;
+}
+
+const getMockQuotesDBInstance = (): QuotePayload[] => {
+  if (typeof window !== 'undefined') {
+    // This module can be imported client-side for types/constants,
+    // but data operations should happen server-side via API calls.
+    // Returning a fresh copy or empty array on client prevents errors.
+    console.warn('[MockData] getMockQuotesDBInstance accessed on client-side. Using initial seed data.');
+    return JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    // In production, real data sources should be used.
+    // This mock DB should ideally not be relied upon.
+    console.warn('[MockData] getMockQuotesDBInstance called in production. Using initial seed data.');
+    return JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
+  } else {
+    // Development: Use global to survive HMR
+    if (!global.__MOCK_QUOTES_DB__) {
+      console.log('[MockData] Initializing global.__MOCK_QUOTES_DB__');
+      global.__MOCK_QUOTES_DB__ = JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
+    }
+    return global.__MOCK_QUOTES_DB__;
+  }
+};
+// --- End Quote Mock DB ---
+
 
 export function addMockQuote(quote: QuotePayload): QuotePayload {
-  const quoteId = quote.id || `MOCK-QID-MEM-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-  const quoteWithId = { ...quote, id: quoteId };
+  const db = getMockQuotesDBInstance();
+  // Ensure ID is present, generate if not (though form should provide it)
+  const quoteWithId = { ...quote, id: quote.id || `MOCK-QID-GEN-${Date.now()}` };
 
-  console.log(`[MockData][addMockQuote] Current MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}. IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
-  const existingIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quoteWithId.id);
-
+  const existingIndex = db.findIndex(q => q.id === quoteWithId.id);
   if (existingIndex !== -1) {
     console.log(`[MockData][addMockQuote] Updating existing quote. ID: ${quoteWithId.id}`);
-    MOCK_QUOTES_DB[existingIndex] = quoteWithId;
+    db[existingIndex] = quoteWithId;
   } else {
-    console.log(`[MockData][addMockQuote] Adding new quote. ID: ${quoteWithId.id}`);
-    MOCK_QUOTES_DB.push(quoteWithId);
+    console.log(`[MockData][addMockQuote] Adding new quote. ID: ${quoteWithId.id}. DB size before: ${db.length}`);
+    db.push(quoteWithId);
   }
-  console.log(`[MockData][addMockQuote] New MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}. Current IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
+  console.log(`[MockData][addMockQuote] DB size after: ${db.length}. Current IDs: [${db.map(q=>q.id).join(', ')}]`);
   return quoteWithId;
 }
 
 export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>): QuotePayload | null {
-  const quoteIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quoteId);
+  const db = getMockQuotesDBInstance();
+  const quoteIndex = db.findIndex(q => q.id === quoteId);
   if (quoteIndex !== -1) {
-    MOCK_QUOTES_DB[quoteIndex] = { ...MOCK_QUOTES_DB[quoteIndex], ...updates };
-    console.log(`[MockData][updateMockQuote] Successfully updated quote ID: ${quoteId}. New Status: ${MOCK_QUOTES_DB[quoteIndex].status}`);
-    return MOCK_QUOTES_DB[quoteIndex];
+    db[quoteIndex] = { ...db[quoteIndex], ...updates };
+    console.log(`[MockData][updateMockQuote] Successfully updated quote ID: ${quoteId}. New Status: ${db[quoteIndex].status}`);
+    return db[quoteIndex];
   }
   console.warn(`[MockData][updateMockQuote] Quote ID: ${quoteId} not found for update.`);
   return null;
 }
 
 export function getAllMockQuotes(): QuotePayload[] {
-    console.log(`[MockData][getAllMockQuotes] Reading all quotes. Current size: ${MOCK_QUOTES_DB.length}`);
-    return MOCK_QUOTES_DB;
+  const db = getMockQuotesDBInstance();
+  console.log(`[MockData][getAllMockQuotes] Reading all quotes. Current size: ${db.length}`);
+  return [...db]; // Return a copy
 }
 
 export function getMockQuoteById(quoteId: string): QuotePayload | null {
-    console.log(`[MockData][getMockQuoteById] Attempting to find quote ID: ${quoteId}. Current DB size: ${MOCK_QUOTES_DB.length}. IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
-    const quote = MOCK_QUOTES_DB.find(q => q.id === quoteId) || null;
-    if (quote) {
-        console.log(`[MockData][getMockQuoteById] Found quote ID: ${quoteId}. Number: ${quote.quoteNumber}`);
-    } else {
-        console.warn(`[MockData][getMockQuoteById] Quote ID: ${quoteId} not found in MOCK_QUOTES_DB.`);
-    }
-    return quote;
+  const db = getMockQuotesDBInstance();
+  console.log(`[MockData][getMockQuoteById] Attempting to find quote ID: ${quoteId}. Current DB size: ${db.length}. IDs: [${db.map(q=>q.id).join(', ')}]`);
+  const quote = db.find(q => q.id === quoteId);
+  if (quote) {
+    console.log(`[MockData][getMockQuoteById] Found quote ID: ${quoteId}. Number: ${quote.quoteNumber}`);
+    return { ...quote }; // Return a copy
+  }
+  console.warn(`[MockData][getMockQuoteById] Quote ID: ${quoteId} not found in MOCK_QUOTES_DB.`);
+  return null;
 }
 
 

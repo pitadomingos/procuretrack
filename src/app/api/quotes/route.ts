@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { QuotePayload } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import { mockApproversData, addMockQuote, getAllMockQuotes } from '@/lib/mock-data'; // Using in-memory mock
+import { mockApproversData, addMockQuote, getAllMockQuotes } from '@/lib/mock-data';
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
             }
             results.push(data);
           })
-          .on('end', () => { // Removed async here as addMockQuote is synchronous
+          .on('end', () => {
             console.log(`[API_INFO] /api/quotes POST CSV: CSV parsing finished. ${results.length} records found.`);
             for (const quoteHeader of results) {
                 const newQuote: QuotePayload = {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
                     approverId: quoteHeader['ApproverID'] || null,
                     creatorEmail: quoteHeader['CreatorEmail'] || 'csv_import@jachris.com',
                 };
-                addMockQuote(newQuote); // Use synchronous version
+                addMockQuote(newQuote);
             }
             resolve();
           })
@@ -88,7 +88,13 @@ export async function POST(request: Request) {
       const quoteDataFromForm = await request.json() as QuotePayload;
       console.log('[API_INFO] /api/quotes POST JSON: Received quote data from form:', JSON.stringify(quoteDataFromForm));
       
-      const newQuote = addMockQuote(quoteDataFromForm); // Use synchronous version
+      // ID should be provided by the client form now
+      if (!quoteDataFromForm.id) {
+        console.error('[API_ERROR] /api/quotes POST JSON: Quote ID missing in payload from form.');
+        return NextResponse.json({ error: 'Quote ID is required from the client.' }, { status: 400 });
+      }
+      
+      const newQuote = addMockQuote(quoteDataFromForm); 
       console.log(`[API_INFO] /api/quotes POST JSON: Mocked saving quote. ID: ${newQuote.id}, Number: ${newQuote.quoteNumber}.`);
       return NextResponse.json({ message: 'Quote saved successfully (simulated)', quoteId: newQuote.id }, { status: 201 });
     } catch (error: any) {
@@ -101,12 +107,12 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) { // Stays async due to potential future DB calls, but mock is sync
-  const { searchParams } = new URL(request.url);
+export async function GET(request: Request) { 
+  const { searchParams } } from new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
 
-  let allQuotes = getAllMockQuotes(); // Use synchronous version
+  let allQuotes = getAllMockQuotes(); 
 
   let filteredQuotes = allQuotes.map(quote => {
     let approverName;

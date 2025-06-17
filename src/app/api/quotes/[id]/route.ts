@@ -1,9 +1,9 @@
 
 import { NextResponse } from 'next/server';
 import type { QuotePayload } from '@/types';
-import { getMockQuoteById, mockApproversData } from '@/lib/mock-data'; // Use in-memory mock
+import { getMockQuoteById, mockApproversData, updateMockQuote } from '@/lib/mock-data';
 
-export async function GET( // Stays async for consistency, though mock is sync
+export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -11,12 +11,12 @@ export async function GET( // Stays async for consistency, though mock is sync
   console.log(`[API_INFO] /api/quotes/${quoteId} GET: Received request for quote ID: ${quoteId}`);
 
   try {
-    const quoteFromMockDB = getMockQuoteById(quoteId); // Use synchronous version
+    const quoteFromMockDB = getMockQuoteById(quoteId);
 
     if (quoteFromMockDB) {
       console.log(`[API_INFO] /api/quotes/${quoteId} GET: Found quote in MOCK_QUOTES_DB: ${quoteFromMockDB.quoteNumber}`);
       const quoteToReturn = { ...quoteFromMockDB };
-      if (quoteToReturn.approverId && !quoteToReturn.approverName) { 
+      if (quoteToReturn.approverId && !quoteToReturn.approverName) {
           const approver = mockApproversData.find(appr => appr.id === quoteToReturn.approverId);
           quoteToReturn.approverName = approver?.name;
       }
@@ -31,11 +31,25 @@ export async function GET( // Stays async for consistency, though mock is sync
   }
 }
 
-// PUT and DELETE methods for single quote (if needed for form editing persistence in mock)
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  console.warn(`[API_WARN][PUT /api/quotes/${params.id}] PUT method not fully implemented for in-memory mock DB yet.`);
-  return NextResponse.json({ error: 'PUT method for single quote not fully implemented for in-memory mock DB yet.' }, { status: 501 });
+  const { id: quoteId } = params;
+  console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Received request to update quote.`);
+  try {
+    const quoteDataToUpdate = await request.json() as Partial<QuotePayload>;
+    const updatedQuote = updateMockQuote(quoteId, quoteDataToUpdate);
+
+    if (updatedQuote) {
+      console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Successfully updated quote.`);
+      return NextResponse.json(updatedQuote);
+    } else {
+      console.warn(`[API_WARN] /api/quotes/${quoteId} PUT: Quote not found for update.`);
+      return NextResponse.json({ error: `Quote with ID ${quoteId} not found for update.` }, { status: 404 });
+    }
+  } catch (error: any) {
+    console.error(`[API_ERROR] /api/quotes/${quoteId} PUT: Error updating quote:`, error);
+    return NextResponse.json({ error: `Failed to update quote with ID ${quoteId}.`, details: error.message }, { status: 500 });
+  }
 }

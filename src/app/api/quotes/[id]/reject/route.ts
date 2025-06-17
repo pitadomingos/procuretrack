@@ -1,8 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { updateMockQuote, getMockQuoteById } from '@/lib/mock-data'; // Use in-memory mock
+import { updateMockQuote, getMockQuoteById } from '@/lib/mock-data';
 
-export async function POST( // Stays async for consistency, though mock is sync
+export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -13,7 +13,7 @@ export async function POST( // Stays async for consistency, though mock is sync
   }
 
   try {
-    const quote = getMockQuoteById(id); // Sync call
+    const quote = getMockQuoteById(id);
 
     if (!quote) {
       return NextResponse.json({ error: `Quote with ID ${id} not found` }, { status: 404 });
@@ -23,7 +23,7 @@ export async function POST( // Stays async for consistency, though mock is sync
       return NextResponse.json({ error: `Quote cannot be rejected. Current status: ${quote.status}` }, { status: 400 });
     }
     
-    const updatedQuote = updateMockQuote(id, { // Sync call
+    const updatedQuote = updateMockQuote(id, {
       status: 'Rejected',
       approvalDate: null, 
     });
@@ -35,7 +35,8 @@ export async function POST( // Stays async for consistency, though mock is sync
         newStatus: 'Rejected',
       });
     } else {
-        return NextResponse.json({ error: `Failed to update quote with ID ${id}` }, { status: 500 });
+        // This case should ideally not be reached if getMockQuoteById found it initially
+        return NextResponse.json({ error: `Failed to update quote with ID ${id} after finding it.` }, { status: 500 });
     }
 
   } catch (error: any) {
