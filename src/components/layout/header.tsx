@@ -27,6 +27,8 @@ export function AppHeader() {
   const [avatarFallbackContent, setAvatarFallbackContent] = useState("U"); 
 
   useEffect(() => {
+    // This ensures the fallback content is set on the client after initial render,
+    // helping to avoid hydration mismatches if server pre-renders a different default.
     setAvatarFallbackContent("PD");
   }, []);
 
@@ -104,9 +106,9 @@ export function AppHeader() {
           <Image
             src="/headerlogo.png"
             alt="Company Logo"
-            width={40}
+            width={40} 
             height={40}
-            className="rounded-sm object-contain"
+            className="rounded-sm object-contain" 
             data-ai-hint="company brand logo"
           />
         </div>
