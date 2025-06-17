@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
-import type { QuotePayload, QuoteItem, Client } from '@/types';
+import type { QuotePayload, QuoteItem, Client, Approver } from '@/types'; // Added Approver
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 import { randomUUID } from 'crypto';
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       const importErrors: string[] = [];
 
       for (const record of results) {
-        const quoteId = record['ID'] || randomUUID();
+        const quoteId = record['ID'] || randomUUID(); // Ensure ID exists for CSV import
         const quoteData: Partial<QuotePayload> = {
           id: quoteId,
           quoteNumber: record['QuoteNumber'] || `CSV-Q-${quoteId.slice(0,8)}`,
@@ -67,6 +67,8 @@ export async function POST(request: Request) {
         }
         
         try {
+          // For CSV, usually items would be in a separate file or a more complex structure
+          // This example only inserts the quote header.
           await connection.execute(
             `INSERT INTO Quote (id, quoteNumber, quoteDate, clientId, creatorEmail, subTotal, vatAmount, grandTotal, currency, termsAndConditions, notes, status, approverId, createdAt, updatedAt)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -99,7 +101,7 @@ export async function POST(request: Request) {
     }
 
   } else if (contentType && contentType.includes('application/json')) {
-    let quoteDataFromForm: QuotePayload | null = null; // To store data for potential error logging
+    let quoteDataFromForm: QuotePayload | null = null;
     try {
       quoteDataFromForm = await request.json() as QuotePayload;
       console.log('[API_INFO] /api/quotes POST JSON: Received quote data:', JSON.stringify(quoteDataFromForm).substring(0, 500));
@@ -137,13 +139,14 @@ export async function POST(request: Request) {
           await connection.execute(
             `INSERT INTO QuoteItem (id, quoteId, partNumber, customerRef, description, quantity, unitPrice)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [item.id, quoteDataFromForm.id, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
+            [item.id || randomUUID(), quoteDataFromForm.id, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
           );
         }
       }
 
       await connection.commit();
       console.log(`[API_INFO] /api/quotes POST JSON: Quote ${quoteDataFromForm.quoteNumber} (ID: ${quoteDataFromForm.id}) saved successfully.`);
+      // Return the full quote object or at least the ID and number
       return NextResponse.json({ message: 'Quote saved successfully', quoteId: quoteDataFromForm.id, quoteNumber: quoteDataFromForm.quoteNumber }, { status: 201 });
 
     } catch (error: any) {
@@ -197,9 +200,26 @@ export async function GET(request: Request) {
   try {
     const [rows] = await pool.execute(query, queryParams);
     return NextResponse.json(rows);
-  } catch (error: any) {
-    console.error('[API_ERROR] /api/quotes GET:', error);
-    return NextResponse.json({ error: 'Failed to fetch quotes', details: error.message }, { status: 500 });
+  } catch (error: unknown) { // Catch as unknown for type safety
+    let errorMessage = 'Failed to fetch quotes due to an unknown server error.';
+    let errorDetails = '';
+    if (error instanceof Error) {
+      errorMessage = `Failed to fetch quotes: ${error.name}`;
+      errorDetails = error.message;
+      console.error(`[API_ERROR] /api/quotes GET: ${error.name}: ${error.message}`, error.stack);
+    } else if (typeof error === 'string') {
+      errorMessage = `Failed to fetch quotes: ${error}`;
+      errorDetails = error;
+      console.error(`[API_ERROR] /api/quotes GET (string error): ${error}`);
+    } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+      // For generic objects with a message property (like some DB errors)
+      errorMessage = `Failed to fetch quotes: Error`;
+      errorDetails = error.message;
+       console.error(`[API_ERROR] /api/quotes GET (object error): ${error.message}`);
+    } else {
+      console.error('[API_ERROR] /api/quotes GET (unknown error type):', error);
+    }
+    return NextResponse.json({ error: errorMessage, details: errorDetails }, { status: 500 });
   }
 }
     
