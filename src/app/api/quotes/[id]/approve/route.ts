@@ -1,8 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { updateMockQuote, MOCK_QUOTES_DB } from '@/lib/mock-data'; // Use shared MOCK_QUOTES_DB and update function
+import { updateMockQuote, getMockQuoteById } from '@/lib/mock-data'; // Use in-memory mock
 
-export async function POST(
+export async function POST( // Stays async for consistency, though mock is sync
   request: Request,
   { params }: { params: { id: string } }
 ) {
@@ -13,20 +13,17 @@ export async function POST(
   }
 
   try {
-    const quoteIndex = MOCK_QUOTES_DB.findIndex(q => q.id === id);
+    const quote = getMockQuoteById(id); // Sync call
 
-    if (quoteIndex === -1) {
+    if (!quote) {
       return NextResponse.json({ error: `Quote with ID ${id} not found` }, { status: 404 });
     }
-
-    const quote = MOCK_QUOTES_DB[quoteIndex];
 
     if (quote.status !== 'Pending Approval') {
       return NextResponse.json({ error: `Quote is not pending approval. Current status: ${quote.status}` }, { status: 400 });
     }
 
-    // Simulate approval
-    const updatedQuote = updateMockQuote(id, {
+    const updatedQuote = updateMockQuote(id, { // Sync call
       status: 'Approved',
       approvalDate: new Date().toISOString(),
     });
@@ -39,7 +36,6 @@ export async function POST(
         approvalDate: updatedQuote.approvalDate,
       });
     } else {
-      // Should not happen if findIndex found it, but as a safeguard
       return NextResponse.json({ error: `Failed to update quote with ID ${id}` }, { status: 500 });
     }
 

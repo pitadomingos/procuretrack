@@ -1,6 +1,8 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord, QuoteItem } from '@/types';
-import { Archive, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon, FileQuestion } from 'lucide-react';
+import { Archive, Loader, FolderOpen, Users as UsersIcon, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon, FileQuestion } from 'lucide-react';
+// Removed: import fs from 'fs/promises';
+// Removed: import path from 'path';
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -41,13 +43,12 @@ export const dashboardStats: StatCardItem[] = [
   },
   {
     title: 'Goods Received Notes',
-    value: 'N/A', // This will be a GRN specific stat
+    value: 'N/A', 
     icon: Truck,
     description: 'Overview of recent GRNs processed.',
   },
 ];
 
-// Mock data for Monthly PO Status Chart
 export const monthlyStatusData: ChartDataPoint[] = [
   { name: 'Jan', 'Approved': 240, 'Pending Approval': 50 },
   { name: 'Feb', 'Approved': 139, 'Pending Approval': 30 },
@@ -57,8 +58,7 @@ export const monthlyStatusData: ChartDataPoint[] = [
   { name: 'Jun', 'Approved': 380, 'Pending Approval': 70 },
 ];
 
-// Mock data for Site PO Value Status Chart
-export const allocationsData: ChartDataPoint[] = [ // This name 'allocationsData' is a bit misleading now, it's for site PO values
+export const allocationsData: ChartDataPoint[] = [ 
   { name: 'TMW', 'ApprovedValue': 180000, 'PendingApprovalValue': 60000 },
   { name: 'MEM', 'ApprovedValue': 130000, 'PendingApprovalValue': 40000 },
   { name: 'FMS', 'ApprovedValue': 230000, 'PendingApprovalValue': 80000 },
@@ -78,8 +78,8 @@ export const activityLogData: ActivityLogEntry[] = [
 
 export const managementTables = [
   { name: 'Suppliers', href: '/management/suppliers', icon: Package, count: 14, description: "Manage suppliers / vendors" },
-  { name: 'Approvers', href: '/management/approvers', icon: Users, count: 3, description: "Manage PO approvers" },
-  { name: 'Users', href: '/management/users', icon: Users, count: 5, description: "Manage system users and roles" },
+  { name: 'Approvers', href: '/management/approvers', icon: UsersIcon, count: 3, description: "Manage PO approvers" },
+  { name: 'Users', href: '/management/users', icon: UsersIcon, count: 5, description: "Manage system users and roles" },
   { name: 'Sites', href: '/management/sites', icon: Building, count: 5, description: "Manage company sites/locations" },
   { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations/departments (Legacy - Use Sites)" },
   { name: 'Categories', href: '/management/categories', icon: TagLucideIcon, count: 15, description: "Manage item and service categories" },
@@ -100,7 +100,6 @@ export const years: FilterOption[] = Array.from({ length: 5 }, (_, i) => ({
   label: (currentYear - i).toString(),
 }));
 
-
 export const mockSitesData: Site[] = [
   { id: 1, name: 'Tete Main Warehouse', location: 'Moatize', siteCode: 'TMW' },
   { id: 2, name: 'Tete Main Lubrication', location: 'Moatize', siteCode: 'TML' },
@@ -111,12 +110,10 @@ export const mockSitesData: Site[] = [
 
 export const monthsWithAll: FilterOption[] = [{ value: 'all', label: 'All Months' }, ...months];
 export const yearsWithAll: FilterOption[] = [{ value: 'all', label: 'All Years' }, ...years];
-
 export const sitesWithAll: FilterOption[] = [
     { value: 'all', label: 'All Sites' },
     ...mockSitesData.map(s => ({value: s.id.toString(), label: `${s.siteCode || s.name} (${s.name})`}))
 ];
-
 
 export const spendByVendorData: ChartDataPoint[] = [
   { name: 'ACP01', Spend: 125000 },
@@ -149,7 +146,6 @@ export const poCountByCategoryData: ChartDataPoint[] = mockCategoriesData.slice(
     Count: Math.floor(Math.random() * 100) + 20
 }));
 
-
 export const mockSuppliers: Supplier[] = [
   { supplierCode: 'ACP01', supplierName: 'AC PECAS ,LDA', emailAddress: 'okechukwuchigaemezu@gmail.com', salesPerson: 'Okechukwu', cellNumber: '258 87 588 8556', nuitNumber: '400 515 931', physicalAddress: 'Estrada Nacional 7, Bairro Chingodzi' },
   { supplierCode: 'ADV01', supplierName: 'ADVANCED CONSULTORIA E SERVICOS ,LDA', emailAddress: 'geral.advanced@outlook.pt', cellNumber: '258 84 045 9167', physicalAddress: 'Bairro Chingodzi , Tete' },
@@ -169,7 +165,6 @@ export const mockUsersData: User[] = [
   { id: 'user_004', name: 'Cobus de Klerk', email: 'cobus.klerk@jachris.com', role: 'Approver', siteAccess: ['all'], isActive: true },
   { id: 'user_005', name: 'Gil Lunguze', email: 'gil.lunguze@jachris.com', role: 'Creator', siteAccess: ['all'], isActive: true },
 ];
-
 
 export const mockClients: Client[] = [
   { id: 'client-001', name: 'Vale Mozambique', email: 'procurement@vale.co.mz', contactPerson: 'Mr. Silva', address: 'Vale Office Park, Moatize', city: 'Moatize', country: 'Mozambique' },
@@ -210,7 +205,6 @@ export const mockRequestorsFilter: FilterOption[] = [
                  .map(u => ({ value: u.id, label: u.name })),
 ].filter((value, index, self) => index === self.findIndex((t) => (t.value === value.value)));
 
-
 export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC001', name: 'Administration', code: 'ADM001', description: 'General administrative costs' },
     { id: 'ALLOC002', name: 'Operations - Site A', code: 'OPS-A01', description: 'Operational costs for Site A' },
@@ -222,64 +216,92 @@ export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC008', name: 'Project Alpha', code: 'PRJ-ALP' },
     { id: 'ALLOC009', name: 'Project Beta', code: 'PRJ-BET' },
     { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
-  ];
+];
 
-// Exportable MOCK_QUOTES_DB for shared access
-export let MOCK_QUOTES_DB: QuotePayload[] = [
+// In-memory store for Quotes
+const INITIAL_MOCK_QUOTES: QuotePayload[] = [
   {
-    id: 'Q-MOCK-PREV-001',
-    quoteNumber: 'Q-2024-PREV-001',
-    quoteDate: '2024-07-15T10:00:00Z',
+    id: 'Q-MOCK-SEED-001',
+    quoteNumber: 'Q-2024-SEED-001',
+    quoteDate: '2024-07-01T10:00:00Z',
     clientId: 'client-001',
-    clientName: 'Vale Mozambique',
-    subTotal: 150000,
-    vatAmount: 24000,
-    grandTotal: 174000,
+    clientName: 'Vale Mozambique (Seed)',
+    subTotal: 10000,
+    vatAmount: 1600,
+    grandTotal: 11600,
     currency: 'MZN',
     status: 'Pending Approval',
     approverId: 'approver_001',
-    items: [{id:'qi-prev-1', description:'Service A', quantity:1, unitPrice:150000, partNumber: 'SVC-A', customerRef: 'CR-VALE-001'}],
-    termsAndConditions: 'Standard Payment Terms: 30 days.',
-    notes: 'This is a sample quote pending approval.',
-    creatorEmail: 'creator@jachris.com',
+    items: [{id:'qi-seed-1', description:'Seed Service A', quantity:1, unitPrice:10000, partNumber: 'SEED-SVC-A', customerRef: 'VALE-REF-001'}],
+    creatorEmail: 'seed@jachris.com',
+    termsAndConditions: 'Seed terms',
+    notes: 'Seed notes',
   },
   {
-    id: 'Q-MOCK-PREV-002',
-    quoteNumber: 'Q-2024-PREV-002',
-    quoteDate: '2024-07-18T14:30:00Z',
+    id: 'Q-MOCK-SEED-002',
+    quoteNumber: 'Q-2024-SEED-002',
+    quoteDate: '2024-07-05T10:00:00Z',
     clientId: 'client-002',
-    clientName: 'Mota-Engil',
-    subTotal: 7500,
+    clientName: 'Mota-Engil (Seed)',
+    subTotal: 5000,
     vatAmount: 0,
-    grandTotal: 7500,
+    grandTotal: 5000,
     currency: 'USD',
-    status: 'Sent to Client',
-    items: [{id:'qi-prev-2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}],
-    termsAndConditions: 'Payment due upon receipt.',
-    notes: 'Urgent consulting services.',
-    creatorEmail: 'creator@jachris.com',
-  },
-  {
-    id: 'Q-MOCK-PREV-003',
-    quoteNumber: 'Q-2024-PREV-003',
-    quoteDate: '2024-07-20T10:00:00Z',
-    clientId: 'client-003',
-    clientName: 'WBHO',
-    subTotal: 250000,
-    vatAmount: 40000,
-    grandTotal: 290000,
-    currency: 'MZN',
-    status: 'Pending Approval',
-    approverId: 'approver_003',
-    items: [
-      {id:'qi-prev-3a', description:'Heavy Equipment Rental - Excavator', quantity:100, unitPrice:2000, partNumber: 'RENT-EXC-01', customerRef: 'REF-WBHO-EXC'},
-      {id:'qi-prev-3b', description:'Heavy Equipment Rental - Dumper', quantity:50, unitPrice:1000, partNumber: 'RENT-DMP-01', customerRef: 'REF-WBHO-DMP'},
-    ],
-    termsAndConditions: 'Net 60. Rental agreement applies.',
-    notes: 'Quote for equipment rental for Nacala project.',
-    creatorEmail: 'sales@jachris.com',
+    status: 'Draft',
+    items: [{id:'qi-seed-2', description:'Seed Service B', quantity:1, unitPrice:5000, partNumber: 'SEED-SVC-B', customerRef: 'MOTA-REF-002'}],
+    creatorEmail: 'seed@jachris.com',
+    termsAndConditions: 'Seed terms 2',
   },
 ];
+
+// Initialize MOCK_QUOTES_DB with a copy of the initial seed data
+// This allows mutations without affecting the original seed constant.
+export let MOCK_QUOTES_DB: QuotePayload[] = JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
+
+export function addMockQuote(quote: QuotePayload): QuotePayload {
+  const quoteId = quote.id || `MOCK-QID-MEM-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+  const quoteWithId = { ...quote, id: quoteId };
+
+  console.log(`[MockData][addMockQuote] Current MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}. IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
+  const existingIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quoteWithId.id);
+
+  if (existingIndex !== -1) {
+    console.log(`[MockData][addMockQuote] Updating existing quote. ID: ${quoteWithId.id}`);
+    MOCK_QUOTES_DB[existingIndex] = quoteWithId;
+  } else {
+    console.log(`[MockData][addMockQuote] Adding new quote. ID: ${quoteWithId.id}`);
+    MOCK_QUOTES_DB.push(quoteWithId);
+  }
+  console.log(`[MockData][addMockQuote] New MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}. Current IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
+  return quoteWithId;
+}
+
+export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>): QuotePayload | null {
+  const quoteIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quoteId);
+  if (quoteIndex !== -1) {
+    MOCK_QUOTES_DB[quoteIndex] = { ...MOCK_QUOTES_DB[quoteIndex], ...updates };
+    console.log(`[MockData][updateMockQuote] Successfully updated quote ID: ${quoteId}. New Status: ${MOCK_QUOTES_DB[quoteIndex].status}`);
+    return MOCK_QUOTES_DB[quoteIndex];
+  }
+  console.warn(`[MockData][updateMockQuote] Quote ID: ${quoteId} not found for update.`);
+  return null;
+}
+
+export function getAllMockQuotes(): QuotePayload[] {
+    console.log(`[MockData][getAllMockQuotes] Reading all quotes. Current size: ${MOCK_QUOTES_DB.length}`);
+    return MOCK_QUOTES_DB;
+}
+
+export function getMockQuoteById(quoteId: string): QuotePayload | null {
+    console.log(`[MockData][getMockQuoteById] Attempting to find quote ID: ${quoteId}. Current DB size: ${MOCK_QUOTES_DB.length}. IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
+    const quote = MOCK_QUOTES_DB.find(q => q.id === quoteId) || null;
+    if (quote) {
+        console.log(`[MockData][getMockQuoteById] Found quote ID: ${quoteId}. Number: ${quote.quoteNumber}`);
+    } else {
+        console.warn(`[MockData][getMockQuoteById] Quote ID: ${quoteId} not found in MOCK_QUOTES_DB.`);
+    }
+    return quote;
+}
 
 
 export const mockRequisitionsData: RequisitionPayload[] = [
@@ -334,34 +356,3 @@ export const mockFuelRecordsData: FuelRecord[] = [
   { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW' },
   { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'MEM' },
 ];
-
-// Function to update MOCK_QUOTES_DB (for use in API routes)
-export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>): QuotePayload | null {
-  const quoteIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quoteId);
-  if (quoteIndex !== -1) {
-    MOCK_QUOTES_DB[quoteIndex] = { ...MOCK_QUOTES_DB[quoteIndex], ...updates };
-    return MOCK_QUOTES_DB[quoteIndex];
-  }
-  return null;
-}
-
-// Function to add a new quote to MOCK_QUOTES_DB (for use in API routes)
-export function addMockQuote(quote: QuotePayload): QuotePayload {
-    if (!quote.id) {
-        console.warn("[MockData][addMockQuote] Critical error: Quote received without an ID from form/client.");
-        // Fallback ID generation, though this shouldn't be hit if form provides ID
-        quote.id = `MOCK-QID-CRITICAL-FALLBACK-${Date.now()}`;
-    }
-    const existingIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quote.id);
-    if (existingIndex !== -1) {
-        console.log(`[MockData][addMockQuote] Updating existing quote. ID: ${quote.id}. MOCK_QUOTES_DB current size: ${MOCK_QUOTES_DB.length}`);
-        MOCK_QUOTES_DB[existingIndex] = quote;
-    } else {
-        console.log(`[MockData][addMockQuote] Adding new quote. ID: ${quote.id}. MOCK_QUOTES_DB current size: ${MOCK_QUOTES_DB.length}`);
-        MOCK_QUOTES_DB.push(quote);
-        console.log(`[MockData][addMockQuote] Added. MOCK_QUOTES_DB new size: ${MOCK_QUOTES_DB.length}. Current IDs: [${MOCK_QUOTES_DB.map(q=>q.id).join(', ')}]`);
-    }
-    return quote;
-}
-
-    

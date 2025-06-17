@@ -1,9 +1,8 @@
 
 import { NextResponse } from 'next/server';
-import { MOCK_QUOTES_DB, mockApproversData, mockClients } from '@/lib/mock-data';
+import { getAllMockQuotes, mockApproversData, mockClients } from '@/lib/mock-data'; // Use in-memory mock
 import type { QuotePayload } from '@/types';
 
-// This interface would be similar to ApprovalQueueItem for POs, but for Quotes
 interface QuoteApprovalQueueItem {
   id: string;
   quoteNumber: string;
@@ -15,7 +14,7 @@ interface QuoteApprovalQueueItem {
   status: string;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: Request) { // Stays async for consistency, though mock is sync
   const { searchParams } = new URL(request.url);
   const approverEmail = searchParams.get('approverEmail');
 
@@ -29,14 +28,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: `No active approver found with email ${approverEmail}` }, { status: 404 });
     }
 
-    const pendingQuotes = MOCK_QUOTES_DB.filter(
+    const allQuotes = getAllMockQuotes(); // Sync call
+    const pendingQuotes = allQuotes.filter(
       quote => quote.approverId === approver.id && quote.status === 'Pending Approval'
     );
 
     const results: QuoteApprovalQueueItem[] = pendingQuotes.map(quote => {
       const client = mockClients.find(c => c.id === quote.clientId);
       return {
-        id: quote.id || `temp-id-${Math.random()}`, // Ensure ID for key
+        id: quote.id || `temp-id-${Math.random()}`, 
         quoteNumber: quote.quoteNumber,
         quoteDate: quote.quoteDate,
         clientName: client?.name || quote.clientName || 'N/A',

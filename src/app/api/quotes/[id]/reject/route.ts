@@ -1,37 +1,31 @@
 
 import { NextResponse } from 'next/server';
-import { updateMockQuote, MOCK_QUOTES_DB } from '@/lib/mock-data'; // Use shared MOCK_QUOTES_DB and update function
+import { updateMockQuote, getMockQuoteById } from '@/lib/mock-data'; // Use in-memory mock
 
-export async function POST(
+export async function POST( // Stays async for consistency, though mock is sync
   request: Request,
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
-  // const { reason } = await request.json(); // Optional: Get reason if needed later
 
   if (!id) {
     return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
   }
 
   try {
-    const quoteIndex = MOCK_QUOTES_DB.findIndex(q => q.id === id);
+    const quote = getMockQuoteById(id); // Sync call
 
-    if (quoteIndex === -1) {
+    if (!quote) {
       return NextResponse.json({ error: `Quote with ID ${id} not found` }, { status: 404 });
     }
-
-    const quote = MOCK_QUOTES_DB[quoteIndex];
 
     if (quote.status !== 'Pending Approval') {
       return NextResponse.json({ error: `Quote cannot be rejected. Current status: ${quote.status}` }, { status: 400 });
     }
     
-    // Simulate rejection
-    const updatedQuote = updateMockQuote(id, {
+    const updatedQuote = updateMockQuote(id, { // Sync call
       status: 'Rejected',
-      approvalDate: null, // Clear approval date if any
-      // rejectionReason: reason, // If you decide to store reason
-      // rejectionDate: new Date().toISOString(),
+      approvalDate: null, 
     });
 
     if (updatedQuote) {
@@ -43,7 +37,6 @@ export async function POST(
     } else {
         return NextResponse.json({ error: `Failed to update quote with ID ${id}` }, { status: 500 });
     }
-
 
   } catch (error: any) {
     console.error(`Error rejecting quote ${id} (mock):`, error);

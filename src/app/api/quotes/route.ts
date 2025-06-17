@@ -1,9 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import type { QuotePayload, Approver } from '@/types';
+import type { QuotePayload } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import { mockApproversData, MOCK_QUOTES_DB, addMockQuote, updateMockQuote } from '@/lib/mock-data';
+import { mockApproversData, addMockQuote, getAllMockQuotes } from '@/lib/mock-data'; // Using in-memory mock
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
@@ -41,9 +41,9 @@ export async function POST(request: Request) {
             }
             results.push(data);
           })
-          .on('end', () => {
+          .on('end', () => { // Removed async here as addMockQuote is synchronous
             console.log(`[API_INFO] /api/quotes POST CSV: CSV parsing finished. ${results.length} records found.`);
-            results.forEach(quoteHeader => {
+            for (const quoteHeader of results) {
                 const newQuote: QuotePayload = {
                     id: quoteHeader['ID'] || `MOCK-QID-CSV-${Date.now()}-${Math.random().toString(36).substring(7)}`,
                     quoteNumber: quoteHeader['QuoteNumber'] || `Q-CSV-${(quoteHeader['ID'] || Date.now()).toString().slice(-5)}`,
@@ -55,13 +55,13 @@ export async function POST(request: Request) {
                     subTotal: parseFloat(quoteHeader['SubTotal'] || 0),
                     vatAmount: parseFloat(quoteHeader['VATAmount'] || 0),
                     grandTotal: parseFloat(quoteHeader['GrandTotal'] || 0),
-                    items: [],
+                    items: [], 
                     status: (quoteHeader['Status'] || 'Draft') as QuotePayload['status'],
                     approverId: quoteHeader['ApproverID'] || null,
                     creatorEmail: quoteHeader['CreatorEmail'] || 'csv_import@jachris.com',
                 };
-                addMockQuote(newQuote);
-            });
+                addMockQuote(newQuote); // Use synchronous version
+            }
             resolve();
           })
           .on('error', (parseError) => {
@@ -86,9 +86,10 @@ export async function POST(request: Request) {
     console.log('[API_INFO] /api/quotes POST: Received application/json request.');
     try {
       const quoteDataFromForm = await request.json() as QuotePayload;
-      // addMockQuote handles ID generation if not present, but form should send it
-      const newQuote = addMockQuote(quoteDataFromForm);
-      console.log(`[API_INFO] /api/quotes POST JSON: Mocked saving quote. ID: ${newQuote.id}, Number: ${newQuote.quoteNumber}. MOCK_QUOTES_DB length: ${MOCK_QUOTES_DB.length}`);
+      console.log('[API_INFO] /api/quotes POST JSON: Received quote data from form:', JSON.stringify(quoteDataFromForm));
+      
+      const newQuote = addMockQuote(quoteDataFromForm); // Use synchronous version
+      console.log(`[API_INFO] /api/quotes POST JSON: Mocked saving quote. ID: ${newQuote.id}, Number: ${newQuote.quoteNumber}.`);
       return NextResponse.json({ message: 'Quote saved successfully (simulated)', quoteId: newQuote.id }, { status: 201 });
     } catch (error: any) {
       console.error('[API_ERROR] /api/quotes POST JSON: Error creating quote:', error);
@@ -100,12 +101,14 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET(request: Request) { // Stays async due to potential future DB calls, but mock is sync
   const { searchParams } = new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
 
-  let filteredQuotes = MOCK_QUOTES_DB.map(quote => {
+  let allQuotes = getAllMockQuotes(); // Use synchronous version
+
+  let filteredQuotes = allQuotes.map(quote => {
     let approverName;
     if (quote.approverId) {
       const approver = mockApproversData.find(appr => appr.id === quote.approverId);
@@ -128,7 +131,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    console.log(`[API_INFO] /api/quotes GET: Returning ${filteredQuotes.length} quotes. MOCK_QUOTES_DB size: ${MOCK_QUOTES_DB.length}`);
+    console.log(`[API_INFO] /api/quotes GET: Returning ${filteredQuotes.length} quotes.`);
     return NextResponse.json(filteredQuotes.sort((a, b) => new Date(b.quoteDate).getTime() - new Date(a.quoteDate).getTime()));
   } catch (error) {
     console.error('[API_ERROR] /api/quotes GET: Error fetching quotes (mock):', error);
