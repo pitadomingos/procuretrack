@@ -7,8 +7,10 @@ import { Readable } from 'stream';
 import { randomUUID } from 'crypto';
 
 export async function GET() {
+  console.log('[API_INFO] /api/clients GET: Received request to fetch clients.');
   try {
     const [rows] = await pool.execute('SELECT id, name, address, city, country, contactPerson, email, createdAt, updatedAt FROM Client ORDER BY name ASC');
+    console.log(`[API_INFO] /api/clients GET: Successfully fetched ${Array.isArray(rows) ? rows.length : 0} clients from DB.`);
     return NextResponse.json(rows);
   } catch (error: any) {
     console.error('[API_ERROR] /api/clients GET: Error fetching clients from DB:', error);
@@ -30,7 +32,7 @@ export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('multipart/form-data')) {
-    console.log('[API_INFO] /api/clients POST: Received multipart/form-data request.');
+    console.log('[API_INFO] /api/clients POST: Received multipart/form-data request for CSV upload.');
     try {
       const formData = await request.formData();
       const file = formData.get('file') as File | null;
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
           .pipe(csv({
             mapHeaders: ({ header, index }) => {
               const trimmedHeader = header.trim();
-              console.log(`[API_DEBUG] /api/clients POST CSV: Mapped header at index ${index}: '${header}' to '${trimmedHeader}'`);
+              console.log(`[API_DEBUG] /api/clients POST CSV: Mapped CSV header at index ${index}: '${header}' to '${trimmedHeader}'`);
               return trimmedHeader;
             }
           }))
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
           })
           .on('data', (data) => {
             if (!firstRecordLogged) {
-              console.log('[API_DEBUG] /api/clients POST CSV: First parsed data record:', data);
+              console.log('[API_DEBUG] /api/clients POST CSV: First parsed data record from CSV:', data);
               firstRecordLogged = true;
             }
             results.push(data);
@@ -92,13 +94,14 @@ export async function POST(request: Request) {
         console.log('[API_INFO] /api/clients POST CSV: Started database transaction.');
 
         for (const [index, record] of results.entries()) {
-          const clientId = record.ID || record.id || randomUUID(); 
-          const clientName = record.Name || record.name; // Case-insensitive common variations
+          // Consistent header access, case-insensitive for common variations
+          const clientId = record.ID || record.id || record.Id || randomUUID(); 
+          const clientName = record.Name || record.name;
           const clientAddress = record.Address || record.address || null;
           const clientCity = record.City || record.city || null;
           const clientCountry = record.Country || record.country || null;
-          const clientContactPerson = record['Contact Person'] || record.contactPerson || record.Contact || null; // Handles "Contact Person" and "contactPerson"
-          const clientEmail = record['Contact Email'] || record.contactEmail || record.Email || null; // Handles "Contact Email" and "contactEmail"
+          const clientContactPerson = record['Contact Person'] || record.contactPerson || record.Contact || null;
+          const clientEmail = record['Contact Email'] || record.contactEmail || record.Email || null;
 
           if (!clientName) {
             failedInserts++;
@@ -108,8 +111,9 @@ export async function POST(request: Request) {
             continue;
           }
 
+          console.log(`[API_DEBUG] /api/clients POST CSV: Processing record #${index + 1}: ID=${clientId}, Name=${clientName}, Address=${clientAddress}, City=${clientCity}, Country=${clientCountry}, ContactPerson=${clientContactPerson}, Email=${clientEmail}`);
+
           try {
-            console.log(`[API_DEBUG] /api/clients POST CSV: Attempting to insert/update client ID: ${clientId}, Name: ${clientName}`);
             const query = `
               INSERT INTO Client (id, name, address, city, country, contactPerson, email, createdAt, updatedAt)
               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -206,3 +210,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
+
+    
