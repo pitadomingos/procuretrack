@@ -1,9 +1,12 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
-import type { Tag } from '@/types';
+import type { Tag, Site, TagStatus } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import { randomUUID } from 'crypto';
+
+const tagStatuses: TagStatus[] = ['Active', 'Inactive', 'Under Maintenance', 'Sold', 'Decommissioned'];
 
 export async function GET() {
   try {
@@ -11,8 +14,8 @@ export async function GET() {
       SELECT 
         t.id, t.tagNumber, t.registration, t.make, t.model, 
         t.tankCapacity, t.year, t.chassisNo, t.type, t.siteId,
-        t.status, -- Added status
-        t.createdAt, t.updatedAt, -- Added timestamps
+        t.status, 
+        t.createdAt, t.updatedAt, 
         s.siteCode AS siteName 
       FROM Tag t
       LEFT JOIN Site s ON t.siteId = s.id
@@ -31,6 +34,7 @@ export async function POST(request: Request) {
 
   if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/tags POST: Received multipart/form-data request for CSV upload.');
+    let connection;
     try {
       const formData = await request.formData();
       const file = formData.get('file') as File | null;
@@ -50,10 +54,10 @@ export async function POST(request: Request) {
       await new Promise<void>((resolve, reject) => {
         stream
           .pipe(csv({
-            mapHeaders: ({ header }) => header.trim() // Trim headers
+            mapHeaders: ({ header }) => header.trim().toLowerCase() // Trim and lowercase headers for consistency
           }))
           .on('headers', (headers) => {
-            console.log('[API_INFO] /api/tags POST CSV: Detected CSV Headers:', headers);
+            console.log('[API_INFO] /api/tags POST CSV: Detected CSV Headers (lowercased):', headers);
           })
           .on('data', (data) => {
             if (!firstRecordLogged) {
@@ -64,7 +68,6 @@ export async function POST(request: Request) {
           })
           .on('end', () => {
             console.log(`[API_INFO] /api/tags POST CSV: CSV parsing finished. ${results.length} records found.`);
-            // TODO: Add logic for validating and inserting tag data (including status) into the database.
             resolve();
           })
           .on('error', (parseError) => {
@@ -78,11 +81,102 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'CSV file is empty or yielded no records.' }, { status: 400 });
       }
 
-      return NextResponse.json({ message: `Tags CSV uploaded and parsed successfully. ${results.length} records found. (Data not saved to DB yet)` }, { status: 200 });
+      connection = await pool.getConnection();
+      console.log('[API_INFO] /api/tags POST CSV: Database connection obtained for batch insert/update.');
+      await connection.beginTransaction();
+      console.log('[API_INFO] /api/tags POST CSV: Started database transaction.');
+
+      let successfulImports = 0;
+      let failedImports = 0;
+      const importErrors: string[] = [];
+
+      for (const [index, record] of results.entries()) {
+        // Consistent header access (all lowercase due to mapHeaders)
+        const tagId = record.id || record.tagid || randomUUID(); // Use provided ID or generate new one
+        const tagNumber = record.tagnumber || record['tag number'];
+
+        if (!tagNumber) {
+          failedImports++;
+          const errorMsg = `Skipped record #${index + 1} (ID: ${tagId}): Tag Number is required. Record data: ${JSON.stringify(record)}`;
+          console.warn(`[API_WARN] /api/tags POST CSV: ${errorMsg}`);
+          importErrors.push(errorMsg);
+          continue;
+        }
+
+        const registration = record.registration || null;
+        const make = record.make || null;
+        const model = record.model || null;
+        const tankCapacity = record.tankcapacity || record['tank capacity'] ? parseInt(record.tankcapacity || record['tank capacity'], 10) : null;
+        const year = record.year ? parseInt(record.year, 10) : null;
+        const chassisNo = record.chassisno || record['chassis no.'] || null;
+        const type = record.type || null;
+        const siteId = record.siteid || record['site id'] ? parseInt(record.siteid || record['site id'], 10) : null;
+        
+        let status = (record.status || 'Active') as TagStatus;
+        if (!tagStatuses.includes(status)) {
+            console.warn(`[API_WARN] /api/tags POST CSV: Invalid status "${status}" for Tag ID ${tagId}. Defaulting to 'Active'.`);
+            status = 'Active';
+        }
+
+        console.log(`[API_DEBUG] /api/tags POST CSV: Processing record #${index + 1}: ID=${tagId}, TagNumber=${tagNumber}, Status=${status}`);
+
+        try {
+          const query = `
+            INSERT INTO Tag (id, tagNumber, registration, make, model, tankCapacity, year, chassisNo, type, status, siteId, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE
+              tagNumber = VALUES(tagNumber), registration = VALUES(registration), make = VALUES(make), model = VALUES(model),
+              tankCapacity = VALUES(tankCapacity), year = VALUES(year), chassisNo = VALUES(chassisNo), type = VALUES(type),
+              status = VALUES(status), siteId = VALUES(siteId), updatedAt = NOW();
+          `;
+          await connection.execute(query, [
+            tagId, tagNumber, registration, make, model, 
+            isNaN(tankCapacity as any) ? null : tankCapacity, 
+            isNaN(year as any) ? null : year, 
+            chassisNo, type, status, 
+            isNaN(siteId as any) ? null : siteId
+          ]);
+          successfulImports++;
+        } catch (dbError: any) {
+          failedImports++;
+          const errorMsg = `Failed to process record #${index + 1} (ID ${tagId}, TagNumber: ${tagNumber}): ${dbError.message}. SQL Error Code: ${dbError.code || 'N/A'}.`;
+          console.error(`[API_ERROR] /api/tags POST CSV: Database error for record: ${errorMsg}`, dbError);
+          importErrors.push(errorMsg);
+        }
+      }
+
+      await connection.commit();
+      console.log('[API_INFO] /api/tags POST CSV: Database transaction committed.');
+      
+      let message = `${successfulImports} tag(s) processed successfully from CSV.`;
+      if (failedImports > 0) {
+        message += ` ${failedImports} tag(s) failed.`;
+      }
+      console.log(`[API_INFO] /api/tags POST CSV: Final processing result - ${message}`);
+      if (importErrors.length > 0) {
+        console.warn('[API_WARN] /api/tags POST CSV: Errors encountered during processing:', importErrors);
+      }
+
+      return NextResponse.json({ 
+        message, 
+        processed: successfulImports,
+        failed: failedImports,
+        errors: importErrors.length > 0 ? importErrors : undefined 
+      }, { status: importErrors.length > 0 && successfulImports === 0 ? 400 : 200 });
+
 
     } catch (error: any) {
-      console.error('[API_ERROR] /api/tags POST CSV: Error handling tag CSV upload (outer try-catch):', error);
+      if (connection) {
+        try { await connection.rollback(); console.log('[API_INFO] /api/tags POST CSV: Database transaction rolled back due to error.'); }
+        catch (rbError) { console.error('[API_ERROR] /api/tags POST CSV: Error during transaction rollback:', rbError); }
+      }
+      console.error('[API_ERROR] /api/tags POST CSV (outer try-catch):', error);
       return NextResponse.json({ error: 'Failed to handle tag CSV upload.', details: error.message }, { status: 500 });
+    } finally {
+      if (connection) {
+        try { connection.release(); console.log('[API_INFO] /api/tags POST CSV: Database connection released.'); }
+        catch (relError) { console.error('[API_ERROR] /api/tags POST CSV: Error releasing connection:', relError); }
+      }
     }
 
   } else if (contentType && contentType.includes('application/json')) {
@@ -94,6 +188,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Tag ID and Tag Number are required.' }, { status: 400 });
       }
       
+      let status = tagData.status || 'Active';
+      if (!tagStatuses.includes(status)) {
+          console.warn(`[API_WARN] /api/tags POST JSON: Invalid status "${status}" for Tag ID ${tagData.id}. Defaulting to 'Active'.`);
+          status = 'Active';
+      }
+
       const query = `
         INSERT INTO Tag (id, tagNumber, registration, make, model, tankCapacity, year, chassisNo, type, siteId, status, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -109,7 +209,7 @@ export async function POST(request: Request) {
         tagData.chassisNo || null,
         tagData.type || null,
         tagData.siteId ? Number(tagData.siteId) : null,
-        tagData.status || 'Active', // Default to 'Active' if not provided
+        status,
       ]);
 
       const [newTagRows]: any[] = await pool.execute('SELECT t.*, s.siteCode as siteName FROM Tag t LEFT JOIN Site s ON t.siteId = s.id WHERE t.id = ?', [tagData.id]);
@@ -130,3 +230,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
+
