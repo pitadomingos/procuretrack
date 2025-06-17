@@ -1,47 +1,74 @@
 
 import type { LucideIcon } from 'lucide-react';
 
-export interface StatCardItem {
+export interface StatCardItem { // Kept for now, but dashboard will transition away
   title: string;
   value: string;
   icon: LucideIcon;
   description?: string;
-  change?: string; // e.g., "+5.2% from last month"
+  change?: string;
   changeType?: 'positive' | 'negative';
 }
+
+export interface SubStat {
+  label: string;
+  value: string;
+  description?: string;
+  change?: string;
+  changeType?: 'positive' | 'negative';
+}
+
+export interface GroupedStatCardItem {
+  title: string;
+  icon: LucideIcon;
+  subStats: SubStat[];
+  viewMoreLink?: string;
+  mainValue?: string; 
+  mainValueDescription?: string;
+}
+
+// This will be the shape of the data fetched from /api/dashboard-stats
+export interface FetchedDashboardStats {
+  users: { total: number; active: number; inactive: number };
+  purchaseOrders: { total: number; approved: number; pending: number; rejected: number };
+  goodsReceived: {
+    totalApprovedPOs: number; 
+    totalPOsWithGRNActivity: number;
+  };
+  requisitions: { total: number; /* more statuses later */ };
+  fuel: { totalTags: number; totalRecords: number; };
+  clientQuotes: { total: number; approved: number; pending: number; rejected: number; };
+}
+
 
 export interface ActivityLogEntry {
   id: string;
   user: string;
   action: string;
-  timestamp: string; // ISO date string or formatted string
+  timestamp: string; 
   details?: string;
 }
 
 export interface ChartDataPoint {
-  name: string; // e.g., month or category
-  // For Monthly PO Status Chart
+  name: string; 
   'Pending Approval'?: number;
   'Approved'?: number;
-  // For Site PO Value Chart
   'PendingApprovalValue'?: number;
   'ApprovedValue'?: number;
-  [key: string]: number | string | undefined; // Allow other dynamic keys
+  [key: string]: number | string | undefined; 
 }
 
-
-// For PO Form state and item structure within the form
 export interface POItem {
-  id: string; // Client-side ID for react-hook-form field array
+  id: string; 
   partNumber?: string;
   description: string;
-  categoryId: number | null; // Stores Category ID as number
-  siteId: number | null;    // Stores Site ID as number
+  categoryId: number | null; 
+  siteId: number | null;    
   uom: string;
   quantity: number;
   unitPrice: number;
   quantityReceived?: number;
-  itemStatus?: string; // e.g., 'Pending', 'Partially Received', 'Fully Received' - THIS IS UPDATED BY GRN
+  itemStatus?: string; 
 }
 
 export interface Supplier {
@@ -109,8 +136,8 @@ export interface POItemPayload {
   uom: string;
   quantity: number;
   unitPrice: number;
-  quantityReceived: number; // This will be updated by GRN process
-  itemStatus: string; // This will be updated by GRN process (e.g. 'Pending', 'Partially Received', 'Fully Received')
+  quantityReceived: number; 
+  itemStatus: string; 
 }
 
 export interface POItemForPrint extends POItemPayload {
@@ -118,7 +145,6 @@ export interface POItemForPrint extends POItemPayload {
   categoryDisplay?: string;
 }
 
-// PO Header statuses are simplified
 export type PurchaseOrderStatus =
   | 'Pending Approval'
   | 'Approved'
@@ -128,19 +154,19 @@ export type PurchaseOrderStatus =
 export interface PurchaseOrderPayload {
   id?: number;
   poNumber: string;
-  creationDate: string; // ISO String
+  creationDate: string; 
   creatorUserId: string | null;
   requestedByName?: string | null;
   supplierId: string | null;
   approverId: string | null;
-  status: PurchaseOrderStatus; // Simplified PO status
+  status: PurchaseOrderStatus; 
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
   currency: string;
   pricesIncludeVat: boolean;
   notes?: string | null;
-  items: POItemPayload[] | POItemForPrint[]; // Items will still hold quantityReceived and itemStatus updated by GRN
+  items: POItemPayload[] | POItemForPrint[]; 
   approvalDate?: string | null;
   rejectionReason?: string | null;
   rejectionDate?: string | null;
@@ -150,11 +176,11 @@ export interface PurchaseOrderPayload {
   approverName?: string;
   approverSignatureUrl?: string;
   quoteNo?: string;
-  siteId?: number | null; // Added overall PO siteId
+  siteId?: number | null; 
 }
 
 
-export interface POApprovalQueueItem { // Specific for PO API response
+export interface POApprovalQueueItem { 
   id: number;
   poNumber: string;
   creationDate: string;
@@ -167,24 +193,24 @@ export interface POApprovalQueueItem { // Specific for PO API response
   status: string;
 }
 
-export interface QuoteApprovalQueueItem { // Specific for Quote API response
-  id: string; // Quote ID is string
+export interface QuoteApprovalQueueItem { 
+  id: string; 
   quoteNumber: string;
-  quoteDate: string; // Renamed from creationDate for consistency
+  quoteDate: string; 
   clientName: string | null | undefined;
-  creatorEmail: string | null | undefined; // Used as creator identifier for quotes
+  creatorEmail: string | null | undefined; 
   grandTotal: number;
   currency: string;
   status: string;
 }
 
 export interface UnifiedApprovalItem {
-  id: string | number; // Can be number (PO) or string (Quote)
+  id: string | number; 
   documentType: 'PO' | 'Quote';
   documentNumber: string;
-  creationDate: string; // ISO string
-  submittedBy: string | null; // Name of creator/requestor or email
-  entityName: string | null; // Supplier name for PO, Client name for Quote
+  creationDate: string; 
+  submittedBy: string | null; 
+  entityName: string | null; 
   totalAmount: number;
   currency: string;
   status: string;
@@ -216,7 +242,7 @@ export interface QuoteItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  quoteId?: string; // Foreign key to QuotePayload
+  quoteId?: string; 
 }
 
 export type QuoteStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Sent to Client' | 'Archived';
@@ -224,11 +250,11 @@ export type QuoteStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected'
 export interface QuotePayload {
   id?: string;
   quoteNumber: string;
-  quoteDate: string; // ISO String
+  quoteDate: string; 
   clientId: string;
-  creatorEmail?: string; // Used as creator identifier
-  clientName?: string; // Denormalized for display
-  clientEmail?: string; // Denormalized for display
+  creatorEmail?: string; 
+  clientName?: string; 
+  clientEmail?: string; 
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
@@ -238,10 +264,10 @@ export interface QuotePayload {
   items: QuoteItem[];
   status: QuoteStatus;
   approverId?: string | null;
-  approverName?: string; // For display
-  approvalDate?: string | null | undefined; // ISO string, can be null
-  createdAt?: string; // ISO string
-  updatedAt?: string; // ISO string
+  approverName?: string; 
+  approvalDate?: string | null | undefined; 
+  createdAt?: string; 
+  updatedAt?: string; 
 }
 
 export interface RequisitionItem {
@@ -252,21 +278,21 @@ export interface RequisitionItem {
   quantity: number;
   estimatedUnitPrice?: number | null;
   notes?: string;
-  requisitionId?: string; // Foreign key
+  requisitionId?: string; 
 }
 
 export interface RequisitionPayload {
   id?: string;
   requisitionNumber: string;
-  requisitionDate: string; // ISO String
-  requestedByUserId?: string | null; // Link to User table
-  requestedByName: string; // Free text name of requestor
-  siteId: number | null; // Link to Site table
+  requisitionDate: string; 
+  requestedByUserId?: string | null; 
+  requestedByName: string; 
+  siteId: number | null; 
   status: 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
   justification?: string;
   items: RequisitionItem[];
   totalEstimatedValue?: number;
-  siteName?: string; // Denormalized for display
+  siteName?: string; 
 }
 
 export type TagStatus = 'Active' | 'Inactive' | 'Under Maintenance' | 'Sold' | 'Decommissioned';
@@ -282,7 +308,7 @@ export interface Tag {
   chassisNo?: string | null;
   type?: string | null;
   siteId: number | null;
-  siteName?: string; // Denormalized for display
+  siteName?: string; 
   status: TagStatus; 
   createdAt?: string; 
   updatedAt?: string; 
@@ -290,22 +316,22 @@ export interface Tag {
 
 export interface FuelRecord {
   id?: string;
-  fuelDate: string; // ISO String
+  fuelDate: string; 
   reqNo?: string;
   invNo?: string;
   driver?: string;
   odometer?: number;
-  tagId: string; // Link to Tag table
-  siteId: number | null; // Link to Site table
+  tagId: string; 
+  siteId: number | null; 
   description?: string;
   uom?: string;
   quantity: number;
   unitCost: number;
-  totalCost?: number; // Calculated: quantity * unitCost
-  distanceTravelled?: number | null; // Calculated based on odometer readings
-  recorderUserId?: string; // Link to User table
-  tagName?: string; // Denormalized for display
-  siteName?: string; // Denormalized for display
+  totalCost?: number; 
+  distanceTravelled?: number | null; 
+  recorderUserId?: string; 
+  tagName?: string; 
+  siteName?: string; 
 }
 
 export interface FilterOption {
@@ -313,13 +339,15 @@ export interface FilterOption {
   label: string;
 }
 
-export interface ManagementStats { // For the main management page card stats
+export interface ManagementStats { 
   suppliersCount: number;
   approversCount: number;
   usersCount: number;
   sitesCount: number;
   categoriesCount: number;
   tagsCount: number;
-  tagStatusSummary?: Record<TagStatus, number>; // Added this for detailed tag statuses
+  tagStatusSummary?: Record<TagStatus, number>; 
   clientsCount: number;
 }
+
+    
