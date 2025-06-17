@@ -4,9 +4,7 @@ import { pool } from '../../../../backend/db.js';
 import type { Client } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import { randomUUID } from 'crypto'; // For generating IDs
-
-// Multer and related config are no longer needed with request.formData()
+import { randomUUID } from 'crypto';
 
 export async function GET() {
   try {
@@ -32,31 +30,55 @@ export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
 
   if (contentType && contentType.includes('multipart/form-data')) {
-    // CSV Upload using request.formData()
+    console.log('[API_INFO] /api/clients POST: Received multipart/form-data request.');
     try {
       const formData = await request.formData();
       const file = formData.get('file') as File | null;
       
       if (!file) {
+        console.error('[API_ERROR] /api/clients POST CSV: No file found in formData.');
         return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
       }
+      console.log(`[API_INFO] /api/clients POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
       
       const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results: any[] = [];
       const stream = Readable.from(fileBuffer);
+      let firstRecordLogged = false;
 
+      console.log('[API_INFO] /api/clients POST CSV: Starting CSV parsing...');
       await new Promise<void>((resolve, reject) => {
         stream
           .pipe(csv({
-            mapHeaders: ({ header }) => header.trim() // Trim headers
+            mapHeaders: ({ header, index }) => {
+              const trimmedHeader = header.trim();
+              console.log(`[API_DEBUG] /api/clients POST CSV: Mapped header at index ${index}: '${header}' to '${trimmedHeader}'`);
+              return trimmedHeader;
+            }
           }))
-          .on('data', (data) => results.push(data))
-          .on('end', resolve)
-          .on('error', reject);
+          .on('headers', (headers) => {
+            console.log('[API_INFO] /api/clients POST CSV: Detected CSV Headers:', headers);
+          })
+          .on('data', (data) => {
+            if (!firstRecordLogged) {
+              console.log('[API_DEBUG] /api/clients POST CSV: First parsed data record:', data);
+              firstRecordLogged = true;
+            }
+            results.push(data);
+          })
+          .on('end', () => {
+            console.log(`[API_INFO] /api/clients POST CSV: CSV parsing finished. ${results.length} records found.`);
+            resolve();
+          })
+          .on('error', (parseError) => {
+            console.error('[API_ERROR] /api/clients POST CSV: Error during CSV parsing:', parseError);
+            reject(parseError);
+          });
       });
 
       if (results.length === 0) {
-        return NextResponse.json({ message: 'CSV file is empty or could not be parsed.' }, { status: 400 });
+        console.warn('[API_WARN] /api/clients POST CSV: CSV file is empty or could not be parsed into records.');
+        return NextResponse.json({ message: 'CSV file is empty or yielded no records.' }, { status: 400 });
       }
 
       let successfulInserts = 0;
@@ -64,25 +86,30 @@ export async function POST(request: Request) {
       const errors: string[] = [];
       
       const connection = await pool.getConnection();
+      console.log('[API_INFO] /api/clients POST CSV: Database connection obtained for batch insert/update.');
       try {
         await connection.beginTransaction();
+        console.log('[API_INFO] /api/clients POST CSV: Started database transaction.');
 
-        for (const record of results) {
+        for (const [index, record] of results.entries()) {
           const clientId = record.ID || record.id || randomUUID(); 
-          const clientName = record.Name || record.name;
+          const clientName = record.Name || record.name; // Case-insensitive common variations
           const clientAddress = record.Address || record.address || null;
           const clientCity = record.City || record.city || null;
           const clientCountry = record.Country || record.country || null;
-          const clientContactPerson = record['Contact Person'] || record.contactPerson || record.Contact || null;
-          const clientEmail = record['Contact Email'] || record.contactEmail || record.Email || null;
+          const clientContactPerson = record['Contact Person'] || record.contactPerson || record.Contact || null; // Handles "Contact Person" and "contactPerson"
+          const clientEmail = record['Contact Email'] || record.contactEmail || record.Email || null; // Handles "Contact Email" and "contactEmail"
 
           if (!clientName) {
             failedInserts++;
-            errors.push(`Skipped record: Name is required. Record: ${JSON.stringify(record)}`);
+            const errorMsg = `Skipped record #${index + 1} (potential ID: ${clientId}): Name is required. Record data: ${JSON.stringify(record)}`;
+            console.warn(`[API_WARN] /api/clients POST CSV: ${errorMsg}`);
+            errors.push(errorMsg);
             continue;
           }
 
           try {
+            console.log(`[API_DEBUG] /api/clients POST CSV: Attempting to insert/update client ID: ${clientId}, Name: ${clientName}`);
             const query = `
               INSERT INTO Client (id, name, address, city, country, contactPerson, email, createdAt, updatedAt)
               VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -99,18 +126,23 @@ export async function POST(request: Request) {
               clientId, clientName, clientAddress, clientCity, clientCountry, clientContactPerson, clientEmail
             ]);
             successfulInserts++;
+            console.log(`[API_INFO] /api/clients POST CSV: Successfully processed client ID: ${clientId}`);
           } catch (dbError: any) {
             failedInserts++;
-            errors.push(`Failed to insert/update record ID ${clientId} (${clientName || 'N/A'}): ${dbError.message}`);
+            const errorMsg = `Failed to insert/update record #${index + 1} (ID ${clientId}, Name: ${clientName || 'N/A'}): ${dbError.message}. SQL Error Code: ${dbError.code || 'N/A'}.`;
+            console.error(`[API_ERROR] /api/clients POST CSV: Database error for record: ${errorMsg}`, dbError);
+            errors.push(errorMsg);
           }
         }
         await connection.commit();
+        console.log('[API_INFO] /api/clients POST CSV: Database transaction committed.');
       } catch (transactionError: any) {
         await connection.rollback();
         console.error('[API_ERROR] /api/clients POST CSV: Transaction error during client import:', transactionError);
         return NextResponse.json({ error: 'Transaction failed during CSV import.', details: transactionError.message, errors }, { status: 500 });
       } finally {
         connection.release();
+        console.log('[API_INFO] /api/clients POST CSV: Database connection released.');
       }
 
       let message = `${successfulInserts} client(s) processed successfully.`;
@@ -118,15 +150,20 @@ export async function POST(request: Request) {
         message += ` ${failedInserts} client(s) failed.`;
       }
       
+      console.log(`[API_INFO] /api/clients POST CSV: Final processing result - ${message}`);
+      if (errors.length > 0) {
+        console.warn('[API_WARN] /api/clients POST CSV: Errors encountered during processing:', errors);
+      }
+      
       return NextResponse.json({ message, errors: errors.length > 0 ? errors : undefined }, { status: errors.length > 0 && successfulInserts === 0 ? 400 : 200 });
 
     } catch (error: any) {
-      console.error('[API_ERROR] /api/clients POST CSV: Error handling client CSV upload:', error);
+      console.error('[API_ERROR] /api/clients POST CSV: Error handling client CSV upload (outer try-catch):', error);
       return NextResponse.json({ error: 'Failed to handle client CSV upload.', details: error.message }, { status: 500 });
     }
 
   } else if (contentType && contentType.includes('application/json')) {
-    // JSON Payload for single client creation
+    console.log('[API_INFO] /api/clients POST: Received application/json request.');
     try {
       const clientData = await request.json() as Omit<Client, 'createdAt' | 'updatedAt'>;
 
@@ -165,6 +202,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create client (JSON)', details: error.message }, { status: 500 });
     }
   } else {
+    console.warn(`[API_WARN] /api/clients POST: Unsupported Content-Type: ${contentType}`);
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
