@@ -1,6 +1,7 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord, QuoteItem } from '@/types';
 import { Archive, Loader, FolderOpen, Users as UsersIcon, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon, FileQuestion } from 'lucide-react';
+// Removed fs and path imports as they are not client-safe
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -216,124 +217,6 @@ export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
 ];
 
-
-// In-memory store for Quotes
-const INITIAL_MOCK_QUOTES: QuotePayload[] = [
-  {
-    id: 'Q-MOCK-SEED-001',
-    quoteNumber: 'Q-2024-SEED-001',
-    quoteDate: '2024-07-01T10:00:00Z',
-    clientId: 'client-001',
-    clientName: 'Vale Mozambique (Seed)',
-    subTotal: 10000,
-    vatAmount: 1600,
-    grandTotal: 11600,
-    currency: 'MZN',
-    status: 'Pending Approval',
-    approverId: 'approver_001',
-    items: [{id:'qi-seed-1', description:'Seed Service A', quantity:1, unitPrice:10000, partNumber: 'SEED-SVC-A', customerRef: 'VALE-REF-001'}],
-    creatorEmail: 'seed@jachris.com',
-    termsAndConditions: 'Seed terms',
-    notes: 'Seed notes',
-  },
-  {
-    id: 'Q-MOCK-SEED-002',
-    quoteNumber: 'Q-2024-SEED-002',
-    quoteDate: '2024-07-05T10:00:00Z',
-    clientId: 'client-002',
-    clientName: 'Mota-Engil (Seed)',
-    subTotal: 5000,
-    vatAmount: 0,
-    grandTotal: 5000,
-    currency: 'USD',
-    status: 'Draft',
-    items: [{id:'qi-seed-2', description:'Seed Service B', quantity:1, unitPrice:5000, partNumber: 'SEED-SVC-B', customerRef: 'MOTA-REF-002'}],
-    creatorEmail: 'seed@jachris.com',
-    termsAndConditions: 'Seed terms 2',
-  },
-];
-
-
-// --- Quote Mock DB with HMR Resilience (Development Only) ---
-declare global {
-  // eslint-disable-next-line no-var
-  var __MOCK_QUOTES_DB__: QuotePayload[] | undefined;
-}
-
-const getMockQuotesDBInstance = (): QuotePayload[] => {
-  if (typeof window !== 'undefined') {
-    // This module can be imported client-side for types/constants,
-    // but data operations should happen server-side via API calls.
-    // Returning a fresh copy or empty array on client prevents errors.
-    console.warn('[MockData] getMockQuotesDBInstance accessed on client-side. Using initial seed data.');
-    return JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
-  }
-
-  if (process.env.NODE_ENV === 'production') {
-    // In production, real data sources should be used.
-    // This mock DB should ideally not be relied upon.
-    console.warn('[MockData] getMockQuotesDBInstance called in production. Using initial seed data.');
-    return JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
-  } else {
-    // Development: Use global to survive HMR
-    if (!global.__MOCK_QUOTES_DB__) {
-      console.log('[MockData] Initializing global.__MOCK_QUOTES_DB__');
-      global.__MOCK_QUOTES_DB__ = JSON.parse(JSON.stringify(INITIAL_MOCK_QUOTES));
-    }
-    return global.__MOCK_QUOTES_DB__;
-  }
-};
-// --- End Quote Mock DB ---
-
-
-export function addMockQuote(quote: QuotePayload): QuotePayload {
-  const db = getMockQuotesDBInstance();
-  // Ensure ID is present, generate if not (though form should provide it)
-  const quoteWithId = { ...quote, id: quote.id || `MOCK-QID-GEN-${Date.now()}` };
-
-  const existingIndex = db.findIndex(q => q.id === quoteWithId.id);
-  if (existingIndex !== -1) {
-    console.log(`[MockData][addMockQuote] Updating existing quote. ID: ${quoteWithId.id}`);
-    db[existingIndex] = quoteWithId;
-  } else {
-    console.log(`[MockData][addMockQuote] Adding new quote. ID: ${quoteWithId.id}. DB size before: ${db.length}`);
-    db.push(quoteWithId);
-  }
-  console.log(`[MockData][addMockQuote] DB size after: ${db.length}. Current IDs: [${db.map(q=>q.id).join(', ')}]`);
-  return quoteWithId;
-}
-
-export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>): QuotePayload | null {
-  const db = getMockQuotesDBInstance();
-  const quoteIndex = db.findIndex(q => q.id === quoteId);
-  if (quoteIndex !== -1) {
-    db[quoteIndex] = { ...db[quoteIndex], ...updates };
-    console.log(`[MockData][updateMockQuote] Successfully updated quote ID: ${quoteId}. New Status: ${db[quoteIndex].status}`);
-    return db[quoteIndex];
-  }
-  console.warn(`[MockData][updateMockQuote] Quote ID: ${quoteId} not found for update.`);
-  return null;
-}
-
-export function getAllMockQuotes(): QuotePayload[] {
-  const db = getMockQuotesDBInstance();
-  console.log(`[MockData][getAllMockQuotes] Reading all quotes. Current size: ${db.length}`);
-  return [...db]; // Return a copy
-}
-
-export function getMockQuoteById(quoteId: string): QuotePayload | null {
-  const db = getMockQuotesDBInstance();
-  console.log(`[MockData][getMockQuoteById] Attempting to find quote ID: ${quoteId}. Current DB size: ${db.length}. IDs: [${db.map(q=>q.id).join(', ')}]`);
-  const quote = db.find(q => q.id === quoteId);
-  if (quote) {
-    console.log(`[MockData][getMockQuoteById] Found quote ID: ${quoteId}. Number: ${quote.quoteNumber}`);
-    return { ...quote }; // Return a copy
-  }
-  console.warn(`[MockData][getMockQuoteById] Quote ID: ${quoteId} not found in MOCK_QUOTES_DB.`);
-  return null;
-}
-
-
 export const mockRequisitionsData: RequisitionPayload[] = [
     {
         id: 'REQ-MOCK-001',
@@ -386,3 +269,16 @@ export const mockFuelRecordsData: FuelRecord[] = [
   { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW' },
   { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'MEM' },
 ];
+
+// --- Remove Quote Mock DB & Functions ---
+// The global-backed in-memory mock DB for quotes is removed.
+// API routes will now directly interact with the actual database.
+// Ensure that INITIAL_MOCK_QUOTES (if it was for seeding the global mock) is also removed or clearly marked as unused.
+// The following functions related to mock quotes are no longer needed:
+// - addMockQuote
+// - updateMockQuote
+// - getAllMockQuotes
+// - getMockQuoteById
+
+// (The above comment is for context, the actual removal will be reflected in the content of this file.)
+    

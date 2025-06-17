@@ -5,11 +5,10 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
-import type { QuotePayload, Approver } from '@/types'; 
+import type { QuotePayload } from '@/types'; 
 import { ArrowLeft, Printer, Loader2, ThumbsUp, ThumbsDown, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names if API doesn't populate it
 
 function PrintQuotePageContent() {
   const router = useRouter();
@@ -35,7 +34,7 @@ function PrintQuotePageContent() {
         let errorDetail = `Server responded with ${quoteRes.status} ${quoteRes.statusText || '(No status text)'}`;
         try {
           const errorData = await quoteRes.json();
-          errorDetail = errorData.error || errorData.message || errorDetail; // Prioritize .error, then .message
+          errorDetail = errorData.error || errorData.message || errorDetail; 
         } catch (jsonError) {
           console.warn("Could not parse error response as JSON:", jsonError);
         }
@@ -43,14 +42,7 @@ function PrintQuotePageContent() {
       }
 
       const data: QuotePayload = await quoteRes.json();
-      
-      // Populate approverName client-side if needed (API should ideally provide this if populated)
-      const populatedData = {...data};
-      if (populatedData.approverId && !populatedData.approverName) { // Only if API didn't send it
-          const approver = mockApproversData.find(appr => appr.id === populatedData.approverId);
-          populatedData.approverName = approver?.name;
-      }
-      setQuoteData(populatedData);
+      setQuoteData(data);
 
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
@@ -98,7 +90,7 @@ function PrintQuotePageContent() {
       }
       const result = await response.json();
       toast({ title: "Quote Approved", description: result.message || `${quoteData.quoteNumber} marked as Approved.`});
-      fetchQuoteDataForPrint();
+      fetchQuoteDataForPrint(); // Refresh data to show new status
     } catch (err: any) {
       toast({ title: "Error Approving Quote", description: err.message, variant: "destructive" });
     } finally {
@@ -117,7 +109,7 @@ function PrintQuotePageContent() {
       }
       const result = await response.json();
       toast({ title: "Quote Rejected", description: result.message || `${quoteData.quoteNumber} marked as Rejected.`});
-      fetchQuoteDataForPrint();
+      fetchQuoteDataForPrint(); // Refresh data
     } catch (err: any) {
       toast({ title: "Error Rejecting Quote", description: err.message, variant: "destructive" });
     } finally {
@@ -127,8 +119,10 @@ function PrintQuotePageContent() {
   
   const handleEditQuote = () => {
     if (!quoteData || !quoteId) return;
-    router.push(`/create-document?editQuoteId=${quoteId}`); 
-    toast({ title: "Edit Quote", description: "Redirecting to edit (functionality may be partial).", variant: "default"});
+    // Editing for quotes is not fully implemented in the form yet.
+    // This would ideally redirect to the quote form with the quote ID.
+    // router.push(`/create-document?editQuoteId=${quoteId}`); 
+    toast({ title: "Edit Quote (Placeholder)", description: "Full editing for quotes is not yet implemented.", variant: "default"});
   };
 
 
@@ -227,3 +221,4 @@ export default function PrintQuotePage() {
     </Suspense>
   );
 }
+    

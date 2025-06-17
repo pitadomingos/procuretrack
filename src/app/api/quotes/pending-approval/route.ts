@@ -1,18 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { getAllMockQuotes, mockApproversData, mockClients } from '@/lib/mock-data';
-import type { QuotePayload } from '@/types';
-
-interface QuoteApprovalQueueItem {
-  id: string;
-  quoteNumber: string;
-  quoteDate: string;
-  clientName: string | null | undefined;
-  creatorEmail: string | null | undefined;
-  grandTotal: number;
-  currency: string;
-  status: string;
-}
+import { pool } from '../../../../../backend/db.js';
+import type { QuoteApprovalQueueItem } from '@/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -22,38 +11,58 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Approver email is required' }, { status: 400 });
   }
 
+  let connection;
   try {
-    const approver = mockApproversData.find(appr => appr.email === approverEmail && appr.isActive);
-    if (!approver) {
-      return NextResponse.json({ error: `No active approver found with email ${approverEmail}` }, { status: 404 });
-    }
+    connection = await pool.getConnection();
 
-    const allQuotes = getAllMockQuotes();
-    const pendingQuotes = allQuotes.filter(
-      quote => quote.approverId === approver.id && quote.status === 'Pending Approval'
+    const [approverRows]: any[] = await connection.execute(
+      'SELECT id FROM Approver WHERE email = ? AND isActive = TRUE',
+      [approverEmail]
     );
 
-    const results: QuoteApprovalQueueItem[] = pendingQuotes.map(quote => {
-      const client = mockClients.find(c => c.id === quote.clientId);
-      return {
-        id: quote.id || `temp-id-${Math.random()}`, 
-        quoteNumber: quote.quoteNumber,
-        quoteDate: quote.quoteDate,
-        clientName: client?.name || quote.clientName || 'N/A',
-        creatorEmail: quote.creatorEmail || 'N/A',
-        grandTotal: quote.grandTotal,
-        currency: quote.currency,
-        status: quote.status,
-      };
-    });
+    if (approverRows.length === 0) {
+      return NextResponse.json({ error: `No active approver found with email ${approverEmail}` }, { status: 404 });
+    }
+    const approverId = approverRows[0].id;
 
-    return NextResponse.json(results.sort((a,b) => new Date(b.quoteDate).getTime() - new Date(a.quoteDate).getTime()));
+    const query = `
+      SELECT
+        q.id,
+        q.quoteNumber,
+        q.quoteDate,
+        c.name as clientName,
+        q.creatorEmail,
+        q.grandTotal,
+        q.currency,
+        q.status
+      FROM Quote q
+      LEFT JOIN Client c ON q.clientId = c.id
+      WHERE q.approverId = ? AND q.status = 'Pending Approval'
+      ORDER BY q.quoteDate DESC;
+    `;
+    const [quoteRows]: any[] = await connection.execute(query, [approverId]);
+
+    const results: QuoteApprovalQueueItem[] = quoteRows.map((row: any) => ({
+      id: row.id,
+      quoteNumber: row.quoteNumber,
+      quoteDate: row.quoteDate,
+      clientName: row.clientName || 'N/A',
+      creatorEmail: row.creatorEmail || 'N/A',
+      grandTotal: parseFloat(row.grandTotal || 0),
+      currency: row.currency,
+      status: row.status,
+    }));
+
+    return NextResponse.json(results);
 
   } catch (error: any) {
-    console.error('Error fetching pending quote approvals (mock):', error);
+    console.error('[API_ERROR] /api/quotes/pending-approval:', error);
     return NextResponse.json(
       { error: 'Failed to fetch pending quote approvals.', details: error.message },
       { status: 500 }
     );
+  } finally {
+    if (connection) connection.release();
   }
 }
+    

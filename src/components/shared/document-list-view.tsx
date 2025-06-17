@@ -137,13 +137,20 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
 
     if (documentType === 'po') apiUrl = '/api/purchase-orders';
     else if (documentType === 'quote') apiUrl = '/api/quotes';
-    else if (documentType === 'requisition') apiUrl = '/api/requisitions';
-    else if (documentType === 'fuel') apiUrl = '/api/fuel-records';
+    else if (documentType === 'requisition') apiUrl = '/api/requisitions'; // Still mock
+    else if (documentType === 'fuel') apiUrl = '/api/fuel-records'; // Still mock
     else {
       setDocuments([]);
-      setError(`List view for ${documentType.toUpperCase()}s is not yet implemented.`);
-      toast({ title: "List View Not Implemented", description: `The list view for ${documentType.toUpperCase()}s is not yet available.`});
-      return;
+      setError(`List view for ${documentType.toUpperCase()}s is not yet implemented or uses mock data.`);
+      toast({ title: "List View Information", description: `The list view for ${documentType.toUpperCase()}s may be using mock data or is not fully implemented.`});
+      if (documentType === 'requisition' || documentType === 'fuel') {
+        // Load mock data for these types if API isn't ready
+        // Example: setDocuments(documentType === 'requisition' ? mockRequisitionsData : mockFuelRecordsData);
+        // For now, we will assume API routes might exist but could be mock.
+        // If API returns empty or error, it will be handled by the try-catch block.
+      } else {
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -173,7 +180,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const handleFilterApply = (filters: any) => {
     const apiFilters = {
         ...filters,
-        creatorUserId: filters.requestor,
+        creatorUserId: filters.requestor, // Map UI filter name to API param name
         approverId: filters.approver,
         siteId: filters.site,
         tagId: filters.tag,
@@ -204,7 +211,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     let uploadUrl = '';
     if (documentType === 'fuel') uploadUrl = '/api/fuel-records';
     else if (documentType === 'quote') uploadUrl = '/api/quotes';
-    else if (documentType === 'po') uploadUrl = '/api/purchase-orders'; // Assuming general PO upload
+    else if (documentType === 'po') uploadUrl = '/api/purchase-orders';
     // Add other types like Requisition if they support CSV upload later
 
     if (!uploadUrl) {
@@ -219,13 +226,17 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
             body: formData,
         });
 
+        const result = await response.json(); // Try to parse JSON regardless of status
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'File upload failed.' }));
-            throw new Error(errorData.message || 'Server error during file upload.');
+             throw new Error(result.error || result.message || 'File upload failed. Server error.');
         }
-
-        const result = await response.json();
-        toast({ title: "Upload Successful", description: result.message || "File processed." });
+        
+        toast({ title: "Upload Processing", description: result.message || "File processed." });
+        if (result.errors && result.errors.length > 0) {
+            result.errors.forEach((errMsg: string) => {
+                toast({ title: "Upload Warning", description: errMsg, variant: "destructive", duration: 7000 });
+            });
+        }
         fetchDocuments(); // Refresh list after upload
     } catch (error: any) {
         toast({ title: "Upload Error", description: error.message, variant: "destructive" });
@@ -261,6 +272,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       );
     }
     if (documentType === 'fuel' && doc.id) {
+        // No print preview for fuel records, so maybe an edit/view modal in future
         return (
             <Button variant="outline" size="sm" title="View Fuel Record Details (Not Implemented)" disabled><Eye className="mr-1 h-4 w-4" /> View</Button>
         );
@@ -283,27 +295,29 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     columnsToUse = poColumns as ColumnDef<any>[];
     listTitle = 'Purchase Orders';
     showApproverFilter = true;
-    showUploadCsv = true; // Enable CSV upload for POs
-    csvTemplateLink = '/templates/purchase_orders_template.csv'; // Add template if applicable
+    // showUploadCsv = true; // PO Header upload can be complex, usually items are separate
+    // csvTemplateLink = '/templates/purchase_orders_template.csv'; 
   } else if (documentType === 'quote') {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';
-    showSiteFilter = false;
-    showRequestorFilter = false;
+    showSiteFilter = false; // Quotes are client-based, not site-based for Jachris
+    showRequestorFilter = false; // Quotes might have a creatorEmail, not a standard requestor user
     showUploadCsv = true;
     csvTemplateLink = '/templates/quotes_template.csv';
   } else if (documentType === 'requisition') {
     columnsToUse = requisitionColumns as ColumnDef<any>[];
     listTitle = 'Purchase Requisitions';
+    // Requisitions are internal, might not need approver filter here directly, but requestor and site are key
   } else if (documentType === 'fuel') {
     columnsToUse = fuelRecordColumns as ColumnDef<any>[];
     listTitle = 'Fuel Records';
-    showRequestorFilter = false;
+    showRequestorFilter = false; // Fuel records have a recorder, not a requestor in the same sense
     showTagFilter = true;
     showDriverFilter = true;
-    showUploadCsv = true;
-    csvTemplateLink = '/templates/fuel_records_template.csv';
+    // showUploadCsv = true; // CSV upload for fuel records can be enabled
+    // csvTemplateLink = '/templates/fuel_records_template.csv';
   } else {
+     // Default or GRN (which is not a primary list view yet)
      columnsToUse = [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
      listTitle = `${documentType.toUpperCase()}s`;
   }
@@ -339,9 +353,10 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
               )}
             </>
           )}
-          <Button onClick={handleDownloadExcel} variant="outline">
+          {/* Excel download can be re-enabled when reporting is more mature */}
+          {/* <Button onClick={handleDownloadExcel} variant="outline">
             <Download className="mr-2 h-4 w-4" /> Download to Excel
-          </Button>
+          </Button> */}
         </div>
         <div className="mt-4">
           {isLoading ? (
@@ -370,3 +385,4 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     </Card>
   );
 }
+    

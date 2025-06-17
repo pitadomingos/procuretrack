@@ -22,15 +22,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { randomUUID } from 'crypto';
+
 
 const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
 interface QuoteFormValues {
   clientId: string | null;
-  clientNameDisplay: string;
-  clientEmailDisplay: string;
+  clientNameDisplay: string; // For display only, not part of payload directly
+  clientEmailDisplay: string; // For display only
   quoteDate: string;
-  quoteNumberDisplay: string;
+  quoteNumberDisplay: string; // For display, actual number from API
   currency: string;
   termsAndConditions: string;
   notes: string;
@@ -38,8 +40,8 @@ interface QuoteFormValues {
   approverId: string | null;
 }
 
-const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
-const NO_APPROVER_VALUE = "__none__";
+const MOCK_CREATOR_EMAIL = 'creator@jachris.com'; // Placeholder for logged-in user
+const NO_APPROVER_VALUE = "__none__"; // Special value for "None" option
 
 export function QuoteForm() {
   const { toast } = useToast();
@@ -132,7 +134,7 @@ export function QuoteForm() {
     let newDisplaySubTotal = calculatedInputSum;
     let newDisplayVatAmount = 0;
     if (watchedCurrency === 'MZN') {
-        newDisplayVatAmount = newDisplaySubTotal * 0.16;
+        newDisplayVatAmount = newDisplaySubTotal * 0.16; // Assuming 16% VAT for MZN
     }
     setSubTotal(parseFloat(newDisplaySubTotal.toFixed(2)));
     setVatAmount(parseFloat(newDisplayVatAmount.toFixed(2)));
@@ -162,21 +164,17 @@ export function QuoteForm() {
       return;
     }
     setIsSubmitting(true);
-
-    const selectedClient = clients.find(c => c.id === formData.clientId);
+    
+    const generatedQuoteId = randomUUID(); // Generate ID client-side for new quotes
     const quoteStatus = (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? 'Pending Approval' : 'Draft';
-    const clientGeneratedQuoteId = `MOCK-QID-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
-    console.log('[QuoteForm] Generated client ID for new quote:', clientGeneratedQuoteId);
-
-
+    
     const payload: QuotePayload = {
-      id: clientGeneratedQuoteId,
+      id: generatedQuoteId, // Use client-generated ID
       quoteNumber: formData.quoteNumberDisplay,
       quoteDate: new Date(formData.quoteDate).toISOString(),
       clientId: formData.clientId,
-      clientName: selectedClient?.name,
-      clientEmail: selectedClient?.email,
-      creatorEmail: MOCK_CREATOR_EMAIL,
+      // clientName and clientEmail will be derived by the backend or joined
+      creatorEmail: MOCK_CREATOR_EMAIL, // Replace with actual logged-in user email
       subTotal: subTotal,
       vatAmount: vatAmount,
       grandTotal: grandTotal,
@@ -184,7 +182,7 @@ export function QuoteForm() {
       termsAndConditions: formData.termsAndConditions,
       notes: formData.notes,
       items: formData.items.map(item => ({
-        id: item.id,
+        id: item.id || randomUUID(), // Ensure item ID for new items
         partNumber: item.partNumber,
         customerRef: item.customerRef,
         description: item.description,
@@ -196,6 +194,7 @@ export function QuoteForm() {
     };
 
     try {
+      // For now, we only support creating new quotes. Editing will use PUT to /api/quotes/[id]
       const response = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,7 +208,7 @@ export function QuoteForm() {
 
       const result = await response.json();
       toast({ title: 'Quote Saved', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
-      router.push(`/quotes/${result.quoteId}/print`);
+      router.push(`/quotes/${result.quoteId}/print`); // Use ID returned by API
 
     } catch (error: any) {
       toast({ title: 'Error Saving Quote', description: error.message || 'An unexpected error occurred.', variant: "destructive" });
@@ -220,7 +219,7 @@ export function QuoteForm() {
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : (watchedCurrency === 'USD' ? '$' : watchedCurrency);
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
+  
   if (isLoadingInitialData) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
   }
@@ -239,7 +238,7 @@ export function QuoteForm() {
                 control={form.control} name="clientId" rules={{ required: 'Client is required' }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Client</FormLabel>
+                    <FormLabel>Client *</FormLabel>
                     <Select onValueChange={(value) => { field.onChange(value); handleClientChange(value); }} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select a client" /></SelectTrigger></FormControl>
                       <SelectContent>{clients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
@@ -249,13 +248,13 @@ export function QuoteForm() {
                 )}
               />
               <FormField control={form.control} name="quoteNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>Quote Number</FormLabel> <FormControl><Input {...field} readOnly /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="quoteDate" rules={{ required: 'Quote Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Quote Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="quoteDate" rules={{ required: 'Quote Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Quote Date *</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
                 <FormField control={form.control} name="currency" render={({ field }) => (
                   <FormItem className="w-full">
-                    <FormLabel>Currency</FormLabel>
+                    <FormLabel>Currency *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value || 'MZN'}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -314,21 +313,21 @@ export function QuoteForm() {
                     )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => (
                       <FormItem className="lg:col-span-3">
-                        <FormLabel>Description</FormLabel>
+                        <FormLabel>Description *</FormLabel>
                         <FormControl><Input placeholder="Service or item description" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => (
                       <FormItem className="lg:col-span-1">
-                        <FormLabel>Quantity</FormLabel>
+                        <FormLabel>Quantity *</FormLabel>
                         <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => (
                       <FormItem className="lg:col-span-2">
-                        <FormLabel>Unit Price ({currencySymbol})</FormLabel>
+                        <FormLabel>Unit Price ({currencySymbol}) *</FormLabel>
                         <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl>
                         <FormMessage />
                       </FormItem>
@@ -396,3 +395,4 @@ export function QuoteForm() {
     </Card>
   );
 }
+    

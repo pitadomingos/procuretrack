@@ -1,33 +1,61 @@
 
 import { NextResponse } from 'next/server';
-import type { QuotePayload } from '@/types';
-import { getMockQuoteById, mockApproversData, updateMockQuote } from '@/lib/mock-data';
+import { pool } from '../../../../../backend/db.js';
+import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   const { id: quoteId } = params;
-  console.log(`[API_INFO] /api/quotes/${quoteId} GET: Received request for quote ID: ${quoteId}`);
+  if (!quoteId) {
+    return NextResponse.json({ error: 'Quote ID is required' }, { status: 400 });
+  }
+  console.log(`[API_INFO] /api/quotes/${quoteId} GET: Received request.`);
 
+  let connection;
   try {
-    const quoteFromMockDB = getMockQuoteById(quoteId);
+    connection = await pool.getConnection();
+    const quoteQuery = `
+      SELECT 
+        q.*, 
+        c.name as clientName, c.email as clientEmail, c.address as clientAddress, c.city as clientCity, c.country as clientCountry, c.contactPerson as clientContactPerson,
+        app.name as approverName 
+      FROM Quote q
+      LEFT JOIN Client c ON q.clientId = c.id
+      LEFT JOIN Approver app ON q.approverId = app.id
+      WHERE q.id = ?
+    `;
+    const [quoteRows]: any[] = await connection.execute(quoteQuery, [quoteId]);
 
-    if (quoteFromMockDB) {
-      console.log(`[API_INFO] /api/quotes/${quoteId} GET: Found quote in MOCK_QUOTES_DB: ${quoteFromMockDB.quoteNumber}`);
-      const quoteToReturn = { ...quoteFromMockDB };
-      if (quoteToReturn.approverId && !quoteToReturn.approverName) {
-          const approver = mockApproversData.find(appr => appr.id === quoteToReturn.approverId);
-          quoteToReturn.approverName = approver?.name;
-      }
-      return NextResponse.json(quoteToReturn);
-    } else {
-      console.warn(`[API_WARN] /api/quotes/${quoteId} GET: Quote with ID ${quoteId} not found in MOCK_QUOTES_DB.`);
+    if (quoteRows.length === 0) {
+      console.warn(`[API_WARN] /api/quotes/${quoteId} GET: Quote not found.`);
       return NextResponse.json({ error: `Quote with ID ${quoteId} not found.` }, { status: 404 });
     }
+
+    const quoteData: QuotePayload = {
+      ...quoteRows[0],
+      // Ensure numeric fields are numbers
+      subTotal: parseFloat(quoteRows[0].subTotal || 0),
+      vatAmount: parseFloat(quoteRows[0].vatAmount || 0),
+      grandTotal: parseFloat(quoteRows[0].grandTotal || 0),
+    };
+
+    const [itemRows]: any[] = await connection.execute('SELECT * FROM QuoteItem WHERE quoteId = ?', [quoteId]);
+    quoteData.items = itemRows.map((item: any) => ({
+        ...item,
+        quantity: parseInt(item.quantity, 10),
+        unitPrice: parseFloat(item.unitPrice),
+    })) as QuoteItem[];
+
+    console.log(`[API_INFO] /api/quotes/${quoteId} GET: Successfully fetched quote with ${quoteData.items.length} items.`);
+    return NextResponse.json(quoteData);
+
   } catch (error: any) {
-    console.error(`[API_ERROR] /api/quotes/${quoteId} GET: Error fetching quote:`, error);
+    console.error(`[API_ERROR] /api/quotes/${quoteId} GET:`, error);
     return NextResponse.json({ error: `Failed to fetch quote with ID ${quoteId}.`, details: error.message }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }
 
@@ -36,20 +64,79 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   const { id: quoteId } = params;
-  console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Received request to update quote.`);
-  try {
-    const quoteDataToUpdate = await request.json() as Partial<QuotePayload>;
-    const updatedQuote = updateMockQuote(quoteId, quoteDataToUpdate);
+  if (!quoteId) {
+    return NextResponse.json({ error: 'Quote ID is required for update' }, { status: 400 });
+  }
+  console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Received request.`);
 
-    if (updatedQuote) {
-      console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Successfully updated quote.`);
-      return NextResponse.json(updatedQuote);
-    } else {
-      console.warn(`[API_WARN] /api/quotes/${quoteId} PUT: Quote not found for update.`);
-      return NextResponse.json({ error: `Quote with ID ${quoteId} not found for update.` }, { status: 404 });
+  let connection;
+  try {
+    const quoteData = await request.json() as QuotePayload;
+    console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Data:`, JSON.stringify(quoteData).substring(0, 500));
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+
+    const [existingQuote]: any[] = await connection.execute('SELECT status FROM Quote WHERE id = ?', [quoteId]);
+    if (existingQuote.length === 0) {
+        await connection.rollback();
+        return NextResponse.json({ error: `Quote with ID ${quoteId} not found for update.` }, { status: 404 });
     }
+    // Add logic here to check if quote status allows editing (e.g., only 'Draft' or 'Pending Approval')
+
+    await connection.execute(
+      `UPDATE Quote SET 
+        quoteNumber = ?, quoteDate = ?, clientId = ?, creatorEmail = ?, 
+        subTotal = ?, vatAmount = ?, grandTotal = ?, currency = ?, 
+        termsAndConditions = ?, notes = ?, status = ?, approverId = ?, approvalDate = ?,
+        updatedAt = NOW()
+       WHERE id = ?`,
+      [
+        quoteData.quoteNumber, new Date(quoteData.quoteDate).toISOString().slice(0, 19).replace('T', ' '), quoteData.clientId, quoteData.creatorEmail,
+        quoteData.subTotal, quoteData.vatAmount, quoteData.grandTotal, quoteData.currency,
+        quoteData.termsAndConditions, quoteData.notes, quoteData.status, quoteData.approverId,
+        quoteData.approvalDate ? new Date(quoteData.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null,
+        quoteId
+      ]
+    );
+
+    // Delete old items and insert new ones
+    await connection.execute('DELETE FROM QuoteItem WHERE quoteId = ?', [quoteId]);
+    if (quoteData.items && quoteData.items.length > 0) {
+      for (const item of quoteData.items) {
+        await connection.execute(
+          `INSERT INTO QuoteItem (id, quoteId, partNumber, customerRef, description, quantity, unitPrice)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [item.id, quoteId, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
+        );
+      }
+    }
+
+    await connection.commit();
+    console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Successfully updated quote.`);
+    
+    // Fetch the updated quote to return it
+    const quoteQuery = `
+      SELECT q.*, c.name as clientName, c.email as clientEmail FROM Quote q
+      LEFT JOIN Client c ON q.clientId = c.id
+      WHERE q.id = ?
+    `;
+    const [updatedQuoteRows]: any[] = await connection.execute(quoteQuery, [quoteId]);
+    const updatedQuoteData = updatedQuoteRows[0];
+    const [updatedItemRows]: any[] = await connection.execute('SELECT * FROM QuoteItem WHERE quoteId = ?', [quoteId]);
+    updatedQuoteData.items = updatedItemRows;
+
+    return NextResponse.json(updatedQuoteData);
+
   } catch (error: any) {
-    console.error(`[API_ERROR] /api/quotes/${quoteId} PUT: Error updating quote:`, error);
+    if (connection) await connection.rollback();
+    console.error(`[API_ERROR] /api/quotes/${quoteId} PUT:`, error);
     return NextResponse.json({ error: `Failed to update quote with ID ${quoteId}.`, details: error.message }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }
+
+// DELETE endpoint can be added here if needed
+// export async function DELETE(...) { ... }
+    
