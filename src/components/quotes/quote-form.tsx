@@ -16,12 +16,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Save, Eye, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, Save, Eye, Loader2, Edit } from 'lucide-react';
 import type { Client, QuoteItem, QuotePayload, Approver } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 const defaultItem: Omit<QuoteItem, 'quoteId'> = { id: '', partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
@@ -38,10 +38,14 @@ interface QuoteFormValues {
   approverId: string | null;
 }
 
-const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
+const MOCK_CREATOR_EMAIL = 'creator@jachris.com'; // Replace with actual logged-in user email
 const NO_APPROVER_VALUE = "__none__";
 
-export function QuoteForm() {
+interface QuoteFormProps {
+  quoteIdToEditProp?: string | null;
+}
+
+export function QuoteForm({ quoteIdToEditProp }: QuoteFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [subTotal, setSubTotal] = useState(0);
@@ -51,6 +55,8 @@ export function QuoteForm() {
   const [clients, setClients] = useState<Client[]>([]);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
+  const [isEditingLoadedQuote, setIsEditingLoadedQuote] = useState(false);
+  const [loadedQuoteId, setLoadedQuoteId] = useState<string | null>(null);
 
   const form = useForm<QuoteFormValues>({
     defaultValues: {
@@ -73,48 +79,91 @@ export function QuoteForm() {
     name: 'items',
   });
 
-  const fetchInitialData = useCallback(async () => {
-    setIsLoadingInitialData(true);
+  const loadQuoteDataIntoForm = useCallback((data: QuotePayload, currentClients: Client[]) => {
+    form.reset({
+      clientId: data.clientId,
+      clientNameDisplay: data.clientName || '',
+      clientEmailDisplay: data.clientEmail || '',
+      quoteDate: data.quoteDate ? format(parseISO(data.quoteDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+      quoteNumberDisplay: data.quoteNumber,
+      currency: data.currency,
+      termsAndConditions: data.termsAndConditions || 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
+      notes: data.notes || '',
+      items: (data.items || []).map(item => ({
+        ...defaultItem, // ensure all default fields are present
+        ...item,
+        id: item.id || crypto.randomUUID(), // Ensure item ID exists
+      })),
+      approverId: data.approverId || null,
+    });
+
+    const selectedClient = currentClients.find(c => c.id === data.clientId);
+    if (selectedClient) {
+        form.setValue('clientNameDisplay', selectedClient.name);
+        form.setValue('clientEmailDisplay', selectedClient.email || '');
+    }
+
+    setIsEditingLoadedQuote(true);
+    setLoadedQuoteId(data.id || null);
+  }, [form]);
+  
+  const resetFormForNew = useCallback(async () => {
+    form.reset({
+      clientId: null, clientNameDisplay: '', clientEmailDisplay: '',
+      quoteDate: format(new Date(), 'yyyy-MM-dd'),
+      quoteNumberDisplay: 'Fetching...', currency: 'MZN',
+      termsAndConditions: 'Standard Payment Terms: 30 days. Prices valid for 15 days.',
+      notes: '', items: [{...defaultItem, id: crypto.randomUUID()}],
+      approverId: null,
+    });
+    setIsEditingLoadedQuote(false);
+    setLoadedQuoteId(null);
     try {
-      const [clientsRes, nextQuoteNumRes, approversRes] = await Promise.all([
-        fetch('/api/clients'),
-        fetch('/api/quotes/next-quote-number'),
-        fetch('/api/approvers')
-      ]);
-
-      if (clientsRes.ok) {
-        const clientsData = await clientsRes.json();
-        setClients(clientsData);
-      } else {
-        toast({ title: "Error", description: "Could not load clients.", variant: "destructive" });
-      }
-
-      if (nextQuoteNumRes.ok) {
-        const data = await nextQuoteNumRes.json();
-        form.setValue('quoteNumberDisplay', data.nextQuoteNumber || 'Q-ERROR');
-      } else {
-        form.setValue('quoteNumberDisplay', 'Q-ERROR');
-        toast({ title: "Error", description: "Could not load next quote number.", variant: "destructive" });
-      }
-
-      if (approversRes.ok) {
-        const approversData = await approversRes.json();
-        setApprovers(approversData);
-      } else {
-        toast({ title: "Error", description: "Could not load approvers.", variant: "destructive" });
-      }
-
+      const response = await fetch('/api/quotes/next-quote-number');
+      if (!response.ok) throw new Error('Failed to fetch next quote number');
+      const data = await response.json();
+      form.setValue('quoteNumberDisplay', data.nextQuoteNumber || 'Q-ERROR');
     } catch (error) {
-      toast({ title: "Error Loading Data", description: "Could not load initial form data.", variant: "destructive" });
       form.setValue('quoteNumberDisplay', 'Q-ERROR');
-    } finally {
-        setIsLoadingInitialData(false);
+      toast({ title: "Error", description: "Could not load next quote number.", variant: "destructive" });
     }
   }, [form, toast]);
 
+
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+    const fetchCoreDataAndInitializeForm = async () => {
+      setIsLoadingInitialData(true);
+      let fetchedClients: Client[] = [];
+      try {
+        const [clientsRes, approversRes] = await Promise.all([
+          fetch('/api/clients'),
+          fetch('/api/approvers')
+        ]);
+
+        fetchedClients = clientsRes.ok ? await clientsRes.json() : [];
+        const fetchedApprovers: Approver[] = approversRes.ok ? await approversRes.json() : [];
+        
+        setClients(fetchedClients);
+        setApprovers(fetchedApprovers);
+
+        if (quoteIdToEditProp) {
+          const quoteRes = await fetch(`/api/quotes/${quoteIdToEditProp}`);
+          if (!quoteRes.ok) throw new Error(`Failed to fetch Quote ${quoteIdToEditProp}`);
+          const quoteDataToEdit: QuotePayload = await quoteRes.json();
+          loadQuoteDataIntoForm(quoteDataToEdit, fetchedClients);
+        } else {
+          await resetFormForNew();
+        }
+      } catch (error) {
+        toast({ title: "Error Loading Data", description: `Failed to load initial form data: ${error instanceof Error ? error.message : String(error)}`, variant: "destructive" });
+        if (!quoteIdToEditProp) form.setValue('quoteNumberDisplay', 'Q-ERROR');
+      } finally {
+        setIsLoadingInitialData(false);
+      }
+    };
+    fetchCoreDataAndInitializeForm();
+  }, [quoteIdToEditProp, toast, loadQuoteDataIntoForm, resetFormForNew]);
+
 
   const watchedItems = form.watch('items');
   const watchedCurrency = form.watch('currency');
@@ -162,7 +211,7 @@ export function QuoteForm() {
     }
     setIsSubmitting(true);
     
-    const generatedQuoteId = crypto.randomUUID();
+    const generatedQuoteId = isEditingLoadedQuote && loadedQuoteId ? loadedQuoteId : crypto.randomUUID();
     const quoteStatus = (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? 'Pending Approval' : 'Draft';
     
     const payload: QuotePayload = {
@@ -187,30 +236,42 @@ export function QuoteForm() {
       })),
       status: quoteStatus,
       approverId: (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? formData.approverId : null,
+      // Ensure approvalDate is only sent if status is already Approved, which shouldn't happen here.
+      // Or let the backend handle setting approvalDate on approval.
+      approvalDate: isEditingLoadedQuote ? form.getValues().approvalDate : undefined, 
     };
 
     try {
-      const response = await fetch('/api/quotes', {
-        method: 'POST',
+      let response;
+      let successMessage = '';
+      const url = isEditingLoadedQuote && loadedQuoteId ? `/api/quotes/${loadedQuoteId}` : '/api/quotes';
+      const method = isEditingLoadedQuote && loadedQuoteId ? 'PUT' : 'POST';
+
+      response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const result = await response.json(); // Always try to parse JSON
+      const result = await response.json(); 
 
       if (!response.ok) {
         const errorDetail = result.error || result.details || result.message || `Server error: ${response.status}`;
         throw new Error(errorDetail);
       }
 
-      toast({ title: 'Quote Saved', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
-      router.push(`/quotes/${result.quoteId}/print`); 
+      successMessage = `Quote ${payload.quoteNumber} ${isEditingLoadedQuote ? 'updated' : 'saved'} successfully with status: ${payload.status}. Navigating to preview.`;
+      toast({ title: 'Success!', description: successMessage });
+      
+      // Use the ID from the response if it's a new quote, otherwise use loadedQuoteId
+      const finalQuoteId = method === 'POST' ? result.quoteId : loadedQuoteId;
+      router.push(`/quotes/${finalQuoteId}/print`); 
 
     } catch (error: any) {
       console.error("Error saving quote (frontend):", error);
       toast({ 
-        title: 'Error Saving Quote', 
-        description: error.message || 'An unexpected error occurred while saving the quote.', 
+        title: `Error ${isEditingLoadedQuote ? 'Updating' : 'Saving'} Quote`, 
+        description: error.message || 'An unexpected error occurred.', 
         variant: "destructive" 
       });
     } finally {
@@ -228,7 +289,9 @@ export function QuoteForm() {
   return (
     <Card className="w-full max-w-5xl mx-auto shadow-xl">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Create New Client Quotation</CardTitle>
+        <CardTitle className="font-headline text-2xl">
+          {isEditingLoadedQuote ? `Edit Quotation: ${form.getValues('quoteNumberDisplay')}` : 'Create New Client Quotation'}
+        </CardTitle>
       </CardHeader>
       <CardContent className="pt-6">
         <Form {...form}>
@@ -242,7 +305,7 @@ export function QuoteForm() {
                     <FormLabel>Client *</FormLabel>
                     <Select onValueChange={(value) => { field.onChange(value); handleClientChange(value); }} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select a client" /></SelectTrigger></FormControl>
-                      <SelectContent>{clients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent>
+                      <SelectContent>{clients.map(c => (<SelectItem key={c.id} value={c.id}>{c.name} ({c.id})</SelectItem>))}</SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
@@ -380,9 +443,14 @@ export function QuoteForm() {
 
               <div className="md:col-span-1 flex flex-col gap-3 w-full pt-6">
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid || isLoadingInitialData}>
-                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
-                  {isSubmitting ? 'Saving...' : 'Save & Preview Quote'}
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedQuote ? <Edit className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />)}
+                  {isSubmitting ? (isEditingLoadedQuote ? 'Updating...' : 'Saving...') : (isEditingLoadedQuote ? 'Update & Preview Quote' : 'Save & Preview Quote')}
                 </Button>
+                 {!isEditingLoadedQuote && (
+                  <Button type="button" variant="ghost" size="lg" className="w-full" onClick={resetFormForNew} disabled={isSubmitting || isLoadingInitialData}>
+                    Clear / New Quote
+                  </Button>
+                )}
               </div>
             </div>
           </form>
@@ -390,9 +458,12 @@ export function QuoteForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Select an approver to submit the quote for approval, or leave blank to save as a draft.
+         {isEditingLoadedQuote
+            ? `Editing Quote: ${form.getValues('quoteNumberDisplay')}.`
+            : "Select an approver to submit for approval, or leave blank to save as Draft."}
         </p>
       </CardFooter>
     </Card>
   );
 }
+

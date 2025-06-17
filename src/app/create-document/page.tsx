@@ -16,10 +16,17 @@ import { Loader2 } from 'lucide-react';
 function CreateDocumentContent() {
   const searchParams = useSearchParams();
   const poIdToEditFromUrl = searchParams.get('editPoId');
+  const quoteIdToEditFromUrl = searchParams.get('editQuoteId');
 
-  const defaultMainTab = "create-po";
+  const determineDefaultMainTab = () => {
+    if (poIdToEditFromUrl) return "create-po";
+    if (quoteIdToEditFromUrl) return "create-quote";
+    return "create-po";
+  };
+
+  const defaultMainTab = determineDefaultMainTab();
   const defaultPOTab = poIdToEditFromUrl ? "create-po-form" : "create-po-form";
-  const defaultQuoteTab = "create-quote-form";
+  const defaultQuoteTab = quoteIdToEditFromUrl ? "create-quote-form" : "create-quote-form";
   const defaultRequisitionTab = "create-requisition-form";
   const defaultFuelTab = "create-fuel-form";
 
@@ -52,30 +59,19 @@ function CreateDocumentContent() {
       </TabsContent>
 
       <TabsContent value="create-grn">
-        {/* Future: Implement nested tabs for GRN create/list */}
         <GRNInterface />
-         {/* <Tabs defaultValue="create-grn-form" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
-            <TabsTrigger value="create-grn-form">Create New GRN</TabsTrigger>
-            <TabsTrigger value="list-grns">List of GRNs</TabsTrigger>
-          </TabsList>
-          <TabsContent value="create-grn-form">
-             <GRNInterface />
-          </TabsContent>
-          <TabsContent value="list-grns">
-            <DocumentListView documentType="grn" />
-          </TabsContent>
-        </Tabs> */}
       </TabsContent>
 
       <TabsContent value="create-quote">
         <Tabs defaultValue={defaultQuoteTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
-            <TabsTrigger value="create-quote-form">Create New Quote</TabsTrigger>
+            <TabsTrigger value="create-quote-form">
+              {quoteIdToEditFromUrl ? 'Edit Quote' : 'Create New Quote'}
+            </TabsTrigger>
             <TabsTrigger value="list-quotes">List of Quotes</TabsTrigger>
           </TabsList>
           <TabsContent value="create-quote-form">
-            <QuoteForm />
+            <QuoteForm quoteIdToEditProp={quoteIdToEditFromUrl} />
           </TabsContent>
           <TabsContent value="list-quotes">
             <DocumentListView documentType="quote" />

@@ -5,8 +5,8 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
-import type { QuotePayload } from '@/types'; 
-import { ArrowLeft, Printer, Loader2, ThumbsUp, ThumbsDown, Edit } from 'lucide-react';
+import type { QuotePayload, QuoteStatus } from '@/types'; 
+import { ArrowLeft, Printer, Loader2, ThumbsUp, ThumbsDown, Edit, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -90,7 +90,7 @@ function PrintQuotePageContent() {
       }
       const result = await response.json();
       toast({ title: "Quote Approved", description: result.message || `${quoteData.quoteNumber} marked as Approved.`});
-      fetchQuoteDataForPrint(); // Refresh data to show new status
+      fetchQuoteDataForPrint(); 
     } catch (err: any) {
       toast({ title: "Error Approving Quote", description: err.message, variant: "destructive" });
     } finally {
@@ -109,7 +109,7 @@ function PrintQuotePageContent() {
       }
       const result = await response.json();
       toast({ title: "Quote Rejected", description: result.message || `${quoteData.quoteNumber} marked as Rejected.`});
-      fetchQuoteDataForPrint(); // Refresh data
+      fetchQuoteDataForPrint(); 
     } catch (err: any) {
       toast({ title: "Error Rejecting Quote", description: err.message, variant: "destructive" });
     } finally {
@@ -119,10 +119,7 @@ function PrintQuotePageContent() {
   
   const handleEditQuote = () => {
     if (!quoteData || !quoteId) return;
-    // Editing for quotes is not fully implemented in the form yet.
-    // This would ideally redirect to the quote form with the quote ID.
-    // router.push(`/create-document?editQuoteId=${quoteId}`); 
-    toast({ title: "Edit Quote (Placeholder)", description: "Full editing for quotes is not yet implemented.", variant: "default"});
+    router.push(`/create-document?editQuoteId=${quoteId}`); 
   };
 
 
@@ -159,7 +156,7 @@ function PrintQuotePageContent() {
   }
   
   const canEdit = quoteData.status === 'Draft' || quoteData.status === 'Pending Approval';
-  const canApproveOrReject = quoteData.status === 'Pending Approval';
+  const showApprovalActions = quoteData.status === 'Pending Approval';
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
@@ -167,8 +164,9 @@ function PrintQuotePageContent() {
         <Card className="mb-6 print:hidden shadow-lg">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
+                <FileText className="h-6 w-6 text-primary" />
                 <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">
-                Quote: {quoteData.quoteNumber}
+                  Quote: {quoteData.quoteNumber}
                 </h1>
                 <span className={`text-sm font-semibold px-2 py-1 rounded-md ${
                     quoteData.status === 'Approved' ? 'bg-green-100 text-green-700' :
@@ -189,7 +187,7 @@ function PrintQuotePageContent() {
                   <Edit className="mr-2 h-4 w-4" /> Edit Quote
                 </Button>
               )}
-              {canApproveOrReject && (
+              {showApprovalActions && (
                 <>
                   <Button onClick={handleApproveQuote} size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" disabled={isProcessingAction}>
                     {isProcessingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />} Approve
