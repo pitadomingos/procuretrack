@@ -1,7 +1,6 @@
 
 import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord, QuoteItem } from '@/types';
 import { Archive, Loader, FolderOpen, Users as UsersIcon, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon, FileQuestion } from 'lucide-react';
-// Removed fs and path imports as they are not client-safe
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -41,10 +40,10 @@ export const dashboardStats: StatCardItem[] = [
     description: 'Summary of logged fuel consumption entries.',
   },
   {
-    title: 'Goods Received Notes',
+    title: 'Goods Received Notes', // This represents POs with GRN activity
     value: 'N/A', 
     icon: Truck,
-    description: 'Overview of recent GRNs processed.',
+    description: 'POs with items received.',
   },
 ];
 
@@ -76,14 +75,14 @@ export const activityLogData: ActivityLogEntry[] = [
 ];
 
 export const managementTables = [
-  { name: 'Suppliers', href: '/management/suppliers', icon: Package, count: 14, description: "Manage suppliers / vendors" },
-  { name: 'Approvers', href: '/management/approvers', icon: UsersIcon, count: 3, description: "Manage PO approvers" },
-  { name: 'Users', href: '/management/users', icon: UsersIcon, count: 5, description: "Manage system users and roles" },
-  { name: 'Sites', href: '/management/sites', icon: Building, count: 5, description: "Manage company sites/locations" },
-  { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations/departments (Legacy - Use Sites)" },
-  { name: 'Categories', href: '/management/categories', icon: TagLucideIcon, count: 15, description: "Manage item and service categories" },
-  { name: 'Tags', href: '/management/tags', icon: Fuel, count: 5, description: "Manage tagged vehicles & equipment" },
-  { name: 'Clients', href: '/management/clients', icon: Briefcase, count: 4, description: "Manage client information"},
+  { name: 'Suppliers', href: '/management/suppliers', icon: Package, count: 'N/A', description: "Manage suppliers / vendors", apiKey: 'suppliersCount' },
+  { name: 'Approvers', href: '/management/approvers', icon: UsersIcon, count: 'N/A', description: "Manage PO approvers", apiKey: 'approversCount' },
+  { name: 'Users', href: '/management/users', icon: UsersIcon, count: 'N/A', description: "Manage system users and roles", apiKey: 'usersCount' },
+  { name: 'Sites', href: '/management/sites', icon: Building, count: 'N/A', description: "Manage company sites/locations", apiKey: 'sitesCount' },
+  { name: 'Allocations', href: '/management/allocations', icon: Briefcase, count: 10, description: "Manage cost allocations (Legacy - Use Sites for current locations). Count is mock.", apiKey: undefined }, // No apiKey, count is mock
+  { name: 'Categories', href: '/management/categories', icon: TagLucideIcon, count: 'N/A', description: "Manage item and service categories", apiKey: 'categoriesCount' },
+  { name: 'Tags', href: '/management/tags', icon: Fuel, count: 'N/A', description: "Manage tagged vehicles & equipment", apiKey: 'tagsCount' },
+  { name: 'Clients', href: '/management/clients', icon: Briefcase, count: 'N/A', description: "Manage client information", apiKey: 'clientsCount'},
 ];
 
 export const months: FilterOption[] = [
@@ -269,16 +268,4 @@ export const mockFuelRecordsData: FuelRecord[] = [
   { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW' },
   { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'MEM' },
 ];
-
-// --- Remove Quote Mock DB & Functions ---
-// The global-backed in-memory mock DB for quotes is removed.
-// API routes will now directly interact with the actual database.
-// Ensure that INITIAL_MOCK_QUOTES (if it was for seeding the global mock) is also removed or clearly marked as unused.
-// The following functions related to mock quotes are no longer needed:
-// - addMockQuote
-// - updateMockQuote
-// - getAllMockQuotes
-// - getMockQuoteById
-
-// (The above comment is for context, the actual removal will be reflected in the content of this file.)
     

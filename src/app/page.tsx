@@ -15,11 +15,11 @@ import { Button } from '@/components/ui/button';
 interface FetchedStats {
   totalPOs: number;
   pendingApprovalPOs: number;
-  openPOs: number; // Represents 'Approved' POs
+  openPOs: number;
   totalRequisitions: number;
-  clientQuotesCount: number; // Changed from string | number to number
-  fuelRecordsCount: string | number; // Kept as is for now
-  grnCount: string | number; // Kept as is for now
+  clientQuotesCount: number;
+  fuelRecordsCount: number;
+  grnCount: number;
 }
 
 export default function DashboardPage() {
@@ -46,12 +46,12 @@ export default function DashboardPage() {
             case 'Pending Approval POs': return { ...stat, value: data.pendingApprovalPOs.toString() };
             case 'Open POs (Approved)': return { ...stat, value: data.openPOs.toString() };
             case 'Total Requisitions': return { ...stat, value: data.totalRequisitions.toString() };
-            case 'Client Quotes': return { ...stat, value: data.clientQuotesCount.toString() }; // Now uses the fetched count
+            case 'Client Quotes': return { ...stat, value: data.clientQuotesCount.toString() };
             case 'Fuel Records': return { ...stat, value: data.fuelRecordsCount.toString() };
-            case 'Goods Received Notes': return { ...stat, value: data.grnCount.toString() };
+            case 'Goods Received Notes': return { ...stat, value: data.grnCount.toString() }; // Updated to use grnCount
             default: return stat;
           }
-        }).filter(stat => stat.title !== 'Completed POs' && stat.title !== 'Partially Completed POs')
+        }).filter(stat => stat.title !== 'Completed POs' && stat.title !== 'Partially Completed POs') // Remove old/unused cards
       );
     } catch (err: any) {
       setStatsError(err.message || 'An unexpected error occurred while fetching stats.');
@@ -72,7 +72,6 @@ export default function DashboardPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
-    // Potentially pass filters to fetchDashboardStats if API supports it
     setRefreshKey(prevKey => prevKey + 1);
   };
 
