@@ -22,26 +22,24 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-// Removed: import { randomUUID } from 'crypto';
 
-
-const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
+const defaultItem: Omit<QuoteItem, 'quoteId'> = { id: '', partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
 interface QuoteFormValues {
   clientId: string | null;
-  clientNameDisplay: string; // For display only, not part of payload directly
-  clientEmailDisplay: string; // For display only
+  clientNameDisplay: string;
+  clientEmailDisplay: string;
   quoteDate: string;
-  quoteNumberDisplay: string; // For display, actual number from API
+  quoteNumberDisplay: string;
   currency: string;
   termsAndConditions: string;
   notes: string;
-  items: QuoteItem[];
+  items: Omit<QuoteItem, 'quoteId'>[];
   approverId: string | null;
 }
 
-const MOCK_CREATOR_EMAIL = 'creator@jachris.com'; // Placeholder for logged-in user
-const NO_APPROVER_VALUE = "__none__"; // Special value for "None" option
+const MOCK_CREATOR_EMAIL = 'creator@jachris.com';
+const NO_APPROVER_VALUE = "__none__";
 
 export function QuoteForm() {
   const { toast } = useToast();
@@ -53,7 +51,6 @@ export function QuoteForm() {
   const [clients, setClients] = useState<Client[]>([]);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
-
 
   const form = useForm<QuoteFormValues>({
     defaultValues: {
@@ -125,7 +122,7 @@ export function QuoteForm() {
   useEffect(() => {
     const items = watchedItems || [];
     let calculatedInputSum = 0;
-    items.forEach((item: QuoteItem) => {
+    items.forEach((item: Omit<QuoteItem, 'quoteId'>) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
         calculatedInputSum += quantity * unitPrice;
@@ -134,7 +131,7 @@ export function QuoteForm() {
     let newDisplaySubTotal = calculatedInputSum;
     let newDisplayVatAmount = 0;
     if (watchedCurrency === 'MZN') {
-        newDisplayVatAmount = newDisplaySubTotal * 0.16; // Assuming 16% VAT for MZN
+        newDisplayVatAmount = newDisplaySubTotal * 0.16;
     }
     setSubTotal(parseFloat(newDisplaySubTotal.toFixed(2)));
     setVatAmount(parseFloat(newDisplayVatAmount.toFixed(2)));
@@ -165,7 +162,7 @@ export function QuoteForm() {
     }
     setIsSubmitting(true);
     
-    const generatedQuoteId = crypto.randomUUID(); // Use browser's crypto.randomUUID()
+    const generatedQuoteId = crypto.randomUUID();
     const quoteStatus = (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? 'Pending Approval' : 'Draft';
     
     const payload: QuotePayload = {
@@ -199,17 +196,23 @@ export function QuoteForm() {
         body: JSON.stringify(payload),
       });
 
+      const result = await response.json(); // Always try to parse JSON
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to save quote. Server error.' }));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        const errorDetail = result.error || result.details || result.message || `Server error: ${response.status}`;
+        throw new Error(errorDetail);
       }
 
-      const result = await response.json();
       toast({ title: 'Quote Saved', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
       router.push(`/quotes/${result.quoteId}/print`); 
 
     } catch (error: any) {
-      toast({ title: 'Error Saving Quote', description: error.message || 'An unexpected error occurred.', variant: "destructive" });
+      console.error("Error saving quote (frontend):", error);
+      toast({ 
+        title: 'Error Saving Quote', 
+        description: error.message || 'An unexpected error occurred while saving the quote.', 
+        variant: "destructive" 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -393,4 +396,3 @@ export function QuoteForm() {
     </Card>
   );
 }
-

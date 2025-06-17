@@ -1,10 +1,9 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
-import type { QuotePayload, QuoteItem, Client, Approver } from '@/types'; // Added Approver
+import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
@@ -65,12 +64,12 @@ export async function POST(request: Request) {
       const importErrors: string[] = [];
 
       for (const [index, record] of results.entries()) {
-        const quoteId = record['ID'] || record['id'] || randomUUID(); // Allow 'id' or 'ID' from CSV, fallback to new UUID
+        const quoteId = record['ID'] || record['id'] || crypto.randomUUID();
         const quoteData: Partial<QuotePayload> = {
           id: quoteId,
           quoteNumber: record['QuoteNumber'] || `CSV-Q-${quoteId.slice(0,8)}`,
           quoteDate: record['QuoteDate'] ? new Date(record['QuoteDate']).toISOString() : new Date().toISOString(),
-          clientId: record['ClientID'] || record['ClientId'] || record['clientId'], // Allow variations
+          clientId: record['ClientID'] || record['ClientId'] || record['clientId'],
           creatorEmail: record['CreatorEmail'] || 'csv_import@system.com',
           subTotal: parseFloat(record['SubTotal'] || 0),
           vatAmount: parseFloat(record['VATAmount'] || 0),
@@ -92,7 +91,6 @@ export async function POST(request: Request) {
         }
         
         try {
-          // This example only inserts/updates the quote header. Items would need separate handling.
           await connection.execute(
             `INSERT INTO Quote (id, quoteNumber, quoteDate, clientId, creatorEmail, subTotal, vatAmount, grandTotal, currency, termsAndConditions, notes, status, approverId, createdAt, updatedAt)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
@@ -142,7 +140,7 @@ export async function POST(request: Request) {
       console.log(`[API_INFO] /api/quotes POST JSON: Received quote data: ${JSON.stringify(quoteDataFromForm).substring(0, 500)}...`);
 
       if (!quoteDataFromForm.id || !quoteDataFromForm.clientId || !quoteDataFromForm.quoteNumber) {
-        console.error('[API_ERROR] /api/quotes POST JSON: Missing required fields (id, clientId, quoteNumber).');
+        console.error('[API_ERROR] /api/quotes POST JSON: Missing required fields (id, clientId, quoteNumber). Data:', quoteDataFromForm);
         return NextResponse.json({ error: 'Quote ID, Client ID, and Quote Number are required.' }, { status: 400 });
       }
       
@@ -172,7 +170,7 @@ export async function POST(request: Request) {
           quoteDataFromForm.approvalDate ? new Date(quoteDataFromForm.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null,
         ]
       );
-      console.log(`[API_INFO] /api/quotes POST JSON: Quote header inserted/updated for ID: ${quoteDataFromForm.id}.`);
+      console.log(`[API_INFO] /api/quotes POST JSON: Quote header inserted for ID: ${quoteDataFromForm.id}.`);
 
       if (quoteDataFromForm.items && quoteDataFromForm.items.length > 0) {
         console.log(`[API_INFO] /api/quotes POST JSON: Processing ${quoteDataFromForm.items.length} items for quote ID: ${quoteDataFromForm.id}.`);
@@ -180,7 +178,7 @@ export async function POST(request: Request) {
           await connection.execute(
             `INSERT INTO QuoteItem (id, quoteId, partNumber, customerRef, description, quantity, unitPrice)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [item.id || randomUUID(), quoteDataFromForm.id, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
+            [item.id || crypto.randomUUID(), quoteDataFromForm.id, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
           );
         }
         console.log(`[API_INFO] /api/quotes POST JSON: Finished processing items for quote ID: ${quoteDataFromForm.id}.`);
@@ -200,10 +198,17 @@ export async function POST(request: Request) {
       }
       const quoteIdentifier = quoteDataFromForm ? `ID ${quoteDataFromForm.id} or Number ${quoteDataFromForm.quoteNumber}` : 'given details';
       console.error(`[API_ERROR] /api/quotes POST JSON (outer try-catch) for ${quoteIdentifier}:`, error);
+      let errorMessage = `Failed to create quote.`;
+      let errorDetails = error.message;
       if (error.code === 'ER_DUP_ENTRY') {
-        return NextResponse.json({ error: `Quote with ${quoteIdentifier} already exists.` }, { status: 409 });
+        errorMessage = `Quote with ${quoteIdentifier} already exists.`;
+      } else if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+        errorMessage = `Failed to create quote. Invalid reference to Client or Approver.`;
+        errorDetails = `Client ID '${quoteDataFromForm?.clientId}' or Approver ID '${quoteDataFromForm?.approverId}' might not exist. Specific error: ${error.message}`;
       }
-      return NextResponse.json({ error: 'Failed to create quote.', details: error.message }, { status: 500 });
+      
+      console.error(`[API_ERROR_DETAILS] /api/quotes POST JSON: Code: ${error.code}, Message: ${error.message}, Stack: ${error.stack}`);
+      return NextResponse.json({ error: errorMessage, details: errorDetails, code: error.code }, { status: 500 });
     } finally {
       if (connection) {
         try { connection.release(); console.log('[API_INFO] /api/quotes POST JSON: Database connection released.'); }
@@ -291,7 +296,6 @@ export async function GET(request: Request) {
         error: errorMessage, 
         details: errorDetails, 
         code: errorCode, 
-        // stack: process.env.NODE_ENV === 'development' ? errorStack : undefined // Only expose stack in dev for security
       }, 
       { status: 500 }
     );
@@ -308,4 +312,3 @@ export async function GET(request: Request) {
     console.log('[API_INFO] /api/quotes GET: Request processing finished.');
   }
 }
-    
