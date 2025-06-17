@@ -7,7 +7,7 @@ import { managementTables as initialManagementTablesConfig } from "@/lib/mock-da
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon, TagStatus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -15,9 +15,10 @@ interface ManagementTableItem {
   name: string;
   href: string;
   icon: LucideIcon;
-  count: number | string; // Can be string for 'N/A' or number
+  count: number | string; 
   description: string;
-  apiKey?: keyof ManagementStatsCounts; // Key to map API response
+  apiKey?: keyof ManagementStatsCounts; 
+  statusSummary?: Record<TagStatus, number>; 
 }
 
 interface ManagementStatsCounts {
@@ -27,26 +28,14 @@ interface ManagementStatsCounts {
   sitesCount: number;
   categoriesCount: number;
   tagsCount: number;
+  tagStatusSummary?: Record<TagStatus, number>; // For specific tag status counts
   clientsCount: number;
 }
-
-const mapApiKeyToManagementTableKey = (apiKey: keyof ManagementStatsCounts): string => {
-  switch (apiKey) {
-    case 'suppliersCount': return 'Suppliers';
-    case 'approversCount': return 'Approvers';
-    case 'usersCount': return 'Users';
-    case 'sitesCount': return 'Sites';
-    case 'categoriesCount': return 'Categories';
-    case 'tagsCount': return 'Tags';
-    case 'clientsCount': return 'Clients';
-    default: return '';
-  }
-};
 
 export default function ManagementPage() {
   const [managementTables, setManagementTables] = useState<ManagementTableItem[]>(initialManagementTablesConfig.map(table => ({
     ...table,
-    apiKey: table.apiKey as keyof ManagementStatsCounts | undefined // Ensure apiKey type compatibility
+    apiKey: table.apiKey as keyof ManagementStatsCounts | undefined 
   })));
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -65,14 +54,23 @@ export default function ManagementPage() {
       
       setManagementTables(prevTables =>
         prevTables.map(table => {
+          let newCount: number | string = table.count;
+          let newStatusSummary: Record<TagStatus, number> | undefined = undefined;
+
           if (table.apiKey && data.hasOwnProperty(table.apiKey)) {
-            return { ...table, count: data[table.apiKey!] };
+            newCount = data[table.apiKey];
           }
-          // For Allocations, keep its mock count and update description
+
+          if (table.name === 'Tags' && data.tagStatusSummary) {
+            newStatusSummary = data.tagStatusSummary;
+            newCount = data.tagsCount; // Ensure total count is also updated for Tags
+          }
+          
           if (table.name === 'Allocations') {
             return { ...table, description: "Manage cost allocations (Legacy - Use Sites for current locations). Count is mock." };
           }
-          return table;
+
+          return { ...table, count: newCount, statusSummary: newStatusSummary };
         })
       );
     } catch (err: any) {
@@ -86,6 +84,17 @@ export default function ManagementPage() {
   useEffect(() => {
     fetchManagementStats();
   }, [fetchManagementStats]);
+
+  const renderStatusSummary = (summary: Record<string, number> | undefined) => {
+    if (!summary || Object.keys(summary).length === 0) return null;
+    return (
+      <p className="text-xs text-muted-foreground pt-1">
+        {Object.entries(summary)
+          .map(([status, count]) => `${status}: ${count}`)
+          .join(', ')}
+      </p>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -123,6 +132,7 @@ export default function ManagementPage() {
                   <CardContent className="flex-grow">
                     <div className="text-2xl font-bold">{table.count}</div>
                     <p className="text-xs text-muted-foreground pt-1">{table.description}</p>
+                    {table.name === 'Tags' && table.statusSummary && renderStatusSummary(table.statusSummary as Record<string, number>)}
                   </CardContent>
                   <CardFooter>
                     {table.href ? (
@@ -146,3 +156,4 @@ export default function ManagementPage() {
     </div>
   );
 }
+

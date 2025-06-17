@@ -283,9 +283,9 @@ export interface Tag {
   type?: string | null;
   siteId: number | null;
   siteName?: string; // Denormalized for display
-  status: TagStatus; // Added status field
-  createdAt?: string; // Added from DB schema
-  updatedAt?: string; // Added from DB schema
+  status: TagStatus; 
+  createdAt?: string; 
+  updatedAt?: string; 
 }
 
 export interface FuelRecord {
@@ -311,4 +311,15 @@ export interface FuelRecord {
 export interface FilterOption {
   value: string;
   label: string;
+}
+
+export interface ManagementStats { // For the main management page card stats
+  suppliersCount: number;
+  approversCount: number;
+  usersCount: number;
+  sitesCount: number;
+  categoriesCount: number;
+  tagsCount: number;
+  tagStatusSummary?: Record<TagStatus, number>; // Added this for detailed tag statuses
+  clientsCount: number;
 }

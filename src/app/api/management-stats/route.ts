@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
+import type { TagStatus } from '@/types';
 
 interface ManagementStats {
   suppliersCount: number;
@@ -9,8 +10,8 @@ interface ManagementStats {
   sitesCount: number;
   categoriesCount: number;
   tagsCount: number;
+  tagStatusSummary?: Record<TagStatus, number>;
   clientsCount: number;
-  // Allocations are mock, not counted from DB
 }
 
 export async function GET() {
@@ -33,8 +34,16 @@ export async function GET() {
     const [categoriesRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Category');
     const categoriesCount = Number(categoriesRows[0]?.count || 0);
 
-    const [tagsRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Tag');
-    const tagsCount = Number(tagsRows[0]?.count || 0);
+    const [tagsTotalRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Tag');
+    const tagsCount = Number(tagsTotalRows[0]?.count || 0);
+
+    const [tagStatusRows]: any[] = await connection.execute('SELECT status, COUNT(*) as count FROM Tag GROUP BY status');
+    const tagStatusSummary: Record<string, number> = {};
+    if (Array.isArray(tagStatusRows)) {
+      tagStatusRows.forEach((row: { status: TagStatus, count: number | string }) => {
+        tagStatusSummary[row.status] = Number(row.count);
+      });
+    }
     
     const [clientsRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Client');
     const clientsCount = Number(clientsRows[0]?.count || 0);
@@ -46,6 +55,7 @@ export async function GET() {
       sitesCount,
       categoriesCount,
       tagsCount,
+      tagStatusSummary: tagStatusSummary as Record<TagStatus, number>,
       clientsCount,
     };
     
@@ -64,3 +74,4 @@ export async function GET() {
     if (connection) connection.release();
   }
 }
+
