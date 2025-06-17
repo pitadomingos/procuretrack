@@ -11,8 +11,8 @@ import { activityLogData } from '@/lib/mock-data'; // Still using mock for activ
 import type { GroupedStatCardItem, FetchedDashboardStats, SubStat } from '@/types';
 import { Loader2, AlertTriangle, RefreshCw, Users, ShoppingCart, Truck, ClipboardList, Fuel, FileText as QuoteIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"; // Added Card imports
-import { Skeleton } from "@/components/ui/skeleton"; // Added Skeleton import
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const initialDashboardCardsConfig: GroupedStatCardItem[] = [
   {
@@ -42,8 +42,6 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
     subStats: [
       { label: 'Approved POs (Open)', value: 'N/A' },
       { label: 'POs with GRN Activity', value: 'N/A' },
-      // { label: 'Fully Received POs', value: 'N/A' }, // Future
-      // { label: 'Partially Received POs', value: 'N/A' }, // Future
     ],
     viewMoreLink: '/create-document', // Links to page with GRN interface
   },
@@ -52,8 +50,6 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
     icon: ClipboardList,
     subStats: [
       { label: 'Total Requisitions', value: 'N/A' },
-      // { label: 'Attended', value: 'N/A' }, // Future
-      // { label: 'Pending', value: 'N/A' }, // Future
     ],
     viewMoreLink: '/create-document',
   },
@@ -63,7 +59,6 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
     subStats: [
       { label: 'Total Vehicles/Tags', value: 'N/A' },
       { label: 'Total Fuel Records', value: 'N/A' },
-      // { label: 'Vehicles Pending Refuel', value: 'N/A' }, // Future concept
     ],
     viewMoreLink: '/create-document', // Links to page with Fuel Records list
   },
@@ -85,7 +80,7 @@ export default function DashboardPage() {
   const [groupedDashboardStats, setGroupedDashboardStats] = useState<GroupedStatCardItem[]>(initialDashboardCardsConfig);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0); 
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchDashboardStats = useCallback(async () => {
     setIsLoadingStats(true);
@@ -98,43 +93,47 @@ export default function DashboardPage() {
       }
       const data: FetchedDashboardStats = await response.json();
       
+      if (!data || typeof data !== 'object') {
+        throw new Error('Fetched dashboard data is not a valid object.');
+      }
+
       setGroupedDashboardStats(prevCards =>
         prevCards.map(card => {
-          let newSubStats: SubStat[] = card.subStats.map(ss => ({ ...ss, value: 'N/A' })); // Default to N/A
+          let newSubStats: SubStat[] = card.subStats.map(ss => ({ ...ss, value: 'N/A' })); 
 
           if (card.title === 'User Activity' && data.users) {
             newSubStats = [
-              { label: 'Total Users', value: data.users.total.toString() },
-              { label: 'Active Users', value: data.users.active.toString() },
-              { label: 'Inactive Users', value: data.users.inactive.toString() },
+              { label: 'Total Users', value: (data.users.total ?? 0).toString() },
+              { label: 'Active Users', value: (data.users.active ?? 0).toString() },
+              { label: 'Inactive Users', value: (data.users.inactive ?? 0).toString() },
             ];
           } else if (card.title === 'Purchase Orders' && data.purchaseOrders) {
             newSubStats = [
-              { label: 'Total POs', value: data.purchaseOrders.total.toString() },
-              { label: 'Approved', value: data.purchaseOrders.approved.toString() },
-              { label: 'Pending Approval', value: data.purchaseOrders.pending.toString() },
-              { label: 'Rejected', value: data.purchaseOrders.rejected.toString() },
+              { label: 'Total POs', value: (data.purchaseOrders.total ?? 0).toString() },
+              { label: 'Approved', value: (data.purchaseOrders.approved ?? 0).toString() },
+              { label: 'Pending Approval', value: (data.purchaseOrders.pending ?? 0).toString() },
+              { label: 'Rejected', value: (data.purchaseOrders.rejected ?? 0).toString() },
             ];
           } else if (card.title === 'Goods Received' && data.goodsReceived) {
             newSubStats = [
-              { label: 'Approved POs (Open)', value: data.goodsReceived.totalApprovedPOs.toString() },
-              { label: 'POs with GRN Activity', value: data.goodsReceived.totalPOsWithGRNActivity.toString() },
+              { label: 'Approved POs (Open)', value: (data.goodsReceived.totalApprovedPOs ?? 0).toString() },
+              { label: 'POs with GRN Activity', value: (data.goodsReceived.totalPOsWithGRNActivity ?? 0).toString() },
             ];
           } else if (card.title === 'Purchase Requisitions' && data.requisitions) {
             newSubStats = [
-              { label: 'Total Requisitions', value: data.requisitions.total.toString() },
+              { label: 'Total Requisitions', value: (data.requisitions.total ?? 0).toString() },
             ];
           } else if (card.title === 'Fuel Management' && data.fuel) {
             newSubStats = [
-              { label: 'Total Vehicles/Tags', value: data.fuel.totalTags.toString() },
-              { label: 'Total Fuel Records', value: data.fuel.totalRecords.toString() },
+              { label: 'Total Vehicles/Tags', value: (data.fuel.totalTags ?? 0).toString() },
+              { label: 'Total Fuel Records', value: (data.fuel.totalRecords ?? 0).toString() },
             ];
           } else if (card.title === 'Client Quotations' && data.clientQuotes) {
             newSubStats = [
-              { label: 'Total Quotes', value: data.clientQuotes.total.toString() },
-              { label: 'Approved', value: data.clientQuotes.approved.toString() },
-              { label: 'Pending Approval', value: data.clientQuotes.pending.toString() },
-              { label: 'Rejected', value: data.clientQuotes.rejected.toString() },
+              { label: 'Total Quotes', value: (data.clientQuotes.total ?? 0).toString() },
+              { label: 'Approved', value: (data.clientQuotes.approved ?? 0).toString() },
+              { label: 'Pending Approval', value: (data.clientQuotes.pending ?? 0).toString() },
+              { label: 'Rejected Quotes', value: (data.clientQuotes.rejected ?? 0).toString() },
             ];
           }
           return { ...card, subStats: newSubStats };
@@ -154,24 +153,22 @@ export default function DashboardPage() {
 
   const handleRefreshAllData = () => {
     fetchDashboardStats();
-    setRefreshKey(prevKey => prevKey + 1); 
+    setRefreshKey(prevKey => prevKey + 1);
   };
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
-    // For now, filters re-trigger chart refreshes.
-    // Stats API doesn't currently use these filters, but could be extended.
     setRefreshKey(prevKey => prevKey + 1);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <FilterBar 
-          onFilterApply={handleFilterApply} 
-          showApproverFilter={false} // Adjust as needed if stats should be filterable
+        <FilterBar
+          onFilterApply={handleFilterApply}
+          showApproverFilter={false}
           showRequestorFilter={false}
-          showSiteFilter={false} // For main dashboard, maybe not needed for global stats
+          showSiteFilter={false}
         />
         <Button onClick={handleRefreshAllData} variant="outline" size="sm" className="ml-4">
           <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
@@ -184,7 +181,7 @@ export default function DashboardPage() {
           initialDashboardCardsConfig.map((cardConfig, index) => (
             <Card key={index} className="shadow-lg flex flex-col h-[220px] sm:h-[240px]">
               <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-5 w-3/5" /> 
+                <Skeleton className="h-5 w-3/5" />
                 <Skeleton className="h-6 w-6 rounded-full" />
               </CardHeader>
               <CardContent className="pt-2 flex-grow">
@@ -219,16 +216,13 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <MonthlyStatusChart key={`monthly-${refreshKey}`} /> 
+        <MonthlyStatusChart key={`monthly-${refreshKey}`} />
         <SitePOValueStatusChart key={`site-po-${refreshKey}`} />
       </section>
 
       <section>
-        {/* ActivityLogTable will be updated in a subsequent step to fetch live data */}
         <ActivityLogTable activities={activityLogData.slice(0, 5)} maxHeight="300px" />
       </section>
     </div>
   );
 }
-
-    
