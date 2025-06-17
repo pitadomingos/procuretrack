@@ -6,10 +6,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
 import type { QuotePayload, Approver } from '@/types'; // Added Approver
-import { ArrowLeft, Printer, Download, Loader2, ThumbsUp, ThumbsDown, Edit } from 'lucide-react'; // Added approval icons
+import { ArrowLeft, Printer, Loader2, ThumbsUp, ThumbsDown, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names
+import { mockApproversData, MOCK_QUOTES_DB, updateMockQuote } from '@/lib/mock-data'; // For fetching approver names and updating mock DB
 
 function PrintQuotePageContent() {
   const router = useRouter();
@@ -29,20 +29,27 @@ function PrintQuotePageContent() {
     setLoading(true);
     setError(null);
     try {
-      const quoteRes = await fetch(`/api/quotes/${quoteId}`); 
-      if (!quoteRes.ok) {
-        const errorData = await quoteRes.json().catch(() => ({ message: 'Failed to fetch quote details.' }));
-        throw new Error(errorData.message || `Failed to fetch quote: ${quoteRes.statusText}`);
-      }
-      const data: QuotePayload = await quoteRes.json();
-
-      // If approverId exists, try to fetch approver name (mocked for now)
-      if (data.approverId) {
-        const approver = mockApproversData.find(appr => appr.id === data.approverId);
-        data.approverName = approver?.name;
-      }
+      // Directly use the shared MOCK_QUOTES_DB for fetching
+      const data = MOCK_QUOTES_DB.find(q => q.id === quoteId);
       
-      setQuoteData(data);
+      if (!data) {
+        // Fallback if not found (e.g., direct navigation to a non-existent mock ID)
+        const quoteRes = await fetch(`/api/quotes/${quoteId}`); 
+        if (!quoteRes.ok) {
+          const errorData = await quoteRes.json().catch(() => ({ message: 'Failed to fetch quote details.' }));
+          throw new Error(errorData.message || `Failed to fetch quote: ${quoteRes.statusText}`);
+        }
+        const fallbackData: QuotePayload = await quoteRes.json();
+        setQuoteData(fallbackData);
+      } else {
+        const populatedData = {...data};
+         if (populatedData.approverId) {
+            const approver = mockApproversData.find(appr => appr.id === populatedData.approverId);
+            populatedData.approverName = approver?.name;
+        }
+        setQuoteData(populatedData);
+      }
+
 
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
@@ -80,30 +87,53 @@ function PrintQuotePageContent() {
   };
   
   const handleApproveQuote = async () => {
-    if (!quoteData) return;
+    if (!quoteData || !quoteData.id) return;
     setIsProcessingAction(true);
-    // Placeholder: Actual API call to /api/quotes/[id]/approve would go here
-    console.log(`Simulating approval for quote ${quoteData.quoteNumber}`);
-    toast({ title: "Quote Approved (Simulated)", description: `${quoteData.quoteNumber} marked as Approved.`});
-    setQuoteData(prev => prev ? ({ ...prev, status: 'Approved' }) : null);
-    setIsProcessingAction(false);
+    try {
+      const response = await fetch(`/api/quotes/${quoteData.id}/approve`, { method: 'POST' });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Approval failed.' }));
+        throw new Error(errorData.error || `Approval failed for Quote ${quoteData.id}.`);
+      }
+      const result = await response.json();
+      toast({ title: "Quote Approved", description: result.message || `${quoteData.quoteNumber} marked as Approved.`});
+      // Refetch data to show updated status
+      fetchQuoteDataForPrint();
+    } catch (err: any) {
+      toast({ title: "Error Approving Quote", description: err.message, variant: "destructive" });
+    } finally {
+      setIsProcessingAction(false);
+    }
   };
 
   const handleRejectQuote = async () => {
-    if (!quoteData) return;
+    if (!quoteData || !quoteData.id) return;
     setIsProcessingAction(true);
-    // Placeholder: Actual API call to /api/quotes/[id]/reject would go here
-    console.log(`Simulating rejection for quote ${quoteData.quoteNumber}`);
-    toast({ title: "Quote Rejected (Simulated)", description: `${quoteData.quoteNumber} marked as Rejected.`});
-    setQuoteData(prev => prev ? ({ ...prev, status: 'Rejected' }) : null);
-    setIsProcessingAction(false);
+    try {
+      const response = await fetch(`/api/quotes/${quoteData.id}/reject`, { method: 'POST' });
+       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Rejection failed.' }));
+        throw new Error(errorData.error || `Rejection failed for Quote ${quoteData.id}.`);
+      }
+      const result = await response.json();
+      toast({ title: "Quote Rejected", description: result.message || `${quoteData.quoteNumber} marked as Rejected.`});
+      // Refetch data to show updated status
+      fetchQuoteDataForPrint();
+    } catch (err: any) {
+      toast({ title: "Error Rejecting Quote", description: err.message, variant: "destructive" });
+    } finally {
+      setIsProcessingAction(false);
+    }
   };
   
   const handleEditQuote = () => {
     if (!quoteData || !quoteId) return;
-    // This will need a new page or modal for editing quotes. For now, placeholder.
-    toast({ title: "Edit Quote", description: "Quote editing functionality is not yet implemented.", variant: "default"});
-    // router.push(`/create-document?editQuoteId=${quoteId}`); // Example future route
+    // This will need a new page or modal for editing quotes.
+    // For now, link to create-document with a query param (similar to PO editing)
+    // Ensure the QuoteForm can handle an editQuoteId prop if this is the desired UX.
+    // Currently, QuoteForm does not have an editQuoteId prop.
+    router.push(`/create-document?editQuoteId=${quoteId}`); // Needs QuoteForm to support this
+    toast({ title: "Edit Quote", description: "Redirecting to edit (functionality may be partial).", variant: "default"});
   };
 
 
@@ -140,6 +170,7 @@ function PrintQuotePageContent() {
   }
   
   const canEdit = quoteData.status === 'Draft' || quoteData.status === 'Pending Approval';
+  const canApproveOrReject = quoteData.status === 'Pending Approval';
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
@@ -169,7 +200,7 @@ function PrintQuotePageContent() {
                   <Edit className="mr-2 h-4 w-4" /> Edit Quote
                 </Button>
               )}
-              {quoteData.status === 'Pending Approval' && (
+              {canApproveOrReject && (
                 <>
                   <Button onClick={handleApproveQuote} size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" disabled={isProcessingAction}>
                     {isProcessingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />} Approve

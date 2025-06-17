@@ -3,10 +3,9 @@ import { NextResponse } from 'next/server';
 import type { QuotePayload, Approver } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
-import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names
+import { mockApproversData, MOCK_QUOTES_DB, addMockQuote, updateMockQuote } from '@/lib/mock-data'; // Using mock data
 
-// Mock database for quotes
-const MOCK_QUOTES_DB: QuotePayload[] = [];
+// Mock database for quotes is now imported from mock-data
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
@@ -47,22 +46,23 @@ export async function POST(request: Request) {
           .on('end', () => {
             console.log(`[API_INFO] /api/quotes POST CSV: CSV parsing finished. ${results.length} records found.`);
             results.forEach(quoteHeader => {
-                const newQuoteId = `MOCK-QID-CSV-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-                MOCK_QUOTES_DB.push({
-                    id: newQuoteId,
-                    quoteNumber: `Q-CSV-${newQuoteId.slice(-5)}`, 
-                    quoteDate: quoteHeader['QuoteDate (YYYY-MM-DD)'] ? new Date(quoteHeader['QuoteDate (YYYY-MM-DD)']).toISOString() : new Date().toISOString(),
+                const newQuote: QuotePayload = {
+                    id: quoteHeader['ID'] || `MOCK-QID-CSV-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                    quoteNumber: quoteHeader['QuoteNumber'] || `Q-CSV-${(quoteHeader['ID'] || '').slice(-5)}`, 
+                    quoteDate: quoteHeader['QuoteDate'] ? new Date(quoteHeader['QuoteDate']).toISOString() : new Date().toISOString(),
                     clientId: quoteHeader['ClientID'],
                     currency: quoteHeader['Currency'] || 'MZN',
                     termsAndConditions: quoteHeader['TermsAndConditions'],
                     notes: quoteHeader['Notes'],
-                    subTotal: 0, 
-                    vatAmount: 0,
-                    grandTotal: 0,
-                    items: [],
-                    status: 'Draft', // Default status for CSV import
+                    subTotal: parseFloat(quoteHeader['SubTotal'] || 0), 
+                    vatAmount: parseFloat(quoteHeader['VATAmount'] || 0),
+                    grandTotal: parseFloat(quoteHeader['GrandTotal'] || 0),
+                    items: [], // Items would typically be handled separately or in a more complex CSV
+                    status: (quoteHeader['Status'] || 'Draft') as QuotePayload['status'],
                     approverId: quoteHeader['ApproverID'] || null,
-                });
+                    creatorEmail: quoteHeader['CreatorEmail'] || 'csv_import@jachris.com',
+                };
+                addMockQuote(newQuote);
             });
             resolve();
           })
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'CSV file is empty or yielded no records for quotes.' }, { status: 400 });
       }
 
-      return NextResponse.json({ message: `Quote headers CSV uploaded and parsed. ${results.length} headers processed. (Data not fully saved to DB yet, items need manual entry)` }, { status: 200 });
+      return NextResponse.json({ message: `Quote headers CSV uploaded and parsed. ${results.length} headers processed and added/updated in mock DB.` }, { status: 200 });
 
     } catch (error: any) {
       console.error('[API_ERROR] /api/quotes POST CSV: Error handling quote CSV upload (outer try-catch):', error);
@@ -88,15 +88,10 @@ export async function POST(request: Request) {
     console.log('[API_INFO] /api/quotes POST: Received application/json request.');
     try {
       const quoteData = await request.json() as QuotePayload;
-      const newQuoteId = `MOCK-QID-${Date.now()}`;
-      const newQuote: QuotePayload = {
-        ...quoteData,
-        id: newQuoteId,
-        // status is already set in payload from form
-      };
-      MOCK_QUOTES_DB.push(newQuote);
+      // Use addMockQuote to handle ID generation and adding to the shared array
+      const newQuote = addMockQuote(quoteData); 
       console.log('Mocked saving quote (JSON):', newQuote);
-      return NextResponse.json({ message: 'Quote saved successfully (simulated)', quoteId: newQuoteId }, { status: 201 });
+      return NextResponse.json({ message: 'Quote saved successfully (simulated)', quoteId: newQuote.id }, { status: 201 });
     } catch (error: any) {
       console.error('[API_ERROR] /api/quotes POST JSON: Error creating quote:', error);
       return NextResponse.json({ error: 'Failed to create quote.', details: error.message }, { status: 500 });

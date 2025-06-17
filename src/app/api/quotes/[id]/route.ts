@@ -1,27 +1,15 @@
 
 import { NextResponse } from 'next/server';
-import type { QuotePayload, Approver } from '@/types';
-import { mockApproversData } from '@/lib/mock-data'; // For fetching approver names
-
-// Access the MOCK_QUOTES_DB (assuming it's somehow shareable or re-fetch if needed)
-// This is NOT how a real DB works.
-let MOCK_QUOTES_DB_REFERENCE: QuotePayload[] = []; 
-const ensureMockDb = () => {
-    if (MOCK_QUOTES_DB_REFERENCE.length === 0) {
-        // This won't truly repopulate from other route's memory,
-        // but shows intent for a standalone mock.
-    }
-}
-
+import type { QuotePayload, Approver, QuoteItem } from '@/types';
+import { mockApproversData, MOCK_QUOTES_DB, updateMockQuote } from '@/lib/mock-data'; // Use shared MOCK_QUOTES_DB
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  ensureMockDb();
   const { id } = params;
   try {
-    const quoteFromMockDB = MOCK_QUOTES_DB_REFERENCE.find(q => q.id === id);
+    const quoteFromMockDB = MOCK_QUOTES_DB.find(q => q.id === id);
 
     let quoteToReturn: QuotePayload;
 
@@ -30,7 +18,7 @@ export async function GET(
     } else {
       // Fallback for previewing a "newly created" mock quote
       // Construct a default quote structure with calculated totals
-      const defaultItems = [
+      const defaultItems: QuoteItem[] = [
         { id: 'item-prev-1', description: 'Sample Service A', quantity: 10, unitPrice: 150.75, partNumber: 'SVC-A', customerRef: 'REF001' },
         { id: 'item-prev-2', description: 'Sample Product B', quantity: 2, unitPrice: 1200.50, partNumber: 'PROD-B', customerRef: 'REF002' },
       ];
@@ -76,3 +64,21 @@ export async function GET(
   }
 }
 
+// Optional: PUT and DELETE methods for single quote (if needed for form editing persistence in mock)
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+  try {
+    const quoteData = await request.json() as QuotePayload;
+    const updatedQuote = updateMockQuote(id, quoteData);
+    if (updatedQuote) {
+      return NextResponse.json(updatedQuote);
+    }
+    return NextResponse.json({ error: 'Quote not found for update' }, { status: 404 });
+  } catch (error: any) {
+    console.error(`Error updating quote (mock) with ID ${id}:`, error);
+    return NextResponse.json({ error: 'Failed to update quote', details: error.message }, { status: 500 });
+  }
+}

@@ -1,6 +1,6 @@
 
-import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord } from '@/types';
-import { Archive, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon } from 'lucide-react';
+import type { StatCardItem, ActivityLogEntry, ChartDataPoint, Supplier, Approver, User, Site, Allocation, Category, Client, PurchaseOrderPayload, FilterOption, QuotePayload, RequisitionPayload, Tag, FuelRecord, QuoteItem } from '@/types';
+import { Archive, Loader, FolderOpen, Users, FileText, GanttChartSquare, Layers, Building, Briefcase, TagIcon as TagLucideIcon, ClipboardList, Fuel, Truck, Package, ListChecks as ListChecksIcon, FileQuestion } from 'lucide-react';
 
 export const dashboardStats: StatCardItem[] = [
   {
@@ -225,10 +225,63 @@ export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
   ];
 
-export const mockQuotesData: QuotePayload[] = [
-  { id: 'Q-MOCK-001', quoteNumber: 'Q-2024-001', quoteDate: '2024-07-15T10:00:00Z', clientId: 'client-001', clientName: 'Vale Mozambique', subTotal: 150000, vatAmount: 24000, grandTotal: 174000, currency: 'MZN', status: 'Draft', items: [{id:'qi1', description:'Service A', quantity:1, unitPrice:150000, partNumber: 'SVC-A', customerRef: 'CR-VALE-001'}] },
-  { id: 'Q-MOCK-002', quoteNumber: 'Q-2024-002', quoteDate: '2024-07-18T14:30:00Z', clientId: 'client-002', clientName: 'Mota-Engil', subTotal: 7500, vatAmount: 0, grandTotal: 7500, currency: 'USD', status: 'Sent to Client', items: [{id:'qi2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}] },
+// Exportable MOCK_QUOTES_DB for shared access
+export let MOCK_QUOTES_DB: QuotePayload[] = [
+  {
+    id: 'Q-MOCK-001',
+    quoteNumber: 'Q-2024-001',
+    quoteDate: '2024-07-15T10:00:00Z',
+    clientId: 'client-001',
+    clientName: 'Vale Mozambique',
+    subTotal: 150000,
+    vatAmount: 24000,
+    grandTotal: 174000,
+    currency: 'MZN',
+    status: 'Pending Approval', // Changed to Pending Approval
+    approverId: 'approver_001',   // Assigned an approver
+    items: [{id:'qi1', description:'Service A', quantity:1, unitPrice:150000, partNumber: 'SVC-A', customerRef: 'CR-VALE-001'}],
+    termsAndConditions: 'Standard Payment Terms: 30 days.',
+    notes: 'This is a sample quote pending approval.',
+    creatorEmail: 'creator@jachris.com',
+  },
+  {
+    id: 'Q-MOCK-002',
+    quoteNumber: 'Q-2024-002',
+    quoteDate: '2024-07-18T14:30:00Z',
+    clientId: 'client-002',
+    clientName: 'Mota-Engil',
+    subTotal: 7500,
+    vatAmount: 0,
+    grandTotal: 7500,
+    currency: 'USD',
+    status: 'Sent to Client',
+    items: [{id:'qi2', description:'Consulting Hours', quantity:100, unitPrice:75, partNumber: 'CONS-H', customerRef: 'CR-MOTA-002'}],
+    termsAndConditions: 'Payment due upon receipt.',
+    notes: 'Urgent consulting services.',
+    creatorEmail: 'creator@jachris.com',
+  },
+  {
+    id: 'Q-MOCK-003',
+    quoteNumber: 'Q-2024-003',
+    quoteDate: '2024-07-20T10:00:00Z',
+    clientId: 'client-003',
+    clientName: 'WBHO',
+    subTotal: 250000,
+    vatAmount: 40000,
+    grandTotal: 290000,
+    currency: 'MZN',
+    status: 'Pending Approval',
+    approverId: 'approver_003', // Assigned to Pita Domingos for example
+    items: [
+      {id:'qi3a', description:'Heavy Equipment Rental - Excavator', quantity:100, unitPrice:2000, partNumber: 'RENT-EXC-01', customerRef: 'REF-WBHO-EXC'},
+      {id:'qi3b', description:'Heavy Equipment Rental - Dumper', quantity:50, unitPrice:1000, partNumber: 'RENT-DMP-01', customerRef: 'REF-WBHO-DMP'},
+    ],
+    termsAndConditions: 'Net 60. Rental agreement applies.',
+    notes: 'Quote for equipment rental for Nacala project.',
+    creatorEmail: 'sales@jachris.com',
+  },
 ];
+
 
 export const mockRequisitionsData: RequisitionPayload[] = [
     {
@@ -282,3 +335,28 @@ export const mockFuelRecordsData: FuelRecord[] = [
   { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW' },
   { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'MEM' },
 ];
+
+// Function to update MOCK_QUOTES_DB (for use in API routes)
+export function updateMockQuote(quoteId: string, updates: Partial<QuotePayload>): QuotePayload | null {
+  const quoteIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quoteId);
+  if (quoteIndex !== -1) {
+    MOCK_QUOTES_DB[quoteIndex] = { ...MOCK_QUOTES_DB[quoteIndex], ...updates };
+    return MOCK_QUOTES_DB[quoteIndex];
+  }
+  return null;
+}
+
+// Function to add a new quote to MOCK_QUOTES_DB (for use in API routes)
+export function addMockQuote(quote: QuotePayload): QuotePayload {
+    // Ensure it has an ID if not provided
+    if (!quote.id) {
+        quote.id = `MOCK-QID-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    }
+    const existingIndex = MOCK_QUOTES_DB.findIndex(q => q.id === quote.id);
+    if (existingIndex !== -1) {
+        MOCK_QUOTES_DB[existingIndex] = quote; // Update if exists
+    } else {
+        MOCK_QUOTES_DB.push(quote);
+    }
+    return quote;
+}
