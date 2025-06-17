@@ -29,17 +29,17 @@ interface POFormProps {
   poIdToEditProp?: string | null;
 }
 
-const defaultItem: POFormItemStructure = { 
-  id: crypto.randomUUID(), 
-  partNumber: '', 
-  description: '', 
-  categoryId: null, 
-  siteId: null, 
-  uom: '', 
-  quantity: 1, 
+const defaultItem: POFormItemStructure = {
+  id: crypto.randomUUID(),
+  partNumber: '',
+  description: '',
+  categoryId: null,
+  siteId: null,
+  uom: '',
+  quantity: 1,
   unitPrice: 0.00,
-  quantityReceived: 0, 
-  itemStatus: 'Pending', 
+  quantityReceived: 0,
+  itemStatus: 'Pending',
 };
 
 interface POFormValues {
@@ -55,7 +55,6 @@ interface POFormValues {
   currency: string;
   requestedByName: string;
   approverId: string | null;
-  // siteId: string | null; // Removed Overall PO Site ID
   pricesIncludeVat: boolean;
   notes: string;
   items: POFormItemStructure[];
@@ -68,10 +67,10 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   const [subTotal, setSubTotal] = useState(0);
   const [vatAmount, setVatAmount] = useState(0);
   const [grandTotal, setGrandTotal] = useState(0);
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrintingLoading, setIsPrintingLoading] = useState(false);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Set true initially
   const [isLoadingPOForEdit, setIsLoadingPOForEdit] = useState(false);
 
   const [isEditingLoadedPO, setIsEditingLoadedPO] = useState(false);
@@ -87,7 +86,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Loading PO...', currency: 'MZN', requestedByName: '',
-      approverId: null, /* siteId: null, */ pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
+      approverId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
     },
     mode: 'onBlur',
   });
@@ -111,20 +110,19 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       currency: data.currency,
       requestedByName: data.requestedByName || '',
       approverId: data.approverId,
-      // siteId: data.siteId ? String(data.siteId) : null, // Removed
       pricesIncludeVat: data.pricesIncludeVat,
       notes: data.notes || '',
       items: (data.items || []).map(item => ({
-        id: crypto.randomUUID(), 
-        partNumber: item.partNumber || '', 
+        id: crypto.randomUUID(),
+        partNumber: item.partNumber || '',
         description: item.description,
-        categoryId: item.categoryId, 
-        siteId: item.siteId, 
+        categoryId: item.categoryId,
+        siteId: item.siteId,
         uom: item.uom,
-        quantity: item.quantity, 
+        quantity: item.quantity,
         unitPrice: item.unitPrice,
-        quantityReceived: item.quantityReceived || 0, 
-        itemStatus: item.itemStatus || 'Pending',   
+        quantityReceived: item.quantityReceived || 0,
+        itemStatus: item.itemStatus || 'Pending',
       })),
     });
 
@@ -147,7 +145,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Fetching...', currency: 'MZN', requestedByName: '',
-      approverId: null, /* siteId: null, */ pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
+      approverId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
     });
     setIsEditingLoadedPO(false);
     setLoadedPOId(null);
@@ -167,13 +165,12 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     const fetchCoreDataAndInitializeForm = async () => {
       setIsLoadingInitialData(true);
       let fetchedSuppliers: Supplier[] = [];
-      // Sites, Categories, Approvers are already initialized in their own state variables
 
       try {
         const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
           fetch('/api/suppliers'), fetch('/api/sites'), fetch('/api/categories'), fetch('/api/approvers'),
         ]);
-        
+
         fetchedSuppliers = suppliersRes.ok ? await suppliersRes.json() : [];
         const fetchedSites: Site[] = sitesRes.ok ? await sitesRes.json() : [];
         const fetchedCategories: CategoryType[] = categoriesRes.ok ? await categoriesRes.json() : [];
@@ -189,7 +186,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
           const poHeaderRes = await fetch(`/api/purchase-orders/${poIdToEditProp}`);
           if (!poHeaderRes.ok) throw new Error(`Failed to fetch PO Header ${poIdToEditProp}`);
           const poDataToEdit: PurchaseOrderPayload = await poHeaderRes.json();
-          
+
           const poItemsRes = await fetch(`/api/purchase-orders/${poIdToEditProp}/items`);
           if (!poItemsRes.ok) throw new Error(`Failed to fetch PO Items for ${poIdToEditProp}`);
           const poItemsData: POItemPayload[] = await poItemsRes.json();
@@ -212,7 +209,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     };
     fetchCoreDataAndInitializeForm();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poIdToEditProp, toast, loadPODataIntoForm, resetFormForNew]);
+  }, [poIdToEditProp, toast]); // Removed loadPODataIntoForm and resetFormForNew from deps
 
 
   const watchedItems = form.watch('items');
@@ -272,7 +269,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
        if (poDataToLoad.supplierId && !poDataToLoad.supplierDetails) {
          poDataToLoad.supplierDetails = suppliers.find(s => s.supplierCode === poDataToLoad.supplierId);
        }
-      loadPODataIntoForm(poDataToLoad, suppliers); 
+      loadPODataIntoForm(poDataToLoad, suppliers);
       toast({title: "PO Loaded", description: `PO ${poNumberToLoad} loaded for editing.`});
     } catch (error) {
       toast({ title: "Error Loading PO", description: `${error instanceof Error ? error.message : String(error)}`, variant: "destructive"});
@@ -294,14 +291,13 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       requestedByName: formData.requestedByName,
       supplierId: formData.vendorName,
       approverId: formData.approverId,
-      // siteId: formData.siteId ? Number(formData.siteId) : null, // Removed
       subTotal: subTotal, vatAmount: vatAmount, grandTotal: grandTotal, currency: formData.currency,
       pricesIncludeVat: formData.pricesIncludeVat, notes: formData.notes,
       items: formData.items.map(item => ({
         partNumber: item.partNumber, description: item.description, categoryId: item.categoryId ? Number(item.categoryId) : null,
         siteId: item.siteId ? Number(item.siteId) : null, uom: item.uom, quantity: Number(item.quantity), unitPrice: Number(item.unitPrice),
-        quantityReceived: item.quantityReceived || 0, 
-        itemStatus: item.itemStatus || 'Pending',   
+        quantityReceived: item.quantityReceived || 0,
+        itemStatus: item.itemStatus || 'Pending',
       })),
       quoteNo: formData.quoteNo,
     };
@@ -318,7 +314,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       } else {
         response = await fetch('/api/purchase-orders', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, status: 'Pending Approval', creatorUserId: null }),
+          body: JSON.stringify({ ...payload, status: 'Pending Approval', creatorUserId: null }), // creatorUserId to be set by auth
         });
         successMessage = `Purchase Order ${payload.poNumber} created successfully.`;
       }
@@ -329,14 +325,14 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       }
       const result = await response.json();
       toast({ title: 'Success!', description: successMessage });
-      
+
       if (result.poId) {
         const contextParam = (isEditingLoadedPO || loadedPOId) ? '' : '?context=creator';
         router.push(`/purchase-orders/${result.poId}/print${contextParam}`);
       } else if (!isEditingLoadedPO) {
         await resetFormForNew();
       }
-      
+
     } catch (error: any) {
       toast({ title: `Error ${isEditingLoadedPO ? 'Updating' : 'Submitting'} PO`, description: error.message || 'An unexpected error occurred.', variant: "destructive" });
     } finally {
@@ -347,7 +343,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
   const handleViewPrintPO = async () => {
     setIsPrintingLoading(true);
     try {
-      let targetPoId = loadedPOId; 
+      let targetPoId = loadedPOId;
       if (!targetPoId) {
         const poNumberInForm = form.getValues('poNumberDisplay');
         if (!poNumberInForm || ['Loading PO...', 'Fetching...', 'PO-ERROR'].includes(poNumberInForm)) {
@@ -369,7 +365,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       setIsPrintingLoading(false);
     }
   };
-  
+
   const handleSupplierChange = (selectedSupplierCode: string | null) => {
     const selectedSupplier = suppliers.find(s => s.supplierCode === selectedSupplierCode);
     if (selectedSupplier) {
@@ -384,15 +380,15 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       form.setValue('nuit', ''); form.setValue('billingAddress', '');
     }
   };
-  
-  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$'; 
+
+  const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : '$';
 
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (isLoadingInitialData && !poIdToEditProp) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
   }
-  if (isLoadingPOForEdit && poIdToEditProp) { 
+  if (isLoadingPOForEdit && poIdToEditProp) {
      return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading PO for editing...</div>;
   }
 
@@ -404,10 +400,9 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
+
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">Supplier & PO Information</h3>
-              {/* Row 1: PO Number, Load Button, Quote No, Date */}
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <FormField
                   control={form.control} name="poNumberDisplay" rules={{ required: 'PO Number is required' }}
@@ -432,7 +427,6 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <FormField control={form.control} name="poDate" rules={{ required: 'PO Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>PO Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
 
-              {/* Supplier Row 1: Name, Email, Sales Person */}
               <div className="grid md:grid-cols-3 gap-4 mt-4">
                 <FormField
                   control={form.control} name="vendorName" rules={{ required: 'Supplier is required' }}
@@ -448,8 +442,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                 <FormField control={form.control} name="vendorEmail" render={({ field }) => ( <FormItem> <FormLabel>Supplier Email</FormLabel> <FormControl><Input type="email" placeholder="e.g. supplier@example.com" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="salesPerson" render={({ field }) => ( <FormItem> <FormLabel>Sales Person</FormLabel> <FormControl><Input placeholder="e.g. Mr. Sales" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
               </div>
-              
-              {/* Supplier Row 2: Contact, NUIT, Address */}
+
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-4">
                 <FormField control={form.control} name="supplierContactNumber" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>Supplier Contact</FormLabel> <FormControl><Input placeholder="e.g. +258 123 4567" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="nuit" render={({ field }) => ( <FormItem className="md:col-span-1"> <FormLabel>NUIT</FormLabel> <FormControl><Input placeholder="e.g. 123456789" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
@@ -457,10 +450,9 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               </div>
             </div>
 
-            {/* PO Configuration Row */}
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-center"> {/* Adjusted lg:grid-cols-4 */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
                 <FormField control={form.control} name="currency" render={({ field }) => ( <FormItem> <FormLabel>Currency</FormLabel> <Select onValueChange={field.onChange} value={field.value || 'MZN'}> <FormControl><SelectTrigger><SelectValue placeholder="Select currency" /></SelectTrigger></FormControl> <SelectContent><SelectItem value="MZN">MZN</SelectItem><SelectItem value="USD">USD</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter requester's name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="approverId" rules={{ required: 'Approver is required' }} render={({ field }) => ( <FormItem> <FormLabel>Approver</FormLabel> <Select onValueChange={field.onChange} value={field.value || ''}> <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl> <SelectContent>{approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )} />
@@ -477,63 +469,63 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-md">
                   <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-x-4 gap-y-2 items-end">
-                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2"> 
-                        <FormLabel>Part Number</FormLabel> 
-                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => (
+                      <FormItem className="lg:col-span-2">
+                        <FormLabel>Part Number</FormLabel>
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl>
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-3"> 
-                        <FormLabel>Description</FormLabel> 
-                        <FormControl><Input placeholder="Item description" {...field} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => (
+                      <FormItem className="lg:col-span-3">
+                        <FormLabel>Description</FormLabel>
+                        <FormControl><Input placeholder="Item description" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> 
-                        <FormLabel>Category</FormLabel> 
-                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}> 
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl> 
-                          <SelectContent>{categories.map(cat => (<SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>))}</SelectContent> 
-                        </Select> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => (
+                      <FormItem className="lg:col-span-1">
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                          <SelectContent>{categories.map(cat => (<SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>))}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Site is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> 
-                        <FormLabel>Site</FormLabel> 
-                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}> 
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl> 
-                          <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent> 
-                        </Select> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Site is required' }} render={({ field }) => (
+                      <FormItem className="lg:col-span-1">
+                        <FormLabel>Site</FormLabel>
+                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                          <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.uom`} rules={{ required: 'UOM is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> 
-                        <FormLabel>UOM</FormLabel> 
-                        <FormControl><Input placeholder="e.g., EA" {...field} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.uom`} rules={{ required: 'UOM is required' }} render={({ field }) => (
+                      <FormItem className="lg:col-span-1">
+                        <FormLabel>UOM</FormLabel>
+                        <FormControl><Input placeholder="e.g., EA" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> 
-                        <FormLabel>Quantity</FormLabel> 
-                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => (
+                      <FormItem className="lg:col-span-1">
+                        <FormLabel>Quantity</FormLabel>
+                        <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-1"> 
-                        <FormLabel>Unit Price ({currencySymbol})</FormLabel> 
-                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> 
-                        <FormMessage /> 
-                      </FormItem> 
+                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => (
+                      <FormItem className="lg:col-span-1">
+                        <FormLabel>Unit Price ({currencySymbol})</FormLabel>
+                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
-                    <FormItem className="lg:col-span-2"> 
-                      <FormLabel>Item Total ({currencySymbol})</FormLabel> 
-                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotal)}</div> 
+                    <FormItem className="lg:col-span-2">
+                      <FormLabel>Item Total ({currencySymbol})</FormLabel>
+                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotal)}</div>
                     </FormItem>
                   </div>
                   {fields.length > 1 && (<Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2" title="Remove Item"><Trash2 className="h-4 w-4" /></Button>)}
@@ -541,7 +533,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               );
             })}
             <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID() })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
-            
+
             <Separator className="my-6"/>
 
             <div className="grid md:grid-cols-3 gap-6 mt-8 items-start">
@@ -554,7 +546,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                       <FormControl>
                         <Textarea
                           placeholder="Add any relevant notes..."
-                          className="resize-none h-40" 
+                          className="resize-none h-40"
                           {...field}
                           value={field.value ?? ''}
                         />
@@ -569,10 +561,10 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                   if (watchedCurrency === 'MZN' && !watchedPricesIncludeVat) {
                     return <div className="text-md">VAT (16%) ({currencySymbol}): <span className="font-semibold">{formatValue(vatAmount)}</span></div>;
                   }
-                  if (watchedPricesIncludeVat) { 
+                  if (watchedPricesIncludeVat) {
                     return <div className="text-sm text-muted-foreground">VAT is included in item prices.</div>;
                   }
-                  return null; 
+                  return null;
                 })()}
                 <div className="text-xl font-bold font-headline">Grand Total ({currencySymbol}): <span className="font-semibold">{formatValue(grandTotal)}</span></div>
               </div>

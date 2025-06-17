@@ -16,13 +16,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Save, Eye, Loader2 } from 'lucide-react'; // Added Loader2
+import { PlusCircle, Trash2, Save, Eye, Loader2 } from 'lucide-react';
 import type { Client, QuoteItem, QuotePayload, Approver } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { mockApproversData } from '@/lib/mock-data';
 
 const defaultItem: QuoteItem = { id: crypto.randomUUID(), partNumber: '', customerRef: '', description: '', quantity: 1, unitPrice: 0.00 };
 
@@ -51,6 +50,7 @@ export function QuoteForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
 
 
   const form = useForm<QuoteFormValues>({
@@ -75,6 +75,7 @@ export function QuoteForm() {
   });
 
   const fetchInitialData = useCallback(async () => {
+    setIsLoadingInitialData(true);
     try {
       const [clientsRes, nextQuoteNumRes, approversRes] = await Promise.all([
         fetch('/api/clients'),
@@ -101,14 +102,14 @@ export function QuoteForm() {
         const approversData = await approversRes.json();
         setApprovers(approversData);
       } else {
-        console.warn('Failed to fetch approvers from API, using mock data.');
-        setApprovers(mockApproversData);
+        toast({ title: "Error", description: "Could not load approvers.", variant: "destructive" });
       }
 
     } catch (error) {
       toast({ title: "Error Loading Data", description: "Could not load initial form data.", variant: "destructive" });
       form.setValue('quoteNumberDisplay', 'Q-ERROR');
-      setApprovers(mockApproversData);
+    } finally {
+        setIsLoadingInitialData(false);
     }
   }, [form, toast]);
 
@@ -164,10 +165,12 @@ export function QuoteForm() {
 
     const selectedClient = clients.find(c => c.id === formData.clientId);
     const quoteStatus = (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? 'Pending Approval' : 'Draft';
-    const clientGeneratedQuoteId = `Q-MOCK-${Date.now()}`; // Generate a unique ID for the quote
+    const clientGeneratedQuoteId = `MOCK-QID-${Date.now()}-${Math.random().toString(36).substring(2,7)}`;
+    console.log('[QuoteForm] Generated client ID for new quote:', clientGeneratedQuoteId);
+
 
     const payload: QuotePayload = {
-      id: clientGeneratedQuoteId, // Use the generated ID
+      id: clientGeneratedQuoteId,
       quoteNumber: formData.quoteNumberDisplay,
       quoteDate: new Date(formData.quoteDate).toISOString(),
       clientId: formData.clientId,
@@ -205,9 +208,7 @@ export function QuoteForm() {
       }
 
       const result = await response.json();
-      toast({ title: 'Quote Saved (Simulated)', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
-
-      // Ensure result.quoteId is the one we expect (it should be payload.id)
+      toast({ title: 'Quote Saved', description: `Quote ${payload.quoteNumber} has been saved with status: ${quoteStatus}. Navigating to preview.` });
       router.push(`/quotes/${result.quoteId}/print`);
 
     } catch (error: any) {
@@ -219,6 +220,10 @@ export function QuoteForm() {
 
   const currencySymbol = watchedCurrency === 'MZN' ? 'MZN' : (watchedCurrency === 'USD' ? '$' : watchedCurrency);
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  if (isLoadingInitialData) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
+  }
 
   return (
     <Card className="w-full max-w-5xl mx-auto shadow-xl">
@@ -374,7 +379,7 @@ export function QuoteForm() {
               </div>
 
               <div className="md:col-span-1 flex flex-col gap-3 w-full pt-6">
-                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid}>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid || isLoadingInitialData}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                   {isSubmitting ? 'Saving...' : 'Save & Preview Quote'}
                 </Button>

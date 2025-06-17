@@ -19,7 +19,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Save, Loader2 } from 'lucide-react';
-import { mockSitesData, mockTagsData } from '@/lib/mock-data'; // Using mock data for now
 
 interface FuelRecordFormValues {
   fuelDate: string;
@@ -28,20 +27,20 @@ interface FuelRecordFormValues {
   driver?: string;
   odometer?: number;
   tagId: string | null;
-  siteId: string | null; // Store siteId as string for form compatibility
+  siteId: string | null;
   description?: string;
   uom?: string;
   quantity: number;
   unitCost: number;
 }
 
-// Placeholder for current user making the record
 const MOCK_RECORDER_USER_ID = 'USR_FUEL_RECORDER_001';
 
 export function FuelRecordForm() {
   const { toast } = useToast();
   const [totalCost, setTotalCost] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
 
   const [sites, setSites] = useState<Site[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -55,8 +54,8 @@ export function FuelRecordForm() {
       odometer: undefined,
       tagId: null,
       siteId: null,
-      description: 'Diesel', // Default description
-      uom: 'Liters',       // Default UOM
+      description: 'Diesel',
+      uom: 'Liters',
       quantity: 0,
       unitCost: 0,
     },
@@ -64,11 +63,25 @@ export function FuelRecordForm() {
   });
 
   const fetchInitialData = useCallback(async () => {
-    // Using mock data for sites and tags for now
-    setSites(mockSitesData);
-    setTags(mockTagsData);
-    // In a real app, you'd fetch from /api/sites and /api/tags
-  }, []);
+    setIsLoadingInitialData(true);
+    try {
+      const [sitesRes, tagsRes] = await Promise.all([
+        fetch('/api/sites'),
+        fetch('/api/tags')
+      ]);
+
+      if (sitesRes.ok) setSites(await sitesRes.json());
+      else toast({ title: "Error", description: "Could not load sites.", variant: "destructive" });
+
+      if (tagsRes.ok) setTags(await tagsRes.json());
+      else toast({ title: "Error", description: "Could not load tags (vehicles/equipment).", variant: "destructive" });
+
+    } catch (error) {
+      toast({ title: "Error Loading Data", description: "Could not load initial form data for fuel records.", variant: "destructive" });
+    } finally {
+      setIsLoadingInitialData(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     fetchInitialData();
@@ -92,18 +105,17 @@ export function FuelRecordForm() {
       invNo: formData.invNo,
       driver: formData.driver,
       odometer: formData.odometer ? Number(formData.odometer) : undefined,
-      tagId: formData.tagId!, // Asserting tagId is not null due to form validation rule
+      tagId: formData.tagId!,
       siteId: formData.siteId ? Number(formData.siteId) : null,
       description: formData.description,
       uom: formData.uom,
       quantity: Number(formData.quantity),
       unitCost: Number(formData.unitCost),
-      recorderUserId: MOCK_RECORDER_USER_ID, // Placeholder
+      recorderUserId: MOCK_RECORDER_USER_ID,
     };
 
     try {
-      // Simulate POST request
-      const response = await fetch('/api/fuel-records', { // Mocked API
+      const response = await fetch('/api/fuel-records', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -115,8 +127,8 @@ export function FuelRecordForm() {
       }
 
       const result = await response.json();
-      toast({ title: 'Fuel Record Saved (Simulated)', description: `Fuel record ID ${result.fuelRecordId} has been saved.` });
-      form.reset(); // Reset form after successful submission
+      toast({ title: 'Fuel Record Saved', description: `Fuel record ID ${result.fuelRecordId} has been saved.` });
+      form.reset();
       setTotalCost(0);
 
     } catch (error: any) {
@@ -127,6 +139,10 @@ export function FuelRecordForm() {
   };
 
   const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  if (isLoadingInitialData) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-xl">
@@ -158,24 +174,24 @@ export function FuelRecordForm() {
 
             <div className="grid md:grid-cols-3 gap-4">
               <FormField control={form.control} name="driver" render={({ field }) => ( <FormItem> <FormLabel>Driver</FormLabel> <FormControl><Input placeholder="Driver's name" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="odometer" render={({ field }) => ( 
-                <FormItem> 
-                  <FormLabel>Odometer (km)</FormLabel> 
+              <FormField control={form.control} name="odometer" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Odometer (km)</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="e.g., 123456" 
-                      {...field} 
-                      value={field.value ?? ''} // Ensures controlled input
-                      onChange={e => field.onChange(parseFloat(e.target.value) || undefined)} 
+                    <Input
+                      type="number"
+                      placeholder="e.g., 123456"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e => field.onChange(parseFloat(e.target.value) || undefined)}
                     />
-                  </FormControl> 
-                  <FormMessage /> 
-                </FormItem> 
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
               <FormField control={form.control} name="reqNo" render={({ field }) => ( <FormItem> <FormLabel>Requisition No.</FormLabel> <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
             </div>
-            
+
             <div className="grid md:grid-cols-3 gap-4">
                 <FormField control={form.control} name="invNo" render={({ field }) => ( <FormItem> <FormLabel>Invoice No.</FormLabel> <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
                 <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description</FormLabel> <FormControl><Input placeholder="e.g., Diesel, Petrol" {...field} value={field.value ?? ''} /></FormControl> <FormMessage /> </FormItem> )} />
@@ -200,7 +216,7 @@ export function FuelRecordForm() {
             </div>
 
             <div className="flex justify-end pt-4">
-              <Button type="submit" size="lg" disabled={isSubmitting || !form.formState.isValid}>
+              <Button type="submit" size="lg" disabled={isSubmitting || !form.formState.isValid || isLoadingInitialData}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 {isSubmitting ? 'Saving...' : 'Save Fuel Record'}
               </Button>
@@ -216,5 +232,3 @@ export function FuelRecordForm() {
     </Card>
   );
 }
-
-    
