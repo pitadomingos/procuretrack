@@ -2,7 +2,7 @@
 import { pool } from '../../../../../backend/db.js'; // Adjust path
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request, { params }) {
   const { id } = params;
   const numericId = Number(id);
 
@@ -17,13 +17,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
     } else {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error(`Error fetching site with ID ${id}:`, error);
-    return NextResponse.json({ error: 'Failed to fetch site', details: error.message }, { status: 500 });
+    const errorMessage = (error instanceof Error) ? error.message : String(error);
+    return NextResponse.json({ error: 'Failed to fetch site', details: errorMessage }, { status: 500 });
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request, { params }) {
   const { id } = params;
   const numericId = Number(id);
 
@@ -43,7 +44,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       [name, location || null, siteCode || null, numericId]
     );
 
-    if ((result as any).affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return NextResponse.json({ error: 'Site not found or no changes made' }, { status: 404 });
     }
 
@@ -55,16 +56,18 @@ export async function PUT(request: Request, { params }: { params: { id: string }
          return NextResponse.json({ error: 'Site updated but failed to retrieve it.' }, { status: 500 });
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error(`Error updating site with ID ${id}:`, error);
-     if (error.code === 'ER_DUP_ENTRY') {
+    const errorMessage = (error instanceof Error) ? error.message : String(error);
+    const errorCode = (error && typeof error === 'object' && 'code' in error) ? error.code : null;
+     if (errorCode === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'A site with this name or code may already exist.' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Failed to update site', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update site', details: errorMessage }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request, { params }) {
   const { id } = params;
   const numericId = Number(id);
 
@@ -75,17 +78,18 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   try {
     const [result] = await pool.execute('DELETE FROM Site WHERE id = ?', [numericId]);
 
-    if ((result as any).affectedRows === 0) {
+    if (result.affectedRows === 0) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Site deleted successfully' }, { status: 200 }); // Or 204 No Content
-  } catch (error: any) {
+    return NextResponse.json({ message: 'Site deleted successfully' }, { status: 200 });
+  } catch (error) {
     console.error(`Error deleting site with ID ${id}:`, error);
-    // Check for foreign key constraint errors (e.g., ER_ROW_IS_REFERENCED_2)
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+    const errorMessage = (error instanceof Error) ? error.message : String(error);
+    const errorCode = (error && typeof error === 'object' && 'code' in error) ? error.code : null;
+    if (errorCode === 'ER_ROW_IS_REFERENCED_2') {
         return NextResponse.json({ error: 'Cannot delete site. It is currently referenced by other records (e.g., Purchase Orders, Users, Tags). Please remove those references first.' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Failed to delete site', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete site', details: errorMessage }, { status: 500 });
   }
 }
