@@ -4,6 +4,19 @@ import { pool } from '../../../../backend/db.js';
 import type { RequisitionPayload, RequisitionItem } from '@/types';
 import { randomUUID } from 'crypto';
 
+// Helper function to safely convert date values to ISO string or null
+const safeToISOString = (dateValue: any): string | null => {
+  if (!dateValue) return null;
+  const dateObj = new Date(dateValue);
+  // Check if the date is valid. getTime() on an Invalid Date object returns NaN.
+  if (isNaN(dateObj.getTime())) {
+    console.warn(`[API WARN] Invalid date value encountered: ${dateValue}. Returning null.`);
+    return null;
+  }
+  return dateObj.toISOString();
+};
+
+
 export async function POST(request: Request) {
   let connection;
   try {
@@ -155,24 +168,23 @@ export async function GET(request: Request) {
         siteName: row.siteCode || row.siteName,
         requestedByName: row.requestorFullName || row.requestedByName,
         approverName: row.approverName,
-        approvalDate: row.approvalDate ? new Date(row.approvalDate).toISOString() : null,
-        requisitionDate: row.requisitionDate ? new Date(row.requisitionDate).toISOString() : null,
+        approvalDate: safeToISOString(row.approvalDate),
+        requisitionDate: safeToISOString(row.requisitionDate),
     }));
     return NextResponse.json(requisitions);
   } catch (error: any) {
-    console.error('[API_ERROR] /api/requisitions GET:', error); // Log the full error object
+    console.error('[API_ERROR] /api/requisitions GET:', error); 
     const errorMessage = error.sqlMessage || error.message || 'An unknown database error occurred.';
     const errorCode = error.code || 'UNKNOWN_DB_ERROR';
     const sqlState = error.sqlState || 'N/A';
     
-    // Log more specific details if available
     console.error(`[API_ERROR_DETAILS] /api/requisitions GET: Code: ${errorCode}, SQL State: ${sqlState}, Message: "${errorMessage}"`);
     
     return NextResponse.json({
         error: 'Failed to fetch requisitions due to a server-side database error.',
         details: `Database operation failed with message: "${errorMessage}". Error Code: ${errorCode}. SQL State: ${sqlState}. Please check server logs for the full query and parameters if the issue persists.`,
         code: errorCode,
-        sqlState: sqlState // Pass SQLState if available
+        sqlState: sqlState 
     }, { status: 500 });
   }
 }
