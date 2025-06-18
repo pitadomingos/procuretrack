@@ -1,10 +1,10 @@
 
-import React from 'react'; 
+import React from 'react';
 import type { PurchaseOrderPayload, POItemForPrint } from '@/types';
 
 interface PrintablePOProps {
   poData: PurchaseOrderPayload;
-  logoDataUri?: string; 
+  logoDataUri?: string;
 }
 
 const JACHRIS_COMPANY_DETAILS = {
@@ -12,7 +12,7 @@ const JACHRIS_COMPANY_DETAILS = {
   contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
-  logoUrl: '/jachris-logo.png', 
+  logoUrl: '/jachris-logo.png',
   nuit: '400 415 954',
 };
 
@@ -28,10 +28,8 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const printableItems = (items || []) as POItemForPrint[]; 
+  const printableItems = (items || []) as POItemForPrint[];
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
-  const preparedByName = poData.creatorName || poData.requestedByName || "System User (JMS)";
-
 
   return (
     <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}>
@@ -101,7 +99,7 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
                 <td className="border border-black p-1 text-center align-top">{item.uom}</td>
                 <td className="border border-black p-1 text-center align-top">{item.quantity}</td>
                 {/* Optional: Display quantityReceived
-                <td className="border border-black p-1 text-center align-top">{item.quantityReceived || 0}</td> 
+                <td className="border border-black p-1 text-center align-top">{item.quantityReceived || 0}</td>
                 */}
                 <td className="border border-black p-1 text-right align-top">{formatCurrency(item.unitPrice)}</td>
                 <td className="border border-black p-1 text-right align-top">{formatCurrency(item.quantity * item.unitPrice)}</td>
@@ -157,34 +155,26 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
       </div>
 
       <div className="text-xs pt-2 border-t-2 border-black">
-        <div className="grid grid-cols-2 gap-x-4">
-            <div>
-                <div className="flex mb-1">
-                    <span className="w-28">Prepared By</span><span>: {preparedByName}</span>
-                </div>
-                <div className="flex mb-1">
-                    <span className="w-28">Requested By</span><span>: {poData.requestedByName || 'N/A'}</span>
-                </div>
-                <div className="flex mb-1">
-                    <span className="w-28">Approved By</span><span>: {poData.approverName || (poData.approverId ? `Approver ID: ${poData.approverId}`: 'Pending')}</span>
-                </div>
+        <h4 className="font-bold mb-2">Authorisation:</h4>
+        <div className="space-y-1">
+            <div className="flex">
+                <span className="w-32 font-medium">Requested By:</span>
+                <span>{poData.requestedByName || poData.creatorName || 'N/A'}</span>
+            </div>
+            <div className="flex">
+                <span className="w-32 font-medium">Approved By:</span>
+                <span>
+                    {poData.status === 'Approved' && poData.approverName
+                        ? poData.approverName
+                        : (poData.status === 'Approved' ? 'Approved (Name Missing)' : (poData.status === 'Rejected' ? 'Rejected' : 'Pending Approval'))}
+                </span>
+            </div>
+            {poData.status === 'Approved' && (
                  <div className="flex">
-                    <span className="w-28">Date</span><span>: {poData.status === 'Approved' && approvalDate !== 'N/A' ? approvalDate : (poData.status === 'Rejected' ? 'N/A' : 'Pending Approval')}</span>
+                    <span className="w-32 font-medium">Approval Date:</span>
+                    <span>{approvalDate}</span>
                 </div>
-            </div>
-            <div className="flex flex-col items-end">
-                {poData.status === 'Approved' && poData.approverSignatureUrl ? (
-                  <img
-                    src={poData.approverSignatureUrl}
-                    alt={`Signature of ${poData.approverName || 'Approver'}`}
-                    className="h-12 w-auto mb-1 mt-4 max-w-[12rem]" 
-                    data-ai-hint="signature image"
-                  />
-                ) : (
-                  <div className="h-12 w-48 border-b border-black mb-1 mt-8"></div> 
-                )}
-                <p className="mr-[70px]">Signature</p>
-            </div>
+            )}
         </div>
       </div>
     </div>
