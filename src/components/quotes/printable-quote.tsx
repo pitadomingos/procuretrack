@@ -12,12 +12,12 @@ const JACHRIS_COMPANY_DETAILS = {
   contactLine1: 'M: +258 85 545 8462 | +27 (0)11 813 4009',
   address: 'Quinta do Bom Sol, Bairro Chithatha, Moatize, Mozambique',
   website: 'www.jachris.com',
-  logoUrl: '/jachris-logo.png', 
+  logoUrl: '/jachris-logo.png',
   nuit: '400 415 954', // Jachris NUIT
 };
 
 export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) {
-  const { clientName, clientEmail, items } = quoteData;
+  const { clientName, clientEmail, items, creatorEmail } = quoteData;
 
   const quoteDateFormatted = quoteData.quoteDate ? new Date(quoteData.quoteDate).toLocaleDateString('en-GB') : 'N/A';
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
@@ -130,7 +130,7 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
             </div>
             {quoteData.vatAmount > 0 && (
               <div className="flex justify-between py-1 border-t border-gray-200">
-                <span>VAT (16%)</span> 
+                <span>VAT (16%)</span>
                 <span className="font-semibold">{quoteData.currency} {formatCurrency(quoteData.vatAmount)}</span>
               </div>
             )}
@@ -144,8 +144,8 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
 
       {/* Footer / Prepared By */}
       <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6">
-        <p className="mb-1">Prepared By: <strong>Jachris Mozambique Lda Sales Team</strong></p>
-        <p>Email: <span className="text-red-700">sales.moz@jachris.com</span> | Contact: See Header</p>
+        <p className="mb-1">Prepared By: <strong>{creatorEmail ? creatorEmail.split('@')[0].replace('.', ' ') : 'Jachris Sales Team'}</strong></p>
+        <p>Email: <span className="text-red-700">{creatorEmail || 'sales.moz@jachris.com'}</span> | Contact: See Header</p>
         <p className="mt-4 text-center text-gray-500">Thank you for your business!</p>
       </div>
     </div>
