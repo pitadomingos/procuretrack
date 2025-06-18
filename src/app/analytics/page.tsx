@@ -8,7 +8,7 @@ import { spendByVendorData, poCountByCategoryData } from '@/lib/mock-data';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon } from 'lucide-react'; // Renamed icons for clarity
+import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [filteredSpendData, setFilteredSpendData] = useState(spendByVendorData);
@@ -17,7 +17,6 @@ export default function AnalyticsPage() {
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
     // In a real app, you would fetch new data based on these filters
-    // For now, resetting to mock data for PO charts as an example
     setFilteredSpendData(spendByVendorData);
     setFilteredCategoryData(poCountByCategoryData);
   };
@@ -55,16 +54,24 @@ export default function AnalyticsPage() {
         <TabsContent value="grn-analytics">
           <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">GRN Analytics</CardTitle>
+              <CardTitle className="font-headline text-xl">GRN & Receiving Analytics</CardTitle>
               <Truck className="h-6 w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription className="mb-4">Analysis of Goods Received Notes, supplier delivery performance, and discrepancies.</CardDescription>
+              <CardDescription className="mb-4">
+                Gain insights into supplier delivery performance, item receipt accuracy, and receiving cycle times.
+              </CardDescription>
               <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                 <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon!</h3>
-                <p className="text-muted-foreground">
-                  Detailed GRN analytics, including receipt timelines, quantity matching, and quality control summaries.
-                </p>
+                <p className="text-muted-foreground mb-3">Potential analytics to develop:</p>
+                <ul className="list-disc list-inside text-muted-foreground mt-2 text-left inline-block text-sm">
+                  <li>Average delivery lead time per supplier/item category.</li>
+                  <li>Discrepancy rates (quantity ordered vs. received).</li>
+                  <li>Value of goods received over time (daily, weekly, monthly).</li>
+                  <li>Partial vs. complete delivery analysis.</li>
+                  <li>Top suppliers by on-time delivery performance.</li>
+                  <li>GRN processing time (from receipt to system update).</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
@@ -77,12 +84,20 @@ export default function AnalyticsPage() {
               <QuoteIcon className="h-6 w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription className="mb-4">Insights into client quotations, conversion rates, and revenue projections.</CardDescription>
+              <CardDescription className="mb-4">
+                Track quotation performance, conversion funnels, and revenue opportunities from client engagements.
+              </CardDescription>
               <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                 <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon!</h3>
-                <p className="text-muted-foreground">
-                  Charts and data related to your company's quotations to clients, win/loss rates, and quoted values.
-                </p>
+                 <p className="text-muted-foreground mb-3">Potential analytics to develop:</p>
+                <ul className="list-disc list-inside text-muted-foreground mt-2 text-left inline-block text-sm">
+                  <li>Quote conversion rate (approved/won vs. total quoted).</li>
+                  <li>Average quote value by client segment or period.</li>
+                  <li>Sales pipeline value (sum of pending/approved quotes).</li>
+                  <li>Time-to-decision for quotes (from submission to client response).</li>
+                  <li>Quote win/loss analysis by value, product/service, or reason.</li>
+                  <li>Revenue forecasting based on quote status and probability.</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
@@ -91,16 +106,24 @@ export default function AnalyticsPage() {
         <TabsContent value="requisition-analytics">
           <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">Purchase Requisition Analysis</CardTitle>
+              <CardTitle className="font-headline text-xl">Purchase Requisition Insights</CardTitle>
               <RequisitionIcon className="h-6 w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription className="mb-4">Analysis of internal purchase requisitions, processing times, and departmental spend.</CardDescription>
+              <CardDescription className="mb-4">
+                Analyze internal demand, requisition lifecycle efficiency, and departmental spending patterns.
+              </CardDescription>
               <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                 <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon!</h3>
-                <p className="text-muted-foreground">
-                  Visualizations of requisition volume, approval cycles, and conversion rates to POs.
-                </p>
+                <p className="text-muted-foreground mb-3">Potential analytics to develop:</p>
+                <ul className="list-disc list-inside text-muted-foreground mt-2 text-left inline-block text-sm">
+                  <li>Average requisition processing time (submission to PO creation).</li>
+                  <li>Spend per department/site based on approved requisitions.</li>
+                  <li>Requisition to PO conversion rate and reasons for non-conversion.</li>
+                  <li>Frequency of requisitions by item category or specific items.</li>
+                  <li>Analysis of urgent vs. standard requisitions.</li>
+                  <li>Budget vs. actual spend tracking initiated from requisitions.</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
@@ -109,16 +132,24 @@ export default function AnalyticsPage() {
         <TabsContent value="fuel-analytics">
           <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">Fuel Usage Overview</CardTitle>
+              <CardTitle className="font-headline text-xl">Fuel Usage & Efficiency</CardTitle>
               <FuelIcon className="h-6 w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription className="mb-4">Insights into fuel consumption patterns, costs, and efficiency.</CardDescription>
+              <CardDescription className="mb-4">
+                Monitor fuel consumption, costs, and identify opportunities for operational efficiency and savings.
+              </CardDescription>
               <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                 <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon!</h3>
-                <p className="text-muted-foreground">
-                  Visualizations of fuel usage, costs per vehicle/equipment, and efficiency metrics.
-                </p>
+                <p className="text-muted-foreground mb-3">Potential analytics to develop:</p>
+                <ul className="list-disc list-inside text-muted-foreground mt-2 text-left inline-block text-sm">
+                  <li>Fuel consumption per vehicle/equipment (e.g., Liters/100km, Liters/hour).</li>
+                  <li>Total fuel cost per vehicle/equipment over time.</li>
+                  <li>Average fuel price trends from supplier invoices.</li>
+                  <li>Odometer readings vs. fuel consumption for efficiency anomaly detection.</li>
+                  <li>Fuel usage breakdown by site or project.</li>
+                  <li>Alerts for unusual consumption patterns.</li>
+                </ul>
               </div>
             </CardContent>
           </Card>
