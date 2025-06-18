@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode, ClipboardCheck, UserCheck, FileQuestion, MessageSquareQuestion } from 'lucide-react';
+import { LayoutDashboard, FilePlus2, ListChecks, Settings, BarChart3, FileText, BookUser, FileCode, ClipboardCheck, UserCheck, MessageCircleQuestion } from 'lucide-react';
 
 export interface NavItem {
   title: string;
@@ -49,7 +49,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Feedback Survey',
     href: '/survey',
-    icon: MessageSquareQuestion,
+    icon: MessageCircleQuestion, // Corrected Icon
   },
   {
     title: 'To-Do / Progress',
@@ -67,3 +67,4 @@ export const navItems: NavItem[] = [
     icon: FileCode,
   },
 ];
+
