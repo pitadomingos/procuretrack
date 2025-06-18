@@ -491,12 +491,15 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                         <Select onValueChange={field.onChange} value={field.value || ''} disabled={isLoadingRequisitionItems}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Choose an approved requisition..." /></SelectTrigger></FormControl>
                             <SelectContent>
-                            {approvedRequisitions.length === 0 && <SelectItem value="" disabled>No approved requisitions found</SelectItem>}
-                            {approvedRequisitions.map(req => (
-                                <SelectItem key={req.id} value={req.id}>
-                                {req.requisitionNumber} ({req.siteName}) - {req.itemCount} items - Req by: {req.requestedByName} on {req.requisitionDate}
-                                </SelectItem>
-                            ))}
+                              {approvedRequisitions.length === 0 ? (
+                                <div className="p-2 text-sm text-muted-foreground">No approved requisitions found</div>
+                              ) : (
+                                approvedRequisitions.map(req => (
+                                    <SelectItem key={req.id} value={req.id}>
+                                    {req.requisitionNumber} ({req.siteName}) - {req.itemCount} items - Req by: {req.requestedByName} on {req.requisitionDate}
+                                    </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                         </Select>
                         <FormMessage />
