@@ -164,7 +164,7 @@ export function RequisitionForm() {
     setIsSubmitting(true);
 
     const payload: Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'approverName' | 'approvalDate'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[], status: RequisitionPayload['status'], approverId?: string | null } = {
-      id: crypto.randomUUID(), // Backend will generate if not provided, but good practice
+      id: crypto.randomUUID(),
       requisitionNumber: formData.requisitionNumberDisplay,
       requisitionDate: new Date(formData.requisitionDate).toISOString(),
       requestedByUserId: formData.requestedByUserId,
@@ -180,7 +180,7 @@ export function RequisitionForm() {
         categoryId: item.categoryId ? Number(item.categoryId) : null,
         quantity: Number(item.quantity),
         notes: item.notes,
-        siteId: item.siteId ? Number(item.siteId) : null, // Ensure item siteId is included
+        siteId: item.siteId ? Number(item.siteId) : null,
       })),
     };
 
@@ -192,8 +192,19 @@ export function RequisitionForm() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to save requisition. Server error.' }));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ 
+            error: 'Failed to save requisition. Server error.', 
+            details: 'Could not parse error response from server.' 
+        }));
+        
+        let detailedMessage = errorData.error || `Server error: ${response.status}`;
+        if (errorData.details) {
+          detailedMessage += ` Details: ${errorData.details}`;
+        }
+        if (errorData.code) {
+          detailedMessage += ` Code: ${errorData.code}`;
+        }
+        throw new Error(detailedMessage);
       }
 
       const result = await response.json();
@@ -202,7 +213,11 @@ export function RequisitionForm() {
       router.push(`/requisitions/${result.requisitionId}/print`);
       
     } catch (error: any) {
-      toast({ title: 'Error Saving Requisition', description: error.message || 'An unexpected error occurred.', variant: "destructive" });
+      toast({ 
+        title: 'Error Saving Requisition', 
+        description: error.message || 'An unexpected error occurred.', 
+        variant: "destructive" 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -367,3 +382,4 @@ export function RequisitionForm() {
     </Card>
   );
 }
+
