@@ -18,12 +18,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { PlusCircle, Trash2, Send, Printer, Loader2, Edit, Search } from 'lucide-react';
-import type { Supplier, Site, Category as CategoryType, Approver, POItem as POFormItemStructure, PurchaseOrderPayload, POItemPayload } from '@/types';
+import { PlusCircle, Trash2, Send, Printer, Loader2, Edit, Search, DownloadCloud } from 'lucide-react';
+import type { Supplier, Site, Category as CategoryType, Approver, POItem as POFormItemStructure, PurchaseOrderPayload, POItemPayload, RequisitionPayload, RequisitionItem } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface POFormProps {
   poIdToEditProp?: string | null;
@@ -34,7 +34,7 @@ const defaultItem: POFormItemStructure = {
   partNumber: '',
   description: '',
   categoryId: null,
-  siteId: null,
+  siteId: null,    
   uom: '',
   quantity: 1,
   unitPrice: 0.00,
@@ -55,10 +55,20 @@ interface POFormValues {
   currency: string;
   requestedByName: string;
   approverId: string | null;
-  overallSiteId: string | null; // Added for overall PO site
+  overallSiteId: string | null; 
   pricesIncludeVat: boolean;
   notes: string;
   items: POFormItemStructure[];
+  selectedRequisitionId?: string | null; // For loading from requisition
+}
+
+interface ApprovedRequisitionOption {
+    id: string;
+    requisitionNumber: string;
+    requisitionDate: string;
+    requestedByName: string;
+    siteName: string;
+    itemCount: number;
 }
 
 
@@ -71,16 +81,20 @@ export function POForm({ poIdToEditProp }: POFormProps) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPrintingLoading, setIsPrintingLoading] = useState(false);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Set true initially
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); 
   const [isLoadingPOForEdit, setIsLoadingPOForEdit] = useState(false);
+  const [isLoadingRequisitionItems, setIsLoadingRequisitionItems] = useState(false);
+
 
   const [isEditingLoadedPO, setIsEditingLoadedPO] = useState(false);
   const [loadedPOId, setLoadedPOId] = useState<string | null>(null);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [sites, setSitesData] = useState<Site[]>([]); // Renamed to avoid conflict
+  const [sites, setSitesData] = useState<Site[]>([]); 
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [approvers, setApproversData] = useState<Approver[]>([]);
+  const [approvedRequisitions, setApprovedRequisitions] = useState<ApprovedRequisitionOption[]>([]);
+
 
   const form = useForm<POFormValues>({
     defaultValues: {
@@ -88,11 +102,12 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: 'Loading PO...', currency: 'MZN', requestedByName: '',
       approverId: null, overallSiteId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
+      selectedRequisitionId: null,
     },
     mode: 'onBlur',
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -106,12 +121,12 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       nuit: data.supplierDetails?.nuitNumber || '',
       billingAddress: data.supplierDetails?.physicalAddress || '',
       quoteNo: data.quoteNo || '',
-      poDate: format(new Date(data.creationDate), 'yyyy-MM-dd'),
+      poDate: data.creationDate ? format(parseISO(data.creationDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       poNumberDisplay: data.poNumber,
       currency: data.currency,
       requestedByName: data.requestedByName || '',
       approverId: data.approverId,
-      overallSiteId: data.siteId ? data.siteId.toString() : null, // Populate overallSiteId
+      overallSiteId: data.siteId ? data.siteId.toString() : null, 
       pricesIncludeVat: data.pricesIncludeVat,
       notes: data.notes || '',
       items: (data.items || []).map(item => ({
@@ -119,13 +134,14 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         partNumber: item.partNumber || '',
         description: item.description,
         categoryId: item.categoryId,
-        siteId: item.siteId, // This is item-level siteId
+        siteId: item.siteId, 
         uom: item.uom,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         quantityReceived: item.quantityReceived || 0,
         itemStatus: item.itemStatus || 'Pending',
       })),
+      selectedRequisitionId: null, // Reset this when loading a PO directly
     });
 
     if (data.supplierId) {
@@ -142,23 +158,27 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     setLoadedPOId(String(data.id));
   }, [form]);
 
-  const resetFormForNew = useCallback(async () => {
+  const resetFormForNew = useCallback(async (fetchNextNumber = true) => {
     form.reset({
       vendorName: null, vendorEmail: '', salesPerson: '', supplierContactNumber: '', nuit: '',
       quoteNo: '', billingAddress: '', poDate: format(new Date(), 'yyyy-MM-dd'),
-      poNumberDisplay: 'Fetching...', currency: 'MZN', requestedByName: '',
+      poNumberDisplay: fetchNextNumber ? 'Fetching...' : form.getValues('poNumberDisplay'), 
+      currency: 'MZN', requestedByName: '',
       approverId: null, overallSiteId: null, pricesIncludeVat: false, notes: '', items: [{...defaultItem}],
+      selectedRequisitionId: null,
     });
     setIsEditingLoadedPO(false);
     setLoadedPOId(null);
-    try {
-      const response = await fetch('/api/purchase-orders/next-po-number');
-      if (!response.ok) throw new Error('Failed to fetch next PO number');
-      const data = await response.json();
-      form.setValue('poNumberDisplay', data.nextPoNumber || 'PO-ERROR');
-    } catch (error) {
-      form.setValue('poNumberDisplay', 'PO-ERROR');
-      toast({ title: "Error", description: "Could not load next PO number.", variant: "destructive" });
+    if (fetchNextNumber) {
+      try {
+        const response = await fetch('/api/purchase-orders/next-po-number');
+        if (!response.ok) throw new Error('Failed to fetch next PO number');
+        const data = await response.json();
+        form.setValue('poNumberDisplay', data.nextPoNumber || 'PO-ERROR');
+      } catch (error) {
+        form.setValue('poNumberDisplay', 'PO-ERROR');
+        toast({ title: "Error", description: "Could not load next PO number.", variant: "destructive" });
+      }
     }
   }, [form, toast]);
 
@@ -169,19 +189,24 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       let fetchedSuppliers: Supplier[] = [];
 
       try {
-        const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
+        const [suppliersRes, sitesRes, categoriesRes, approversRes, approvedReqsRes] = await Promise.all([
           fetch('/api/suppliers'), fetch('/api/sites'), fetch('/api/categories'), fetch('/api/approvers'),
+          fetch('/api/requisitions/for-po-creation'), // Fetch approved requisitions
         ]);
 
         fetchedSuppliers = suppliersRes.ok ? await suppliersRes.json() : [];
         const fetchedSites: Site[] = sitesRes.ok ? await sitesRes.json() : [];
         const fetchedCategories: CategoryType[] = categoriesRes.ok ? await categoriesRes.json() : [];
         const fetchedApprovers: Approver[] = approversRes.ok ? await approversRes.json() : [];
+        const fetchedApprovedReqs: ApprovedRequisitionOption[] = approvedReqsRes.ok ? await approvedReqsRes.json() : [];
+
 
         setSuppliers(fetchedSuppliers);
         setSitesData(fetchedSites);
         setCategories(fetchedCategories);
         setApproversData(fetchedApprovers);
+        setApprovedRequisitions(fetchedApprovedReqs);
+
 
         if (poIdToEditProp) {
           setIsLoadingPOForEdit(true);
@@ -262,7 +287,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       const poItemsData: POItemPayload[] = await poItemsRes.json();
       poDataToLoad.items = poItemsData;
 
-      if (poDataToLoad.status !== 'Pending Approval') {
+      if (poDataToLoad.status !== 'Pending Approval' && poDataToLoad.status !== 'Draft' && poDataToLoad.status !== 'Rejected') { // Allow editing rejected
         toast({ title: "Cannot Edit", description: `PO ${poNumberToLoad} is in '${poDataToLoad.status}' status and cannot be edited.`, variant: "destructive"});
         setIsLoadingPOForEdit(false);
         return;
@@ -280,6 +305,54 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     }
   };
 
+   const handleLoadRequisitionItems = async () => {
+    const requisitionId = form.getValues('selectedRequisitionId');
+    if (!requisitionId) {
+      toast({ title: 'No Requisition Selected', description: 'Please select an approved requisition to load items.', variant: 'info' });
+      return;
+    }
+    setIsLoadingRequisitionItems(true);
+    try {
+      const response = await fetch(`/api/requisitions/${requisitionId}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch requisition details for ID ${requisitionId}.`);
+      }
+      const requisitionData: RequisitionPayload = await response.json();
+
+      // Pre-fill header info from requisition
+      form.setValue('requestedByName', requisitionData.requestedByName || requisitionData.requestorFullName || '');
+      if (requisitionData.siteId) {
+        form.setValue('overallSiteId', requisitionData.siteId.toString());
+      }
+      // Add a note indicating source
+      const currentNotes = form.getValues('notes') || '';
+      form.setValue('notes', `${currentNotes}\nItems loaded from Requisition: ${requisitionData.requisitionNumber}`.trim());
+
+
+      // Map requisition items to PO items
+      const newPOItems = requisitionData.items.map(reqItem => ({
+        ...defaultItem, // Start with default PO item structure
+        id: crypto.randomUUID(), // New ID for PO item
+        partNumber: reqItem.partNumber || '',
+        description: reqItem.description,
+        categoryId: reqItem.categoryId,
+        siteId: reqItem.siteId, // Item specific site from requisition
+        uom: (reqItem as any).uom || 'EA', // Assuming RequisitionItem might have uom, fallback to EA
+        quantity: reqItem.quantity,
+        unitPrice: 0.00, // Price to be filled by PO creator
+      }));
+
+      replace(newPOItems); // Replace existing items with new ones
+      toast({ title: 'Items Loaded', description: `Items from Requisition ${requisitionData.requisitionNumber} loaded.` });
+    } catch (error: any) {
+      toast({ title: 'Error Loading Requisition Items', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoadingRequisitionItems(false);
+    }
+  };
+
+
   const onSubmit = async (formData: POFormValues) => {
     if (!formData.items || formData.items.length === 0) {
       toast({ title: "Validation Error", description: "Please add at least one item.", variant: "destructive" });
@@ -293,7 +366,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       requestedByName: formData.requestedByName,
       supplierId: formData.vendorName,
       approverId: formData.approverId,
-      siteId: formData.overallSiteId ? Number(formData.overallSiteId) : null, // Add overallSiteId
+      siteId: formData.overallSiteId ? Number(formData.overallSiteId) : null, 
       subTotal: subTotal, vatAmount: vatAmount, grandTotal: grandTotal, currency: formData.currency,
       pricesIncludeVat: formData.pricesIncludeVat, notes: formData.notes,
       items: formData.items.map(item => ({
@@ -303,6 +376,8 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         itemStatus: item.itemStatus || 'Pending',
       })),
       quoteNo: formData.quoteNo,
+      status: isEditingLoadedPO && loadedPOId && form.getValues('status' as any) === 'Rejected' ? 'Pending Approval' : 'Pending Approval', // If editing a rejected PO, resubmit as Pending. Else, always Pending.
+      creatorUserId: null 
     };
 
     try {
@@ -317,7 +392,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       } else {
         response = await fetch('/api/purchase-orders', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, status: 'Pending Approval', creatorUserId: null }),
+          body: JSON.stringify(payload), // status is set above
         });
         successMessage = `Purchase Order ${payload.poNumber} created successfully.`;
       }
@@ -402,6 +477,45 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Load from Requisition Section */}
+            {!isEditingLoadedPO && (
+              <div className="p-4 border rounded-md bg-muted/30 space-y-3 mb-6">
+                <h3 className="text-md font-medium text-primary">Load from Approved Requisition</h3>
+                <div className="grid md:grid-cols-3 gap-4 items-end">
+                    <FormField
+                    control={form.control}
+                    name="selectedRequisitionId"
+                    render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                        <FormLabel>Select Requisition</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ''} disabled={isLoadingRequisitionItems}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Choose an approved requisition..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                            {approvedRequisitions.length === 0 && <SelectItem value="" disabled>No approved requisitions found</SelectItem>}
+                            {approvedRequisitions.map(req => (
+                                <SelectItem key={req.id} value={req.id}>
+                                {req.requisitionNumber} ({req.siteName}) - {req.itemCount} items - Req by: {req.requestedByName} on {req.requisitionDate}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <Button 
+                        type="button" 
+                        onClick={handleLoadRequisitionItems} 
+                        disabled={!form.watch('selectedRequisitionId') || isLoadingRequisitionItems}
+                        variant="outline"
+                    >
+                        {isLoadingRequisitionItems ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DownloadCloud className="mr-2 h-4 w-4" />}
+                        Load Items
+                    </Button>
+                </div>
+              </div>
+            )}
+
 
             <div>
               <h3 className="text-lg font-medium font-headline mb-2">Supplier & PO Information</h3>
@@ -454,7 +568,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
 
             <div>
               <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 items-center"> {/* Changed to 5 columns for better layout */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 items-center"> 
                 <FormField
                   control={form.control} name="overallSiteId" rules={{ required: 'Overall PO Site is required' }}
                   render={({ field }) => (
@@ -500,17 +614,17 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                     <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => (
                       <FormItem className="lg:col-span-1">
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}>
+                        <Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ''}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
                           <SelectContent>{categories.map(cat => (<SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>))}</SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Item Site is required' }} render={({ field }) => ( // Item-specific site
+                    <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Item Site is required' }} render={({ field }) => ( 
                       <FormItem className="lg:col-span-1">
                         <FormLabel>Item Site</FormLabel>
-                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}>
+                        <Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ''}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
                           <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>
                         </Select>
@@ -531,7 +645,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0.01, message: 'Must be positive' } }} render={({ field }) => (
+                    <FormField control={form.control} name={`items.${index}.unitPrice`} rules={{ required: 'Unit Price is required', min: { value: 0, message: 'Cannot be negative' } }} render={({ field }) => (
                       <FormItem className="lg:col-span-1">
                         <FormLabel>Unit Price ({currencySymbol})</FormLabel>
                         <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl>
@@ -585,7 +699,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               </div>
 
               <div className="md:col-span-1 flex flex-col gap-3 w-full">
-                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isLoadingPOForEdit || (!form.formState.isValid && form.formState.isSubmitted)}>
+                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || isLoadingPOForEdit || isLoadingRequisitionItems || (!form.formState.isValid && form.formState.isSubmitted)}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : (isEditingLoadedPO ? <Edit className="mr-2 h-4 w-4" /> : <Send className="mr-2 h-4 w-4" />)}
                   {isSubmitting ? (isEditingLoadedPO ? 'Updating PO...' : 'Submitting PO...') : (isEditingLoadedPO ? 'Update PO' : 'Submit PO')}
                 </Button>
@@ -594,7 +708,7 @@ export function POForm({ poIdToEditProp }: POFormProps) {
                   {isPrintingLoading ? 'Loading Preview...' : 'View/Print PO'}
                 </Button>
                  {!isEditingLoadedPO && (
-                  <Button type="button" variant="ghost" size="lg" className="w-full" onClick={() => resetFormForNew()} disabled={isSubmitting || isLoadingPOForEdit}>
+                  <Button type="button" variant="ghost" size="lg" className="w-full" onClick={() => resetFormForNew()} disabled={isSubmitting || isLoadingPOForEdit || isLoadingRequisitionItems}>
                     Clear / New PO
                   </Button>
                 )}
