@@ -17,7 +17,7 @@ const JACHRIS_COMPANY_DETAILS = {
 };
 
 export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) {
-  const { clientName, clientEmail, items, creatorEmail } = quoteData;
+  const { clientName, clientEmail, items, creatorEmail, clientAddress, clientCity, clientCountry, clientContactPerson } = quoteData;
 
   const quoteDateFormatted = quoteData.quoteDate ? new Date(quoteData.quoteDate).toLocaleDateString('en-GB') : 'N/A';
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
@@ -28,6 +28,8 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
   };
 
   const printableItems = (items || []) as QuoteItem[];
+
+  const fullClientAddress = [clientAddress, clientCity, clientCountry].filter(Boolean).join(', ');
 
   return (
     <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
@@ -51,9 +53,10 @@ export function PrintableQuote({ quoteData, logoDataUri }: PrintableQuoteProps) 
         <div>
           <h3 className="font-bold text-gray-600 mb-1">CLIENT DETAILS:</h3>
           <p><strong>{clientName || 'N/A'}</strong></p>
-          <p>{quoteData.clientId ? `Client ID: ${quoteData.clientId}` : ''}</p>
-          <p>{clientEmail || 'N/A'}</p>
-          {/* Add more client details from quoteData.client if available (e.g., address, contact person) */}
+          {fullClientAddress && <p>{fullClientAddress}</p>}
+          {clientEmail && <p>{clientEmail}</p>}
+          {clientContactPerson && <p>Attn: {clientContactPerson}</p>}
+          {!fullClientAddress && !clientEmail && !clientContactPerson && <p>Client details not fully specified.</p>}
         </div>
         <div className="text-right">
           <p><strong className="text-gray-600">Quote No.:</strong> {quoteData.quoteNumber}</p>
