@@ -190,7 +190,8 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentType', 
       header: 'Type',
-      cell: (item: UnifiedApprovalItem) => { 
+      cell: (itemProps) => { 
+        const item = itemProps.row.original;
         if (item.documentType === 'PO') return <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span>;
         if (item.documentType === 'Quote') return <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
         if (item.documentType === 'Requisition') return <span className="flex items-center"><RequisitionListIcon className="mr-2 h-4 w-4 text-purple-500" /> Requisition</span>;
@@ -200,27 +201,28 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: (item: UnifiedApprovalItem) => <span className="font-medium">{item.documentNumber}</span>
+      cell: (itemProps) => <span className="font-medium">{itemProps.row.original.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (item: UnifiedApprovalItem) => format(new Date(item.creationDate), 'PP')
+      cell: (itemProps) => format(new Date(itemProps.row.original.creationDate), 'PP')
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: (item: UnifiedApprovalItem) => item.submittedBy || 'N/A'
+      cell: (itemProps) => itemProps.row.original.submittedBy || 'N/A'
     },
     { 
       accessorKey: 'entityName', 
       header: 'Supplier/Client/Site',
-      cell: (item: UnifiedApprovalItem) => item.entityName || 'N/A'
+      cell: (itemProps) => itemProps.row.original.entityName || 'N/A'
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (item: UnifiedApprovalItem) => { 
+      cell: (itemProps) => { 
+        const item = itemProps.row.original;
         if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
         return `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency || ''}`;
       }
@@ -228,7 +230,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (item: UnifiedApprovalItem) => <span className="text-orange-600 font-semibold">{item.status}</span>
+      cell: (itemProps) => <span className="text-orange-600 font-semibold">{itemProps.row.original.status}</span>
     },
   ];
 
@@ -289,7 +291,8 @@ export default function ApprovalsPage() {
           <DataTable
             columns={columns}
             data={pendingItems}
-            renderRowActions={(item) => {
+            renderRowActions={(row) => {
+              const item = row; // DataTable passes the item directly
               let viewPath = '';
               if (item.documentType === 'PO') viewPath = `/purchase-orders/${item.id}/print`;
               else if (item.documentType === 'Quote') viewPath = `/quotes/${item.id}/print`;
@@ -329,7 +332,10 @@ export default function ApprovalsPage() {
           />
            {pendingItems.length === 0 && !loading && !error && (
              <div className="text-center py-8 text-muted-foreground">
-                No documents are currently pending your approval.
+                <p className="mb-2">No documents are currently pending your approval.</p>
+                <p className="text-xs">
+                  Ensure documents (POs, Quotes, Requisitions) are in 'Pending Approval' status and assigned to <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>.
+                </p>
              </div>
            )}
         </CardContent>
