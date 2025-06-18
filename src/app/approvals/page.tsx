@@ -190,7 +190,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentType', 
       header: 'Type',
-      cell: (item) => { // Changed: Directly use item (which is UnifiedApprovalItem)
+      cell: (item: UnifiedApprovalItem) => { 
         if (item.documentType === 'PO') return <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span>;
         if (item.documentType === 'Quote') return <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
         if (item.documentType === 'Requisition') return <span className="flex items-center"><RequisitionListIcon className="mr-2 h-4 w-4 text-purple-500" /> Requisition</span>;
@@ -200,27 +200,27 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: (item) => <span className="font-medium">{item.documentNumber}</span> // Changed
+      cell: (item: UnifiedApprovalItem) => <span className="font-medium">{item.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (item) => format(new Date(item.creationDate), 'PP') // Changed
+      cell: (item: UnifiedApprovalItem) => format(new Date(item.creationDate), 'PP')
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: (item) => item.submittedBy || 'N/A' // Changed
+      cell: (item: UnifiedApprovalItem) => item.submittedBy || 'N/A'
     },
     { 
       accessorKey: 'entityName', 
       header: 'Supplier/Client/Site',
-      cell: (item) => item.entityName || 'N/A' // Changed
+      cell: (item: UnifiedApprovalItem) => item.entityName || 'N/A'
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (item) => { // Changed
+      cell: (item: UnifiedApprovalItem) => { 
         if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
         return `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency || ''}`;
       }
@@ -228,7 +228,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (item) => <span className="text-orange-600 font-semibold">{item.status}</span> // Changed
+      cell: (item: UnifiedApprovalItem) => <span className="text-orange-600 font-semibold">{item.status}</span>
     },
   ];
 
@@ -362,4 +362,4 @@ export default function ApprovalsPage() {
     </div>
   );
 }
-
+    
