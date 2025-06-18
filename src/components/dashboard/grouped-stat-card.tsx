@@ -12,7 +12,7 @@ interface GroupedStatCardProps extends GroupedStatCardItem {}
 
 export function GroupedStatCard({ title, icon: Icon, subStats, viewMoreLink, mainValue, mainValueDescription }: GroupedStatCardProps) {
   return (
-    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ease-in-out flex flex-col h-[180px]"> {/* Reduced height */}
+    <Card className="shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ease-in-out flex flex-col h-[190px]"> {/* Increased height */}
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-1 pt-3 px-3"> {/* Reduced padding */}
         <div className="space-y-0.5">
           <CardTitle className="text-sm font-medium text-card-foreground/90">{title}</CardTitle> {/* Reduced font size */}

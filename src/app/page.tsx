@@ -190,7 +190,7 @@ export default function DashboardPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {isLoadingStats ? (
           initialDashboardCardsConfig.map((cardConfig, index) => (
-            <Card key={index} className="shadow-lg flex flex-col h-[180px]"> {/* Reduced height */}
+            <Card key={index} className="shadow-lg flex flex-col h-[190px]"> {/* Adjusted height */}
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-1 pt-3 px-3"> {/* Reduced padding */}
                 <Skeleton className="h-4 w-3/5" /> {/* Adjusted skeleton size */}
                 <Skeleton className="h-5 w-5 rounded-full" />
