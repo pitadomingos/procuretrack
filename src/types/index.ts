@@ -174,7 +174,7 @@ export interface PurchaseOrderPayload {
   supplierName?: string;
   creatorName?: string;
   approverName?: string;
-  approverSignatureUrl?: string;
+  // approverSignatureUrl?: string; // Removed as per request
   quoteNo?: string;
   siteId?: number | null; 
 }
@@ -204,15 +204,27 @@ export interface QuoteApprovalQueueItem {
   status: string;
 }
 
+export interface RequisitionApprovalQueueItem {
+  id: string;
+  documentNumber: string; // Requisition Number
+  creationDate: string; // Requisition Date
+  submittedBy: string; // Requested By Name or User Name
+  entityName: string; // Site Name or Code
+  totalAmount: number | null; // Total Estimated Value (can be null or 0)
+  currency: string | null; // Currency (may not be applicable or set to MZN default)
+  status: string; // Requisition Status
+}
+
+
 export interface UnifiedApprovalItem {
   id: string | number; 
-  documentType: 'PO' | 'Quote';
+  documentType: 'PO' | 'Quote' | 'Requisition';
   documentNumber: string;
   creationDate: string; 
   submittedBy: string | null; 
   entityName: string | null; 
-  totalAmount: number;
-  currency: string;
+  totalAmount: number | null; // Made nullable
+  currency: string | null; // Made nullable
   status: string;
 }
 
@@ -255,6 +267,10 @@ export interface QuotePayload {
   creatorEmail?: string; 
   clientName?: string; 
   clientEmail?: string; 
+  clientAddress?: string;
+  clientCity?: string;
+  clientCountry?: string;
+  clientContactPerson?: string;
   subTotal: number;
   vatAmount: number;
   grandTotal: number;
@@ -270,7 +286,7 @@ export interface QuotePayload {
   updatedAt?: string; 
 }
 
-export type RequisitionStatus = 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
+export type RequisitionStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Closed' | 'Cancelled';
 
 export interface RequisitionItem {
   id: string;
@@ -282,6 +298,7 @@ export interface RequisitionItem {
   quantity: number;
   estimatedUnitPrice?: number | null; // Marking as optional
   notes?: string | null;
+  siteId?: number | null; // Added from PO form to ensure consistency
 }
 
 export interface RequisitionPayload {
@@ -296,8 +313,11 @@ export interface RequisitionPayload {
   siteCode?: string;
   status: RequisitionStatus;
   justification?: string | null;
-  items: RequisitionItem[]; // Or Omit<RequisitionItem, 'estimatedUnitPrice'>[] if strictly not sending
+  items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string, siteId?: number | null})[];
   totalEstimatedValue?: number; // Marking as optional
+  approverId?: string | null; // Added for approval workflow
+  approverName?: string; // Added for display
+  approvalDate?: string | null; // Added for approval workflow
   createdAt?: string; 
   updatedAt?: string; 
 }
@@ -365,5 +385,4 @@ export interface SurveyFormValues {
   mostUsedFeatures: string;
   suggestions: string;
 }
-
     

@@ -5,16 +5,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
-import type { UnifiedApprovalItem, POApprovalQueueItem, QuoteApprovalQueueItem } from '@/types';
-import { Eye, Loader2, ThumbsDown, MessageSquareText, CheckCircle2, RefreshCw, AlertTriangle, FileText, ShoppingBag } from 'lucide-react';
+import type { UnifiedApprovalItem, POApprovalQueueItem, QuoteApprovalQueueItem, RequisitionApprovalQueueItem } from '@/types';
+import { Eye, Loader2, ThumbsDown, MessageSquareText, CheckCircle2, RefreshCw, AlertTriangle, FileText, ShoppingBag, ClipboardList as RequisitionListIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { RejectPOModal } from '@/components/approvals/RejectPOModal'; // Can be generalized or duplicated for Quotes if needed
-import { ReviewPOModal } from '@/components/approvals/ReviewPOModal'; // PO specific, might need generalization or conditional logic for Quotes
+import { RejectDocumentModal } from '@/components/approvals/RejectDocumentModal'; // Updated component name
+import { ReviewPOModal } from '@/components/approvals/ReviewPOModal';
 
 // --- AUTHENTICATION PLACEHOLDER ---
-const MOCK_LOGGED_IN_APPROVER_EMAIL = 'pita.domingos@jachris.com'; // Should match an email in your Approver table
+const MOCK_LOGGED_IN_APPROVER_EMAIL = 'pita.domingos@jachris.com';
 
 export default function ApprovalsPage() {
   const [pendingItems, setPendingItems] = useState<UnifiedApprovalItem[]>([]);
@@ -38,9 +38,10 @@ export default function ApprovalsPage() {
         throw new Error("Approver email is not defined (authentication placeholder).");
       }
 
-      const [poResponse, quoteResponse] = await Promise.all([
+      const [poResponse, quoteResponse, requisitionResponse] = await Promise.all([
         fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`),
-        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`)
+        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`),
+        fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`)
       ]);
 
       let allPendingItems: UnifiedApprovalItem[] = [];
@@ -62,7 +63,6 @@ export default function ApprovalsPage() {
       } else {
         const poErrorData = await poResponse.json().catch(() => ({ message: 'Failed to fetch PO approvals.' }));
         console.warn('Error fetching PO approvals:', poErrorData.message);
-        // Optionally notify user or just proceed with other data
       }
 
       if (quoteResponse.ok) {
@@ -82,6 +82,25 @@ export default function ApprovalsPage() {
       } else {
         const quoteErrorData = await quoteResponse.json().catch(() => ({ message: 'Failed to fetch Quote approvals.' }));
         console.warn('Error fetching Quote approvals:', quoteErrorData.message);
+      }
+
+      if (requisitionResponse.ok) {
+        const reqData: RequisitionApprovalQueueItem[] = await requisitionResponse.json();
+        const mappedRequisitions: UnifiedApprovalItem[] = reqData.map(req => ({
+          id: req.id,
+          documentType: 'Requisition',
+          documentNumber: req.documentNumber,
+          creationDate: req.creationDate,
+          submittedBy: req.submittedBy || 'N/A',
+          entityName: req.entityName || 'N/A', // Site name/code
+          totalAmount: req.totalAmount, 
+          currency: req.currency,
+          status: req.status,
+        }));
+        allPendingItems = allPendingItems.concat(mappedRequisitions);
+      } else {
+        const reqErrorData = await requisitionResponse.json().catch(() => ({ message: 'Failed to fetch Requisition approvals.' }));
+        console.warn('Error fetching Requisition approvals:', reqErrorData.message);
       }
       
       allPendingItems.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime());
@@ -106,12 +125,11 @@ export default function ApprovalsPage() {
   };
 
   const handleOpenReviewModal = (item: UnifiedApprovalItem) => {
-    // Review modal is PO specific for now
     if (item.documentType === 'PO') {
       setSelectedPOForReview(item);
       setIsReviewModalOpen(true);
     } else {
-      toast({ title: "Info", description: "Review comments for Quotes can be added manually after viewing."})
+      toast({ title: "Info", description: `Review comments for ${item.documentType}s can be added manually after viewing.`});
     }
   };
 
@@ -122,9 +140,22 @@ export default function ApprovalsPage() {
     }
     
     setIsProcessingItemId(item.id);
-    const apiUrl = item.documentType === 'PO' 
-      ? `/api/purchase-orders/${item.id}/approve` 
-      : `/api/quotes/${item.id}/approve`;
+    let apiUrl = '';
+    switch (item.documentType) {
+      case 'PO':
+        apiUrl = `/api/purchase-orders/${item.id}/approve`;
+        break;
+      case 'Quote':
+        apiUrl = `/api/quotes/${item.id}/approve`;
+        break;
+      case 'Requisition':
+        apiUrl = `/api/requisitions/${item.id}/approve`;
+        break;
+      default:
+        toast({title: "Error", description: "Invalid document type for approval.", variant: "destructive"});
+        setIsProcessingItemId(null);
+        return;
+    }
 
     try {
       const response = await fetch(apiUrl, {
@@ -150,51 +181,56 @@ export default function ApprovalsPage() {
     }
   };
   
-  const handleRejectConfirmed = () => { // Callback from RejectPOModal
+  const handleRejectConfirmed = () => { 
     fetchPendingApprovals();
     setSelectedItemForReject(null);
   };
-
 
   const columns: ColumnDef<UnifiedApprovalItem>[] = [
     { 
       accessorKey: 'documentType', 
       header: 'Type',
-      cell: (item) => { // Changed from ({ row }) to (item)
-        return item.documentType === 'PO' ? 
-          <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span> : 
-          <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
+      cell: ({ row }) => {
+        const item = row.original;
+        if (item.documentType === 'PO') return <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span>;
+        if (item.documentType === 'Quote') return <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
+        if (item.documentType === 'Requisition') return <span className="flex items-center"><RequisitionListIcon className="mr-2 h-4 w-4 text-purple-500" /> Requisition</span>;
+        return item.documentType;
       }
     },
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: (item) => <span className="font-medium">{item.documentNumber}</span> // Changed from ({ row }) to (item)
+      cell: ({ row }) => <span className="font-medium">{row.original.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (item) => format(new Date(item.creationDate), 'PP') // Changed from ({ row }) to (item)
+      cell: ({ row }) => format(new Date(row.original.creationDate), 'PP')
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: (item) => item.submittedBy || 'N/A' // Changed from ({ row }) to (item)
+      cell: ({ row }) => row.original.submittedBy || 'N/A'
     },
     { 
       accessorKey: 'entityName', 
-      header: 'Supplier/Client',
-      cell: (item) => item.entityName || 'N/A' // Changed from ({ row }) to (item)
+      header: 'Supplier/Client/Site',
+      cell: ({ row }) => row.original.entityName || 'N/A'
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (item) => `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency}` // Changed from ({ row }) to (item)
+      cell: ({ row }) => {
+        const item = row.original;
+        if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
+        return `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency || ''}`;
+      }
     },
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (item) => <span className="text-orange-600 font-semibold">{item.status}</span> // Changed from ({ row }) to (item)
+      cell: ({ row }) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
     },
   ];
 
@@ -255,34 +291,43 @@ export default function ApprovalsPage() {
           <DataTable
             columns={columns}
             data={pendingItems}
-            renderRowActions={(item) => (
-              <div className="space-x-1">
-                <Link href={item.documentType === 'PO' ? `/purchase-orders/${item.id}/print` : `/quotes/${item.id}/print`} passHref legacyBehavior={false}>
-                  <Button variant="ghost" size="sm" title={`View ${item.documentType} Details`}>
-                    <Eye className="mr-1 h-4 w-4 text-muted-foreground" /> View
+            renderRowActions={(item) => {
+              let viewPath = '';
+              if (item.documentType === 'PO') viewPath = `/purchase-orders/${item.id}/print`;
+              else if (item.documentType === 'Quote') viewPath = `/quotes/${item.id}/print`;
+              else if (item.documentType === 'Requisition') viewPath = `/requisitions/${item.id}/print`;
+              
+              return (
+                <div className="space-x-1">
+                  {viewPath && (
+                    <Link href={viewPath} passHref legacyBehavior={false}>
+                      <Button variant="ghost" size="sm" title={`View ${item.documentType} Details`}>
+                        <Eye className="mr-1 h-4 w-4 text-muted-foreground" /> View
+                      </Button>
+                    </Link>
+                  )}
+                  <Button 
+                      variant="outline" 
+                      size="sm" 
+                      title={`Approve ${item.documentType}`}
+                      onClick={() => handleApproveItem(item)}
+                      disabled={isProcessingItemId === item.id}
+                      className="text-green-600 hover:text-green-700 border-green-600 hover:border-green-700 hover:bg-green-50"
+                  >
+                    {isProcessingItemId === item.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} 
+                    Approve
                   </Button>
-                </Link>
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    title={`Approve ${item.documentType}`}
-                    onClick={() => handleApproveItem(item)}
-                    disabled={isProcessingItemId === item.id}
-                    className="text-green-600 hover:text-green-700 border-green-600 hover:border-green-700 hover:bg-green-50"
-                >
-                  {isProcessingItemId === item.id ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-1 h-4 w-4" />} 
-                  Approve
-                </Button>
-                {item.documentType === 'PO' && ( // Review modal is currently PO specific
-                  <Button variant="outline" size="sm" title="Review PO" onClick={() => handleOpenReviewModal(item)} className="text-blue-600 hover:text-blue-700 border-blue-600 hover:border-blue-700 hover:bg-blue-50">
-                    <MessageSquareText className="mr-1 h-4 w-4" /> Review
+                  {item.documentType === 'PO' && ( 
+                    <Button variant="outline" size="sm" title="Review PO" onClick={() => handleOpenReviewModal(item)} className="text-blue-600 hover:text-blue-700 border-blue-600 hover:border-blue-700 hover:bg-blue-50">
+                      <MessageSquareText className="mr-1 h-4 w-4" /> Review
+                    </Button>
+                  )}
+                   <Button variant="outline" size="sm" title={`Reject ${item.documentType}`} onClick={() => handleOpenRejectModal(item)} className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700 hover:bg-red-50">
+                    <ThumbsDown className="mr-1 h-4 w-4" /> Reject
                   </Button>
-                )}
-                 <Button variant="outline" size="sm" title={`Reject ${item.documentType}`} onClick={() => handleOpenRejectModal(item)} className="text-red-600 hover:text-red-700 border-red-600 hover:border-red-700 hover:bg-red-50">
-                  <ThumbsDown className="mr-1 h-4 w-4" /> Reject
-                </Button>
-              </div>
-            )}
+                </div>
+              );
+            }}
           />
            {pendingItems.length === 0 && !loading && !error && (
              <div className="text-center py-8 text-muted-foreground">
@@ -293,9 +338,10 @@ export default function ApprovalsPage() {
       </Card>
 
       {selectedItemForReject && (
-        <RejectPOModal // This modal might need to be made more generic if rejection reasons differ significantly
-          poId={typeof selectedItemForReject.id === 'number' ? selectedItemForReject.id : -1} // Hack for PO ID, needs proper handling for quote ID
-          poNumber={selectedItemForReject.documentNumber}
+        <RejectDocumentModal
+          documentId={selectedItemForReject.id}
+          documentNumber={selectedItemForReject.documentNumber}
+          documentType={selectedItemForReject.documentType}
           open={isRejectModalOpen}
           onOpenChange={setIsRejectModalOpen}
           onRejected={handleRejectConfirmed}
@@ -304,7 +350,7 @@ export default function ApprovalsPage() {
 
       {selectedPOForReview && selectedPOForReview.documentType === 'PO' && (
         <ReviewPOModal
-          poId={selectedPOForReview.id as number} // Cast as PO Review is PO specific
+          poId={selectedPOForReview.id as number} 
           poNumber={selectedPOForReview.documentNumber}
           creatorName={selectedPOForReview.submittedBy}
           open={isReviewModalOpen}
@@ -313,7 +359,7 @@ export default function ApprovalsPage() {
       )}
        <div className="text-center text-xs text-muted-foreground mt-4">
         <strong>Note:</strong> Full authentication and user-specific approval queues will be implemented in a future update.
-        Email notifications for review feedback are simulated. The "Reject" modal is currently PO-styled.
+        Email notifications for review feedback are simulated.
       </div>
     </div>
   );

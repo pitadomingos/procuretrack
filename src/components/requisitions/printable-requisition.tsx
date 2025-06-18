@@ -18,13 +18,14 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
   const requisitionDateFormatted = requisitionData.requisitionDate 
     ? new Date(requisitionData.requisitionDate).toLocaleDateString('en-GB') 
     : 'N/A';
+  const approvalDateFormatted = requisitionData.approvalDate
+    ? new Date(requisitionData.approvalDate).toLocaleDateString('en-GB')
+    : 'N/A';
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
   const siteName = requisitionData.siteName || (requisitionData.siteId ? `Site ID: ${requisitionData.siteId}`: 'N/A');
 
-  // Price formatting function removed as prices are not displayed
-
-  const printableItems = (items || []) as (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string})[];
+  const printableItems = (items || []) as (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string, siteId?: number | null})[];
 
   return (
     <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
@@ -61,7 +62,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
         </div>
       )}
 
-      {/* Items Table - Price columns removed */}
+      {/* Items Table */}
       <div className="mb-6 min-h-[250px]">
         <table className="w-full border-collapse border border-gray-400 text-xs">
           <thead>
@@ -69,6 +70,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
               <th className="border border-gray-400 p-2 text-left">PART NUMBER</th>
               <th className="border border-gray-400 p-2 text-left w-2/5">ITEM / SERVICE DESCRIPTION</th>
               <th className="border border-gray-400 p-2 text-left">CATEGORY</th>
+              <th className="border border-gray-400 p-2 text-left">ITEM SITE</th>
               <th className="border border-gray-400 p-2 text-center">QTY</th>
               <th className="border border-gray-400 p-2 text-left">NOTES</th>
             </tr>
@@ -76,11 +78,16 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
           <tbody>
             {printableItems.map((item, index) => {
               const categoryName = item.categoryName || (item.categoryId ? `Cat. ID: ${item.categoryId}` : 'N/A');
+              // Find site name/code for item
+              const itemSite = requisitionData.siteId === item.siteId // Check if item site is same as header
+                ? siteName // Use header site name if same
+                : (item.siteId ? `Site ID: ${item.siteId}` : 'N/A'); // Fallback or show different item site
               return (
                 <tr key={item.id || index}>
                   <td className="border border-gray-400 p-2 align-top">{item.partNumber || ''}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.description}</td>
                   <td className="border border-gray-400 p-2 align-top">{categoryName}</td>
+                  <td className="border border-gray-400 p-2 align-top">{itemSite}</td>
                   <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.notes || ''}</td>
                 </tr>
@@ -93,31 +100,27 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
+                    <td className="border border-gray-400 p-2">&nbsp;</td>
                 </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Total Estimated Value section removed */}
-
-      {/* Signatures / Approval Section (Placeholder) */}
-      <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-3 gap-4">
+      {/* Signatures / Approval Section */}
+      <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-2 gap-4">
         <div>
-          <p className="mb-1">Requested By:</p>
-          <p className="font-semibold">{requisitionData.requestedByName}</p>
+          <p className="mb-1"><strong className="text-gray-600">Requested By:</strong></p>
+          <p className="font-semibold">{requisitionData.requestedByName || 'N/A'}</p>
           <div className="mt-8 border-b border-black w-4/5"></div>
           <p className="text-xs">Signature & Date</p>
         </div>
         <div>
-          <p className="mb-1">Approved By (Dept. Head):</p>
-          <p className="font-semibold text-gray-400">(Pending)</p>
-          <div className="mt-8 border-b border-black w-4/5"></div>
-          <p className="text-xs">Signature & Date</p>
-        </div>
-        <div>
-          <p className="mb-1">Approved By (Procurement/Finance):</p>
-          <p className="font-semibold text-gray-400">(Pending)</p>
+          <p className="mb-1"><strong className="text-gray-600">Approved By:</strong></p>
+          <p className="font-semibold">{requisitionData.approverName || (requisitionData.status === 'Pending Approval' ? '(Pending Approval)' : (requisitionData.status === 'Approved' ? 'Approved (Name Missing)' : 'N/A'))}</p>
+          {requisitionData.status === 'Approved' && requisitionData.approvalDate && (
+            <p className="text-xs">Date: {approvalDateFormatted}</p>
+          )}
           <div className="mt-8 border-b border-black w-4/5"></div>
           <p className="text-xs">Signature & Date</p>
         </div>
@@ -126,5 +129,3 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     </div>
   );
 }
-
-    

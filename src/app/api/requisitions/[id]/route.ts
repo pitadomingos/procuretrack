@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../../backend/db.js';
-import type { RequisitionPayload, RequisitionItem, Site, Category as CategoryType, User as UserType } from '@/types';
+import type { RequisitionPayload, RequisitionItem, Site, Category as CategoryType, User as UserType, Approver } from '@/types';
 
 export async function GET(
   request: Request,
@@ -20,10 +20,12 @@ export async function GET(
       SELECT 
         r.*, 
         s.name as siteName, s.siteCode,
-        u.name as requestorFullName 
+        u.name as requestorFullName,
+        app.name as approverName
       FROM Requisition r
       LEFT JOIN Site s ON r.siteId = s.id
       LEFT JOIN User u ON r.requestedByUserId = u.id
+      LEFT JOIN Approver app ON r.approverId = app.id
       WHERE r.id = ?
     `;
     const [reqRows]: any[] = await connection.execute(requisitionQuery, [id]);
@@ -35,21 +37,21 @@ export async function GET(
     const requisitionData: RequisitionPayload = {
       ...reqRows[0],
       requisitionDate: new Date(reqRows[0].requisitionDate).toISOString(),
-      // totalEstimatedValue will be whatever is in DB, but not actively used in UI
+      approvalDate: reqRows[0].approvalDate ? new Date(reqRows[0].approvalDate).toISOString() : null,
       totalEstimatedValue: parseFloat(reqRows[0].totalEstimatedValue || 0),
       requestedByName: reqRows[0].requestorFullName || reqRows[0].requestedByName,
+      approverName: reqRows[0].approverName,
     };
 
     const itemsQuery = `
-      SELECT ri.id, ri.requisitionId, ri.partNumber, ri.description, ri.categoryId, ri.quantity, ri.notes, ri.createdAt, ri.updatedAt, 
+      SELECT ri.id, ri.requisitionId, ri.partNumber, ri.description, ri.categoryId, ri.quantity, ri.notes, ri.createdAt, ri.updatedAt, ri.siteId,
              c.category as categoryName 
       FROM RequisitionItem ri
       LEFT JOIN Category c ON ri.categoryId = c.id
       WHERE ri.requisitionId = ?
-    `; // Removed estimatedUnitPrice from select
+    `;
     const [itemRows]: any[] = await connection.execute(itemsQuery, [id]);
     
-    // Map items without estimatedUnitPrice
     requisitionData.items = itemRows.map((item: any) => ({
       id: item.id,
       requisitionId: item.requisitionId,
@@ -59,8 +61,8 @@ export async function GET(
       categoryName: item.categoryName,
       quantity: parseInt(item.quantity, 10),
       notes: item.notes,
-      // estimatedUnitPrice is omitted
-    })) as Omit<RequisitionItem, 'estimatedUnitPrice'>[];
+      siteId: item.siteId,
+    })) as (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string, siteId?: number | null})[];
 
     return NextResponse.json(requisitionData);
 
@@ -83,7 +85,7 @@ export async function PUT(
 
   let connection;
   try {
-    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items'> & { items: Omit<RequisitionItem, 'estimatedUnitPrice'>[] };
+    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[] };
     
     connection = await pool.getConnection();
     await connection.beginTransaction();
@@ -93,25 +95,28 @@ export async function PUT(
         await connection.rollback();
         return NextResponse.json({ error: 'Requisition not found for update.'}, { status: 404});
     }
-    if (currentReq[0].status !== 'Draft') {
+    // Allow editing if Draft or Pending Approval (to change approver, for example)
+    if (currentReq[0].status !== 'Draft' && currentReq[0].status !== 'Pending Approval') {
         await connection.rollback();
-        return NextResponse.json({ error: `Cannot update requisition. Status is '${currentReq[0].status}'. Only 'Draft' requisitions can be edited.`}, { status: 400});
+        return NextResponse.json({ error: `Cannot update requisition. Status is '${currentReq[0].status}'. Only 'Draft' or 'Pending Approval' requisitions can be edited.`}, { status: 400});
     }
 
-    // totalEstimatedValue is not updated from form
+    // If an approverId is provided, set status to 'Pending Approval', otherwise keep current (or set to Draft if it was Pending and approver removed)
+    const newStatus = requisitionData.approverId ? 'Pending Approval' : 'Draft';
+
     await connection.execute(
       `UPDATE Requisition SET 
         requisitionDate = ?, requestedByUserId = ?, requestedByName = ?, siteId = ?, 
-        status = ?, justification = ?, updatedAt = NOW() 
+        status = ?, justification = ?, approverId = ?, updatedAt = NOW() 
        WHERE id = ?`,
       [
         new Date(requisitionData.requisitionDate).toISOString().slice(0, 19).replace('T', ' '),
         requisitionData.requestedByUserId || null,
         requisitionData.requestedByName,
         requisitionData.siteId ? Number(requisitionData.siteId) : null,
-        requisitionData.status,
+        newStatus, // Update status based on approverId
         requisitionData.justification,
-        // totalEstimatedValue not updated here
+        requisitionData.approverId || null,
         id
       ]
     );
@@ -120,10 +125,9 @@ export async function PUT(
 
     if (requisitionData.items && requisitionData.items.length > 0) {
       for (const item of requisitionData.items) {
-        // estimatedUnitPrice not inserted
         await connection.execute(
-          `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, createdAt, updatedAt)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, siteId, createdAt, updatedAt)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
           [
             item.id || crypto.randomUUID(),
             id, 
@@ -131,14 +135,43 @@ export async function PUT(
             item.description, 
             item.categoryId ? Number(item.categoryId) : null, 
             item.quantity, 
-            item.notes
+            item.notes,
+            item.siteId ? Number(item.siteId) : null, // Save item-level siteId
           ]
         );
       }
     }
 
     await connection.commit();
-    return NextResponse.json({ message: `Requisition ${requisitionData.requisitionNumber} updated successfully.`, id });
+    // Fetch the updated requisition to return it with all joined data
+    const getUpdatedQuery = `
+      SELECT 
+        r.*, 
+        s.name as siteName, s.siteCode,
+        u.name as requestorFullName,
+        app.name as approverName
+      FROM Requisition r
+      LEFT JOIN Site s ON r.siteId = s.id
+      LEFT JOIN User u ON r.requestedByUserId = u.id
+      LEFT JOIN Approver app ON r.approverId = app.id
+      WHERE r.id = ?
+    `;
+    const [updatedReqRows]: any[] = await connection.execute(getUpdatedQuery, [id]);
+    const updatedRequisition = updatedReqRows[0];
+    updatedRequisition.approvalDate = updatedRequisition.approvalDate ? new Date(updatedRequisition.approvalDate).toISOString() : null;
+    updatedRequisition.requisitionDate = new Date(updatedRequisition.requisitionDate).toISOString();
+
+    const [updatedItemRows]: any[] = await connection.execute(
+       `SELECT ri.*, c.category as categoryName FROM RequisitionItem ri LEFT JOIN Category c ON ri.categoryId = c.id WHERE ri.requisitionId = ?`, [id]
+    );
+    updatedRequisition.items = updatedItemRows.map((item: any) => ({
+      ...item,
+      quantity: parseInt(item.quantity, 10),
+    }));
+
+
+    return NextResponse.json(updatedRequisition);
+
 
   } catch (error: any) {
     if (connection) await connection.rollback();
@@ -167,9 +200,10 @@ export async function DELETE(
             await connection.rollback();
             return NextResponse.json({ error: 'Requisition not found for deletion.'}, { status: 404});
         }
-        if (currentReq[0].status !== 'Draft') {
+        // Only allow deleting Draft or Rejected requisitions through this direct DELETE
+        if (currentReq[0].status !== 'Draft' && currentReq[0].status !== 'Rejected') {
             await connection.rollback();
-            return NextResponse.json({ error: `Cannot delete requisition. Status is '${currentReq[0].status}'. Only 'Draft' requisitions can be deleted.`}, { status: 400});
+            return NextResponse.json({ error: `Cannot delete requisition. Status is '${currentReq[0].status}'. Only 'Draft' or 'Rejected' requisitions can be deleted directly.`}, { status: 400});
         }
 
         await connection.execute('DELETE FROM RequisitionItem WHERE requisitionId = ?', [id]);
@@ -190,5 +224,3 @@ export async function DELETE(
         if (connection) connection.release();
     }
 }
-
-    

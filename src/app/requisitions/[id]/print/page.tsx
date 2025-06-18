@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableRequisition } from '@/components/requisitions/printable-requisition';
 import type { RequisitionPayload } from '@/types';
-import { ArrowLeft, Printer, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, Download, Loader2, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -76,6 +76,14 @@ function PrintRequisitionPageContent() {
     });
   };
 
+  const handleEditRequisition = () => {
+    if (!requisitionData || !requisitionId) return;
+    // For now, navigating to the generic create page, which doesn't support editing requisitions yet.
+    // This will need to be updated if/when requisition editing is fully implemented in the form.
+    toast({ title: 'Info', description: 'Requisition editing via the main form is not yet fully supported. This action is a placeholder.' });
+    // router.push(`/create-document?editRequisitionId=${requisitionId}`);
+  };
+
 
   if (loading) {
     return (
@@ -108,19 +116,38 @@ function PrintRequisitionPageContent() {
       </div>
     );
   }
+  
+  const canEditRequisition = requisitionData.status === 'Draft' || requisitionData.status === 'Pending Approval';
+
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
       <div className="print-page-inner-container container mx-auto max-w-4xl print:max-w-full print:p-0">
         <Card className="mb-6 print:hidden shadow-lg">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">
-              Requisition Preview: {requisitionData.requisitionNumber}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-semibold text-center sm:text-left">
+                Requisition: {requisitionData.requisitionNumber}
+              </h1>
+              <span className={`text-sm font-semibold px-2 py-1 rounded-md ${
+                    requisitionData.status === 'Approved' ? 'bg-green-100 text-green-700' :
+                    requisitionData.status === 'Pending Approval' ? 'bg-yellow-100 text-yellow-700' :
+                    requisitionData.status === 'Rejected' ? 'bg-red-100 text-red-700' :
+                    requisitionData.status === 'Draft' ? 'bg-gray-100 text-gray-700' :
+                    'bg-blue-100 text-blue-700' 
+                }`}>
+                    {requisitionData.status}
+                </span>
+            </div>
             <div className="flex flex-wrap gap-2 justify-center sm:justify-end">
               <Button onClick={() => router.back()} variant="outline" size="sm">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Close Preview
               </Button>
+              {canEditRequisition && (
+                <Button onClick={handleEditRequisition} variant="outline" size="sm" title="Edit Requisition (Placeholder)">
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Button>
+              )}
               <Button onClick={handlePrint} size="sm" variant="outline">
                 <Printer className="mr-2 h-4 w-4" /> Print Requisition
               </Button>

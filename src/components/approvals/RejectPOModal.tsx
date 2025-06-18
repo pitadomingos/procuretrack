@@ -4,7 +4,6 @@
 import { useState } from 'react';
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -17,41 +16,61 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import type { UnifiedApprovalItem } from '@/types';
 
-interface RejectPOModalProps {
-  poId: number;
-  poNumber: string;
+
+interface RejectDocumentModalProps {
+  documentId: string | number;
+  documentNumber: string;
+  documentType: UnifiedApprovalItem['documentType'];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRejected: () => void; // Callback after successful rejection
+  onRejected: () => void; 
 }
 
-export function RejectPOModal({ poId, poNumber, open, onOpenChange, onRejected }: RejectPOModalProps) {
+export function RejectDocumentModal({ documentId, documentNumber, documentType, open, onOpenChange, onRejected }: RejectDocumentModalProps) {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleReject = async () => {
     setIsSubmitting(true);
+    let apiUrl = '';
+    switch (documentType) {
+      case 'PO':
+        apiUrl = `/api/purchase-orders/${documentId}/reject`;
+        break;
+      case 'Quote':
+        apiUrl = `/api/quotes/${documentId}/reject`;
+        break;
+      case 'Requisition':
+        apiUrl = `/api/requisitions/${documentId}/reject`;
+        break;
+      default:
+        toast({ title: 'Error', description: 'Invalid document type for rejection.', variant: 'destructive' });
+        setIsSubmitting(false);
+        return;
+    }
+
     try {
-      const response = await fetch(`/api/purchase-orders/${poId}/reject`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }), // Sending reason, though API doesn't store it yet
+        body: JSON.stringify({ reason }), // API might not use reason, but good to send
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to reject PO.' }));
+        const errorData = await response.json().catch(() => ({ error: `Failed to reject ${documentType}.` }));
         throw new Error(errorData.error || `Server error: ${response.status}`);
       }
 
-      toast({ title: 'Success', description: `Purchase Order ${poNumber} has been rejected.` });
-      onRejected(); // Trigger refresh or state update in parent
-      onOpenChange(false); // Close modal
-      setReason(''); // Reset reason
+      toast({ title: 'Success', description: `${documentType} ${documentNumber} has been rejected.` });
+      onRejected(); 
+      onOpenChange(false);
+      setReason('');
     } catch (error: any) {
       toast({
-        title: 'Error Rejecting PO',
+        title: `Error Rejecting ${documentType}`,
         description: error.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
@@ -64,9 +83,9 @@ export function RejectPOModal({ poId, poNumber, open, onOpenChange, onRejected }
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Reject Purchase Order: {poNumber}?</AlertDialogTitle>
+          <AlertDialogTitle>Reject {documentType}: {documentNumber}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This action will mark the PO as &quot;Rejected&quot;. The creator will be able to view it but may need to create a new PO or revise it based on feedback (if communicated separately).
+            This action will mark the {documentType.toLowerCase()} as &quot;Rejected&quot;. The creator will be able to view it but may need to create a new one or revise it based on feedback (if communicated separately).
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-2 py-4">

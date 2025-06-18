@@ -7,9 +7,10 @@ import { randomUUID } from 'crypto';
 export async function POST(request: Request) {
   let connection;
   try {
-    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items'> & { items: Omit<RequisitionItem, 'estimatedUnitPrice'>[] };
+    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[], status?: RequisitionPayload['status'], approverId?: string | null };
     
-    if (!requisitionData.id) requisitionData.id = randomUUID();
+    const generatedId = requisitionData.id || randomUUID();
+
     if (!requisitionData.requisitionNumber || !requisitionData.requisitionDate || !requisitionData.requestedByName || !requisitionData.siteId) {
         return NextResponse.json({ error: 'Missing required fields for requisition header.' }, { status: 400 });
     }
@@ -20,20 +21,21 @@ export async function POST(request: Request) {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // totalEstimatedValue will default to 0.00 in DB as per schema
+    const statusToSave = requisitionData.approverId ? 'Pending Approval' : 'Draft';
+
     await connection.execute(
-      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, justification, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, justification, approverId, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
-        requisitionData.id,
+        generatedId,
         requisitionData.requisitionNumber,
         new Date(requisitionData.requisitionDate).toISOString().slice(0, 19).replace('T', ' '),
         requisitionData.requestedByUserId || null,
         requisitionData.requestedByName,
         Number(requisitionData.siteId),
-        requisitionData.status || 'Draft',
+        statusToSave, // Set status based on approverId
         requisitionData.justification,
-        // totalEstimatedValue is omitted, DB will use default 0.00
+        requisitionData.approverId || null, // Save approverId
       ]
     );
 
@@ -42,24 +44,24 @@ export async function POST(request: Request) {
           await connection.rollback();
           return NextResponse.json({ error: `Item description and quantity are required. Item problematic: ${JSON.stringify(item)}` }, { status: 400 });
       }
-      // estimatedUnitPrice is omitted, DB will use default 0.00
       await connection.execute(
-        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, siteId, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
           item.id || randomUUID(),
-          requisitionData.id, 
+          generatedId, 
           item.partNumber, 
           item.description, 
           item.categoryId ? Number(item.categoryId) : null, 
           Number(item.quantity), 
-          item.notes
+          item.notes,
+          item.siteId ? Number(item.siteId) : null // Save item-level siteId
         ]
       );
     }
 
     await connection.commit();
-    return NextResponse.json({ message: 'Requisition created successfully', requisitionId: requisitionData.id, requisitionNumber: requisitionData.requisitionNumber }, { status: 201 });
+    return NextResponse.json({ message: 'Requisition created successfully', requisitionId: generatedId, requisitionNumber: requisitionData.requisitionNumber, status: statusToSave }, { status: 201 });
 
   } catch (error: any) {
     if (connection) await connection.rollback();
@@ -84,12 +86,14 @@ export async function GET(request: Request) {
   let query = `
     SELECT 
       r.id, r.requisitionNumber, r.requisitionDate, r.requestedByName, r.status, 
-      -- r.totalEstimatedValue, -- No longer primarily displayed, but might be in DB
+      r.approverId, r.approvalDate,
       s.name as siteName, s.siteCode,
-      u.name as requestorFullName
+      u.name as requestorFullName,
+      app.name as approverName
     FROM Requisition r
     LEFT JOIN Site s ON r.siteId = s.id
     LEFT JOIN User u ON r.requestedByUserId = u.id
+    LEFT JOIN Approver app ON r.approverId = app.id
     WHERE 1=1
   `;
   const queryParams: (string | number)[] = [];
@@ -123,7 +127,9 @@ export async function GET(request: Request) {
         ...row,
         siteName: row.siteCode || row.siteName,
         requestedByName: row.requestorFullName || row.requestedByName,
-        // totalEstimatedValue is not transformed here as it's not a primary display field anymore
+        approverName: row.approverName,
+        approvalDate: row.approvalDate ? new Date(row.approvalDate).toISOString() : null,
+        requisitionDate: new Date(row.requisitionDate).toISOString(),
     }));
     return NextResponse.json(requisitions);
   } catch (error: any) {
@@ -131,5 +137,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch requisitions', details: error.message }, { status: 500 });
   }
 }
-
-    
