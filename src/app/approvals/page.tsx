@@ -190,8 +190,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentType', 
       header: 'Type',
-      cell: (itemProps) => { 
-        const item = itemProps.row.original;
+      cell: (item: UnifiedApprovalItem) => { 
         if (item.documentType === 'PO') return <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span>;
         if (item.documentType === 'Quote') return <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
         if (item.documentType === 'Requisition') return <span className="flex items-center"><RequisitionListIcon className="mr-2 h-4 w-4 text-purple-500" /> Requisition</span>;
@@ -201,28 +200,27 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: (itemProps) => <span className="font-medium">{itemProps.row.original.documentNumber}</span>
+      cell: (item: UnifiedApprovalItem) => <span className="font-medium">{item.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (itemProps) => format(new Date(itemProps.row.original.creationDate), 'PP')
+      cell: (item: UnifiedApprovalItem) => format(new Date(item.creationDate), 'PP')
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: (itemProps) => itemProps.row.original.submittedBy || 'N/A'
+      cell: (item: UnifiedApprovalItem) => item.submittedBy || 'N/A'
     },
     { 
       accessorKey: 'entityName', 
       header: 'Supplier/Client/Site',
-      cell: (itemProps) => itemProps.row.original.entityName || 'N/A'
+      cell: (item: UnifiedApprovalItem) => item.entityName || 'N/A'
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (itemProps) => { 
-        const item = itemProps.row.original;
+      cell: (item: UnifiedApprovalItem) => { 
         if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
         return `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency || ''}`;
       }
@@ -230,7 +228,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (itemProps) => <span className="text-orange-600 font-semibold">{itemProps.row.original.status}</span>
+      cell: (item: UnifiedApprovalItem) => <span className="text-orange-600 font-semibold">{item.status}</span>
     },
   ];
 
@@ -291,8 +289,7 @@ export default function ApprovalsPage() {
           <DataTable
             columns={columns}
             data={pendingItems}
-            renderRowActions={(row) => {
-              const item = row; // DataTable passes the item directly
+            renderRowActions={(item) => { // Changed from 'row' to 'item' to reflect direct data access
               let viewPath = '';
               if (item.documentType === 'PO') viewPath = `/purchase-orders/${item.id}/print`;
               else if (item.documentType === 'Quote') viewPath = `/quotes/${item.id}/print`;
