@@ -9,17 +9,25 @@ import { Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
-export function MonthlyStatusChart() {
+interface MonthlyStatusChartProps {
+  filters?: { month?: string; year?: string };
+}
+
+export function MonthlyStatusChart({ filters }: MonthlyStatusChartProps) {
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchChartData = useCallback(async () => {
+  const fetchChartData = useCallback(async (currentFilters?: { month?: string; year?: string }) => {
     setIsLoading(true);
     setError(null);
+    const queryParams = new URLSearchParams();
+    if (currentFilters?.month && currentFilters.month !== 'all') queryParams.append('month', currentFilters.month);
+    if (currentFilters?.year && currentFilters.year !== 'all') queryParams.append('year', currentFilters.year);
+    
     try {
-      const response = await fetch('/api/charts/monthly-po-status');
+      const response = await fetch(`/api/charts/monthly-po-status?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to fetch chart data');
@@ -39,8 +47,8 @@ export function MonthlyStatusChart() {
   }, [toast]);
 
   useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
+    fetchChartData(filters);
+  }, [fetchChartData, filters]);
 
   return (
     <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
@@ -59,7 +67,7 @@ export function MonthlyStatusChart() {
             <AlertTriangle className="h-10 w-10 mb-3" />
             <p className="font-semibold text-center mb-2">Error loading chart data:</p>
             <p className="text-sm text-center mb-4">{error}</p>
-            <Button onClick={fetchChartData} variant="outline" size="sm" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
+            <Button onClick={() => fetchChartData(filters)} variant="outline" size="sm" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
               Try Again
             </Button>
           </div>

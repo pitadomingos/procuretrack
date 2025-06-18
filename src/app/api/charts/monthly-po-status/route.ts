@@ -4,26 +4,48 @@ import { pool } from '../../../../../backend/db.js';
 import type { ChartDataPoint } from '@/types';
 
 interface MonthlyPOQueryResult {
-  month_year: string; // Format 'YYYY-MM'
+  month_year: string; 
   status: string;
   count: number | string; 
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const month = searchParams.get('month');
+  const year = searchParams.get('year');
+
   let connection;
   try {
     connection = await pool.getConnection();
+    
+    let whereClauses: string[] = [];
+    const queryParams: (string | number)[] = [];
+
+    if (month && month !== 'all') {
+      whereClauses.push("MONTH(creationDate) = ?");
+      queryParams.push(parseInt(month, 10));
+    }
+    if (year && year !== 'all') {
+      whereClauses.push("YEAR(creationDate) = ?");
+      queryParams.push(parseInt(year, 10));
+    }
+    
+    whereClauses.push("status IN ('Pending Approval', 'Approved')");
+
+    const whereString = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
     const query = `
       SELECT 
         DATE_FORMAT(creationDate, '%Y-%m') as month_year,
         status,
         COUNT(*) as count
       FROM PurchaseOrder
-      WHERE status IN ('Pending Approval', 'Approved') -- Only these two are direct PO statuses now
+      ${whereString}
       GROUP BY month_year, status
       ORDER BY month_year ASC, status ASC;
     `;
-    const [rows]: any[] = await connection.execute(query);
+
+    const [rows]: any[] = await connection.execute(query, queryParams);
 
     const monthlyData: { [key: string]: ChartDataPoint } = {};
     const monthOrder: string[] = [];
@@ -31,12 +53,12 @@ export async function GET() {
     rows.forEach((row: MonthlyPOQueryResult) => {
       const monthYear = row.month_year;
       if (!monthlyData[monthYear]) {
-        const [year, monthNum] = monthYear.split('-');
-        const date = new Date(Number(year), Number(monthNum) - 1);
+        const [y, mNum] = monthYear.split('-');
+        const date = new Date(Number(y), Number(mNum) - 1);
         const displayMonth = date.toLocaleString('default', { month: 'short' });
         
         monthlyData[monthYear] = { 
-          name: `${displayMonth} ${year}`, // Chart X-axis label
+          name: `${displayMonth} ${y}`, 
           'Approved': 0,      
           'Pending Approval': 0   
         };

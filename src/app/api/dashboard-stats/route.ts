@@ -3,12 +3,49 @@ import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
 import type { FetchedDashboardStats } from '@/types';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const month = searchParams.get('month');
+  const year = searchParams.get('year');
+  
   let connection;
   try {
     connection = await pool.getConnection();
 
-    // Users Stats
+    let poWhereClause = '';
+    let quoteWhereClause = '';
+    let fuelWhereClause = '';
+    let requisitionWhereClause = '';
+    const queryParams: (string | number)[] = [];
+    const quoteQueryParams: (string | number)[] = [];
+    const fuelQueryParams: (string | number)[] = [];
+    const requisitionQueryParams: (string | number)[] = [];
+
+
+    if (month && month !== 'all' && year && year !== 'all') {
+      poWhereClause = 'WHERE MONTH(creationDate) = ? AND YEAR(creationDate) = ?';
+      quoteWhereClause = 'WHERE MONTH(quoteDate) = ? AND YEAR(quoteDate) = ?';
+      fuelWhereClause = 'WHERE MONTH(fuelDate) = ? AND YEAR(fuelDate) = ?';
+      requisitionWhereClause = 'WHERE MONTH(requisitionDate) = ? AND YEAR(requisitionDate) = ?';
+      
+      queryParams.push(parseInt(month, 10), parseInt(year, 10));
+      quoteQueryParams.push(parseInt(month, 10), parseInt(year, 10));
+      fuelQueryParams.push(parseInt(month, 10), parseInt(year, 10));
+      requisitionQueryParams.push(parseInt(month, 10), parseInt(year, 10));
+    } else if (year && year !== 'all') {
+      poWhereClause = 'WHERE YEAR(creationDate) = ?';
+      quoteWhereClause = 'WHERE YEAR(quoteDate) = ?';
+      fuelWhereClause = 'WHERE YEAR(fuelDate) = ?';
+      requisitionWhereClause = 'WHERE YEAR(requisitionDate) = ?';
+      
+      queryParams.push(parseInt(year, 10));
+      quoteQueryParams.push(parseInt(year, 10));
+      fuelQueryParams.push(parseInt(year, 10));
+      requisitionQueryParams.push(parseInt(year, 10));
+    }
+
+
+    // Users Stats (not time-filtered for now)
     const [userRows]: any[] = await connection.execute('SELECT isActive, COUNT(*) as count FROM User GROUP BY isActive');
     let totalUsers = 0;
     let activeUsers = 0;
@@ -20,7 +57,7 @@ export async function GET() {
     });
 
     // Purchase Order Stats
-    const [poRows]: any[] = await connection.execute('SELECT status, COUNT(*) as count FROM PurchaseOrder GROUP BY status');
+    const [poRows]: any[] = await connection.execute(`SELECT status, COUNT(*) as count FROM PurchaseOrder ${poWhereClause} GROUP BY status`, queryParams);
     let totalPOs = 0;
     let approvedPOs = 0;
     let pendingPOs = 0;
@@ -33,30 +70,44 @@ export async function GET() {
       else if (row.status === 'Rejected') rejectedPOs = count;
     });
 
-    // Goods Received (based on PO status and item received quantity)
-    const [grnPOsRows]: any[] = await connection.execute(
-      `SELECT COUNT(DISTINCT po.id) as count
+    // Goods Received
+    const grnActivityBaseQuery = `
        FROM PurchaseOrder po
        JOIN POItem poi ON po.id = poi.poId
-       WHERE poi.quantityReceived > 0`
+       WHERE poi.quantityReceived > 0 
+    `;
+    let grnActivityWhereClause = '';
+    const grnActivityParams = [];
+    if (month && month !== 'all' && year && year !== 'all') {
+      grnActivityWhereClause = 'AND MONTH(po.creationDate) = ? AND YEAR(po.creationDate) = ?';
+      grnActivityParams.push(parseInt(month, 10), parseInt(year, 10));
+    } else if (year && year !== 'all') {
+      grnActivityWhereClause = 'AND YEAR(po.creationDate) = ?';
+      grnActivityParams.push(parseInt(year, 10));
+    }
+    const [grnPOsRows]: any[] = await connection.execute(
+      `SELECT COUNT(DISTINCT po.id) as count ${grnActivityBaseQuery} ${grnActivityWhereClause}`,
+      grnActivityParams
     );
     const totalPOsWithGRNActivity = Number(grnPOsRows[0]?.count || 0);
-    // More granular GRN statuses like 'Completed', 'Partially' need complex per-PO item checks
-    // For now, totalApprovedPOs (openPOs) can represent those ready for/in receiving.
+    
+    // Approved POs for GRN stat (this count might also be filtered by date)
+    const [approvedPORowsForGRN]: any[] = await connection.execute(`SELECT COUNT(*) as count FROM PurchaseOrder WHERE status = 'Approved' ${poWhereClause ? `AND ${poWhereClause.substring(5)}` : ''}`, queryParams); // Reuse poWhereClause but remove initial 'WHERE'
+    const totalApprovedPOsForGRN = Number(approvedPORowsForGRN[0]?.count || 0);
+
 
     // Requisition Stats
-    const [requisitionRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Requisition');
+    const [requisitionRows]: any[] = await connection.execute(`SELECT COUNT(*) as count FROM Requisition ${requisitionWhereClause}`, requisitionQueryParams);
     const totalRequisitions = Number(requisitionRows[0]?.count || 0);
-    // Requisition status breakdown to be added later when statuses are defined
 
     // Fuel Records Stats
-    const [fuelRecordsRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM FuelRecord');
+    const [fuelRecordsRows]: any[] = await connection.execute(`SELECT COUNT(*) as count FROM FuelRecord ${fuelWhereClause}`, fuelQueryParams);
     const totalFuelRecords = Number(fuelRecordsRows[0]?.count || 0);
-    const [fuelTagsRows]: any[] = await connection.execute('SELECT COUNT(DISTINCT id) as count FROM Tag'); // Assuming all tags are vehicles/equipment
+    const [fuelTagsRows]: any[] = await connection.execute('SELECT COUNT(DISTINCT id) as count FROM Tag');
     const totalFuelTags = Number(fuelTagsRows[0]?.count || 0);
     
     // Client Quotes Stats
-    const [quoteRows]: any[] = await connection.execute('SELECT status, COUNT(*) as count FROM Quote GROUP BY status');
+    const [quoteRows]: any[] = await connection.execute(`SELECT status, COUNT(*) as count FROM Quote ${quoteWhereClause} GROUP BY status`, quoteQueryParams);
     let totalQuotes = 0;
     let approvedQuotes = 0;
     let pendingQuotes = 0;
@@ -69,12 +120,11 @@ export async function GET() {
         else if (row.status === 'Rejected') rejectedQuotes = count;
     });
 
-
     const responsePayload: FetchedDashboardStats = {
       users: { total: totalUsers, active: activeUsers, inactive: inactiveUsers },
       purchaseOrders: { total: totalPOs, approved: approvedPOs, pending: pendingPOs, rejected: rejectedPOs },
       goodsReceived: { 
-        totalApprovedPOs: approvedPOs, // POs in 'Approved' status
+        totalApprovedPOs: totalApprovedPOsForGRN,
         totalPOsWithGRNActivity: totalPOsWithGRNActivity
       },
       requisitions: { total: totalRequisitions },
@@ -91,5 +141,3 @@ export async function GET() {
     if (connection) connection.release();
   }
 }
-
-    

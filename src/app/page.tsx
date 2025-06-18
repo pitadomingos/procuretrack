@@ -7,7 +7,7 @@ import { FilterBar } from '@/components/shared/filter-bar';
 import { MonthlyStatusChart } from '@/components/dashboard/monthly-status-chart';
 import { SitePOValueStatusChart } from '@/components/dashboard/site-po-value-status-chart';
 import { ActivityLogTable } from '@/components/shared/activity-log-table';
-import { activityLogData } from '@/lib/mock-data'; // Still using mock for activity log for now
+import { activityLogData } from '@/lib/mock-data'; 
 import type { GroupedStatCardItem, FetchedDashboardStats, SubStat } from '@/types';
 import { Loader2, AlertTriangle, RefreshCw, Users, ShoppingCart, Truck, ClipboardList, Fuel, FileText as QuoteIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,8 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
     icon: Users,
     subStats: [
       { label: 'Total Users', value: 'N/A' },
-      { label: 'Active Now', value: 'N/A' },
-      { label: 'Inactive', value: 'N/A' },
+      { label: 'Active Users', value: 'N/A' },
+      { label: 'Inactive Users', value: 'N/A' },
     ],
     viewMoreLink: '/management/users',
   },
@@ -34,7 +34,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Links to page with PO list
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Goods Received',
@@ -43,7 +43,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Approved POs (Open)', value: 'N/A' },
       { label: 'POs with GRN Activity', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Links to page with GRN interface
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Purchase Requisitions',
@@ -60,18 +60,18 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Total Vehicles/Tags', value: 'N/A' },
       { label: 'Total Fuel Records', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Links to page with Fuel Records list
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Client Quotations',
     icon: QuoteIcon,
     subStats: [
       { label: 'Total Quotes', value: 'N/A' },
-      { label: 'Approved Quotes', value: 'N/A' },
+      { label: 'Approved', value: 'N/A' },
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected Quotes', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Links to page with Quote list
+    viewMoreLink: '/create-document', 
   },
 ];
 
@@ -80,13 +80,22 @@ export default function DashboardPage() {
   const [groupedDashboardStats, setGroupedDashboardStats] = useState<GroupedStatCardItem[]>(initialDashboardCardsConfig);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string }>({
+    month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
+    year: new Date().getFullYear().toString(),
+  });
+  const [refreshKey, setRefreshKey] = useState(0); // Used to force re-render/re-fetch of charts
 
-  const fetchDashboardStats = useCallback(async () => {
+  const fetchDashboardStats = useCallback(async (filters?: { month?: string; year?: string }) => {
     setIsLoadingStats(true);
     setStatsError(null);
+    
+    const queryParams = new URLSearchParams();
+    if (filters?.month && filters.month !== 'all') queryParams.append('month', filters.month);
+    if (filters?.year && filters.year !== 'all') queryParams.append('year', filters.year);
+
     try {
-      const response = await fetch('/api/dashboard-stats');
+      const response = await fetch(`/api/dashboard-stats?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Failed to fetch dashboard stats');
@@ -148,27 +157,29 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchDashboardStats();
-  }, [fetchDashboardStats]);
-
-  const handleRefreshAllData = () => {
-    fetchDashboardStats();
-    setRefreshKey(prevKey => prevKey + 1);
-  };
+    fetchDashboardStats(currentFilters);
+  }, [fetchDashboardStats, currentFilters]);
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
+    setCurrentFilters({ month: filters.month, year: filters.year });
+    setRefreshKey(prevKey => prevKey + 1); // Force re-fetch in charts
+  };
+  
+  const handleRefreshAllData = () => {
+    fetchDashboardStats(currentFilters);
     setRefreshKey(prevKey => prevKey + 1);
   };
+
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <FilterBar
           onFilterApply={handleFilterApply}
-          showApproverFilter={false}
-          showRequestorFilter={false}
-          showSiteFilter={false}
+          showApproverFilter={false} 
+          showRequestorFilter={false} 
+          showSiteFilter={false} 
         />
         <Button onClick={handleRefreshAllData} variant="outline" size="sm" className="ml-4">
           <RefreshCw className={`mr-2 h-4 w-4 ${isLoadingStats ? 'animate-spin' : ''}`} />
@@ -176,35 +187,35 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {isLoadingStats ? (
           initialDashboardCardsConfig.map((cardConfig, index) => (
-            <Card key={index} className="shadow-lg flex flex-col h-[220px] sm:h-[240px]">
-              <CardHeader className="flex flex-row items-start sm:items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-5 w-3/5" />
-                <Skeleton className="h-6 w-6 rounded-full" />
+            <Card key={index} className="shadow-lg flex flex-col h-[180px]"> {/* Reduced height */}
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-1 pt-3 px-3"> {/* Reduced padding */}
+                <Skeleton className="h-4 w-3/5" /> {/* Adjusted skeleton size */}
+                <Skeleton className="h-5 w-5 rounded-full" />
               </CardHeader>
-              <CardContent className="pt-2 flex-grow">
-                <Skeleton className="h-8 w-1/2 mb-3" />
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-4/5" />
-                  <Skeleton className="h-4 w-3/4" />
+              <CardContent className="pt-1 px-3 flex-grow"> {/* Reduced padding */}
+                <Skeleton className="h-6 w-1/2 mb-2" /> {/* Adjusted skeleton size */}
+                <div className="space-y-1.5"> {/* Adjusted spacing */}
+                  <Skeleton className="h-3 w-full" /> {/* Adjusted skeleton size */}
+                  <Skeleton className="h-3 w-4/5" />
+                  <Skeleton className="h-3 w-3/4" />
                 </div>
               </CardContent>
-               <CardFooter className="pt-3 sm:pt-4">
-                  <Skeleton className="h-8 w-full" />
+               <CardFooter className="pt-2 pb-3 px-3"> {/* Reduced padding */}
+                  <Skeleton className="h-7 w-full" /> {/* Adjusted skeleton size */}
                </CardFooter>
             </Card>
           ))
         ) : statsError ? (
-          <div className="md:col-span-2 lg:col-span-3 p-4 rounded-lg border border-destructive bg-destructive/10 text-destructive-foreground">
+          <div className="col-span-full p-4 rounded-lg border border-destructive bg-destructive/10 text-destructive-foreground">
             <div className="flex items-center mb-2">
               <AlertTriangle className="h-5 w-5 mr-2" />
               <h3 className="font-semibold">Error loading statistics</h3>
             </div>
             <p className="text-sm mb-3">{statsError}</p>
-            <Button onClick={fetchDashboardStats} variant="outline" size="sm" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
+            <Button onClick={() => fetchDashboardStats(currentFilters)} variant="outline" size="sm" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
               Try Again
             </Button>
           </div>
@@ -216,11 +227,12 @@ export default function DashboardPage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
-        <MonthlyStatusChart key={`monthly-${refreshKey}`} />
-        <SitePOValueStatusChart key={`site-po-${refreshKey}`} />
+        <MonthlyStatusChart key={`monthly-${refreshKey}`} filters={currentFilters} />
+        <SitePOValueStatusChart key={`site-po-${refreshKey}`} filters={currentFilters} />
       </section>
 
       <section>
+        {/* Activity log will be made dynamic in a subsequent step */}
         <ActivityLogTable activities={activityLogData.slice(0, 5)} maxHeight="300px" />
       </section>
     </div>

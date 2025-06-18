@@ -5,18 +5,34 @@ import type { ChartDataPoint, PurchaseOrderStatus } from '@/types';
 
 interface SitePOValueQueryResult {
   site_identifier: string; 
-  status: PurchaseOrderStatus; // PO Status
+  status: PurchaseOrderStatus; 
   total_value: number | string; 
   po_id: number; 
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const month = searchParams.get('month');
+  const year = searchParams.get('year');
+  
   let connection;
   try {
     connection = await pool.getConnection();
     
-    // Fetch POs with 'Pending Approval' or 'Approved' statuses.
-    // Site ID is determined from POItem's siteId.
+    let poWhereClauses: string[] = ["po.status IN ('Pending Approval', 'Approved')"];
+    const queryParams: (string | number)[] = [];
+
+    if (month && month !== 'all') {
+      poWhereClauses.push("MONTH(po.creationDate) = ?");
+      queryParams.push(parseInt(month, 10));
+    }
+    if (year && year !== 'all') {
+      poWhereClauses.push("YEAR(po.creationDate) = ?");
+      queryParams.push(parseInt(year, 10));
+    }
+    
+    const poWhereString = poWhereClauses.length > 0 ? `WHERE ${poWhereClauses.join(' AND ')}` : '';
+    
     const poQuery = `
       SELECT 
         po.id as po_id,
@@ -26,11 +42,11 @@ export async function GET() {
       FROM PurchaseOrder po
       LEFT JOIN POItem poi ON po.id = poi.poId 
       LEFT JOIN Site s ON poi.siteId = s.id 
-      WHERE po.status IN ('Pending Approval', 'Approved') 
+      ${poWhereString}
       GROUP BY po.id, site_identifier, po.status, po.grandTotal 
       ORDER BY site_identifier ASC, po.status ASC;
     `;
-    const [poRows]: any[] = await connection.execute(poQuery);
+    const [poRows]: any[] = await connection.execute(poQuery, queryParams);
 
     const siteData: { [key: string]: ChartDataPoint } = {};
     const siteOrder: string[] = [];
