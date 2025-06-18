@@ -156,11 +156,24 @@ export async function GET(request: Request) {
         requestedByName: row.requestorFullName || row.requestedByName,
         approverName: row.approverName,
         approvalDate: row.approvalDate ? new Date(row.approvalDate).toISOString() : null,
-        requisitionDate: new Date(row.requisitionDate).toISOString(),
+        requisitionDate: row.requisitionDate ? new Date(row.requisitionDate).toISOString() : null,
     }));
     return NextResponse.json(requisitions);
   } catch (error: any) {
-    console.error('[API_ERROR] /api/requisitions GET:', error);
-    return NextResponse.json({ error: 'Failed to fetch requisitions', details: error.message }, { status: 500 });
+    console.error('[API_ERROR] /api/requisitions GET:', error); // Log the full error object
+    const errorMessage = error.sqlMessage || error.message || 'An unknown database error occurred.';
+    const errorCode = error.code || 'UNKNOWN_DB_ERROR';
+    const sqlState = error.sqlState || 'N/A';
+    
+    // Log more specific details if available
+    console.error(`[API_ERROR_DETAILS] /api/requisitions GET: Code: ${errorCode}, SQL State: ${sqlState}, Message: "${errorMessage}"`);
+    
+    return NextResponse.json({
+        error: 'Failed to fetch requisitions due to a server-side database error.',
+        details: `Database operation failed with message: "${errorMessage}". Error Code: ${errorCode}. SQL State: ${sqlState}. Please check server logs for the full query and parameters if the issue persists.`,
+        code: errorCode,
+        sqlState: sqlState // Pass SQLState if available
+    }, { status: 500 });
   }
 }
+
