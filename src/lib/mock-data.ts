@@ -216,44 +216,12 @@ export const mockAllocationsData: Allocation[] = [
     { id: 'ALLOC010', name: 'Capital Expenditure', code: 'CAPEX01' },
 ];
 
-export const mockRequisitionsData: RequisitionPayload[] = [
-    {
-        id: 'REQ-MOCK-001',
-        requisitionNumber: 'REQ-2024-001',
-        requisitionDate: '2024-07-20T09:00:00Z',
-        requestedByName: 'Pita Domingos',
-        siteId: 1,
-        status: 'Submitted for Approval',
-        justification: 'Restock office stationery for Q3.',
-        items: [
-            { id: 'reqi-1-1', partNumber: 'A4REAM-W', description: 'A4 Reams', categoryId: 1, quantity: 10, estimatedUnitPrice: 200, notes: 'White A4 paper, 80gsm' },
-            { id: 'reqi-1-2', partNumber: 'PEN-BL-BX', description: 'Blue Pens', categoryId: 1, quantity: 50, estimatedUnitPrice: 10, notes: 'Box of 50' },
-        ],
-        totalEstimatedValue: 2500,
-        siteName: 'TMW',
-    },
-    {
-        id: 'REQ-MOCK-002',
-        requisitionNumber: 'REQ-2024-002',
-        requisitionDate: '2024-07-21T11:30:00Z',
-        requestedByName: 'Gil Lunguze',
-        siteId: 2,
-        status: 'Draft',
-        justification: 'Need new safety helmets for Site B personnel.',
-        items: [
-            { id: 'reqi-2-1', partNumber: 'SAF-HAT-YEL', description: 'Hard Hats (Yellow)', categoryId: 3, quantity: 5, estimatedUnitPrice: 1000, notes: 'Standard safety helmets' },
-        ],
-        totalEstimatedValue: 5000,
-        siteName: 'TML',
-    },
-];
-
 export const mockTagsData: Tag[] = [
-  { id: 'TAG001', tagNumber: 'LDV001', registration: 'ALL-001-MP', make: 'Toyota', model: 'Hilux D4D', tankCapacity: 80, year: 2022, chassisNo: 'XYZ123CHASSIS', type: 'LDV', siteId: 1, siteName: 'TMW' },
-  { id: 'TAG002', tagNumber: 'TRK005', registration: 'ATR-005-MP', make: 'Mercedes', model: 'Actros', tankCapacity: 400, year: 2020, chassisNo: 'ABC789CHASSIS', type: 'Truck', siteId: 2, siteName: 'TML' },
-  { id: 'TAG003', tagNumber: 'GEN002', type: 'Generator', make: 'CAT', model: 'Olympian GEP22', tankCapacity: 50, siteId: 1, siteName: 'TMW' },
-  { id: 'TAG004', tagNumber: 'FORK001', type: 'Forklift', make: 'Toyota', model: '8FD30', siteId: 3, siteName: 'MEM' },
-  { id: 'TAG005', tagNumber: 'LDV002', registration: 'NTR-002-TT', make: 'Ford', model: 'Ranger', tankCapacity: 70, year: 2023, type: 'LDV', siteId: 1, siteName: 'TMW' },
+  { id: 'TAG001', tagNumber: 'LDV001', registration: 'ALL-001-MP', make: 'Toyota', model: 'Hilux D4D', tankCapacity: 80, year: 2022, chassisNo: 'XYZ123CHASSIS', type: 'LDV', siteId: 1, siteName: 'TMW', status: 'Active' },
+  { id: 'TAG002', tagNumber: 'TRK005', registration: 'ATR-005-MP', make: 'Mercedes', model: 'Actros', tankCapacity: 400, year: 2020, chassisNo: 'ABC789CHASSIS', type: 'Truck', siteId: 2, siteName: 'TML', status: 'Active' },
+  { id: 'TAG003', tagNumber: 'GEN002', type: 'Generator', make: 'CAT', model: 'Olympian GEP22', tankCapacity: 50, siteId: 1, siteName: 'TMW', status: 'Under Maintenance' },
+  { id: 'TAG004', tagNumber: 'FORK001', type: 'Forklift', make: 'Toyota', model: '8FD30', siteId: 3, siteName: 'MEM', status: 'Inactive' },
+  { id: 'TAG005', tagNumber: 'LDV002', registration: 'NTR-002-TT', make: 'Ford', model: 'Ranger', tankCapacity: 70, year: 2023, type: 'LDV', siteId: 1, siteName: 'TMW', status: 'Active' },
 ];
 
 export const tagsWithAll: FilterOption[] = [
@@ -268,4 +236,6 @@ export const mockFuelRecordsData: FuelRecord[] = [
   { id: 'FUEL004', fuelDate: '2024-07-29T10:00:00Z', driver: 'John Doe', odometer: 125650, tagId: 'TAG001', siteId: 1, description: 'Diesel Refuel', uom: 'Liters', quantity: 60, unitCost: 86.00, totalCost: 5160.00, tagName: 'LDV001', siteName: 'TMW' },
   { id: 'FUEL005', fuelDate: '2024-07-29T11:00:00Z', driver: 'Mike Brown', odometer: 1500, tagId: 'TAG004', siteId: 3, description: 'Forklift Diesel', uom: 'Liters', quantity: 25, unitCost: 85.75, totalCost: 2143.75, tagName: 'FORK001', siteName: 'MEM' },
 ];
+    
+
     
