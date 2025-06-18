@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -22,10 +22,10 @@ import type { UnifiedApprovalItem } from '@/types';
 interface RejectDocumentModalProps {
   documentId: string | number;
   documentNumber: string;
-  documentType: UnifiedApprovalItem['documentType'];
+  documentType: UnifiedApprovalItem['documentType']; // PO, Quote, Requisition
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRejected: () => void; 
+  onRejected: () => void; // Callback after successful rejection
 }
 
 export function RejectDocumentModal({ documentId, documentNumber, documentType, open, onOpenChange, onRejected }: RejectDocumentModalProps) {
@@ -36,6 +36,7 @@ export function RejectDocumentModal({ documentId, documentNumber, documentType, 
   const handleReject = async () => {
     setIsSubmitting(true);
     let apiUrl = '';
+
     switch (documentType) {
       case 'PO':
         apiUrl = `/api/purchase-orders/${documentId}/reject`;
@@ -53,10 +54,11 @@ export function RejectDocumentModal({ documentId, documentNumber, documentType, 
     }
 
     try {
+      // The reason is optional and might not be used by all backend endpoints
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }), // API might not use reason, but good to send
+        body: JSON.stringify({ reason }), // Send reason even if not stored by API yet
       });
 
       if (!response.ok) {
@@ -65,9 +67,9 @@ export function RejectDocumentModal({ documentId, documentNumber, documentType, 
       }
 
       toast({ title: 'Success', description: `${documentType} ${documentNumber} has been rejected.` });
-      onRejected(); 
-      onOpenChange(false);
-      setReason('');
+      onRejected(); // Call the callback to refresh the list or perform other actions
+      onOpenChange(false); // Close the modal
+      setReason(''); // Reset reason
     } catch (error: any) {
       toast({
         title: `Error Rejecting ${documentType}`,
@@ -78,6 +80,13 @@ export function RejectDocumentModal({ documentId, documentNumber, documentType, 
       setIsSubmitting(false);
     }
   };
+
+  // Reset reason when modal is closed or opened
+  useEffect(() => {
+    if (!open) {
+      setReason('');
+    }
+  }, [open]);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -97,7 +106,7 @@ export function RejectDocumentModal({ documentId, documentNumber, documentType, 
             onChange={(e) => setReason(e.target.value)}
             className="min-h-[100px]"
           />
-           <p className="text-xs text-muted-foreground">Note: Rejection reasons are not currently stored in the database but this field is provided for future use.</p>
+           <p className="text-xs text-muted-foreground">Note: Rejection reasons are not currently stored in the database for all document types but this field is provided for future use and consistency.</p>
         </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
