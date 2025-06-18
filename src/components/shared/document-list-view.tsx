@@ -166,7 +166,9 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       const response = await fetch(`${apiUrlBase}?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to fetch ${documentType.toUpperCase()}s.`);
+        // Use errorData.details if available, then errorData.error, then a generic message
+        const errorMessage = errorData.details || errorData.error || `Failed to fetch ${documentType.toUpperCase()}s.`;
+        throw new Error(errorMessage);
       }
       const data: DocumentData[] = await response.json();
       setDocuments(data);
@@ -443,3 +445,4 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   );
 }
     
+
