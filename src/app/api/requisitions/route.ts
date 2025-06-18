@@ -33,9 +33,9 @@ export async function POST(request: Request) {
         requisitionData.requestedByUserId || null,
         requisitionData.requestedByName,
         Number(requisitionData.siteId),
-        statusToSave, // Set status based on approverId
+        statusToSave, 
         requisitionData.justification,
-        requisitionData.approverId || null, // Save approverId
+        requisitionData.approverId || null, 
       ]
     );
 
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
           item.categoryId ? Number(item.categoryId) : null, 
           Number(item.quantity), 
           item.notes,
-          item.siteId ? Number(item.siteId) : null // Save item-level siteId
+          item.siteId ? Number(item.siteId) : null 
         ]
       );
     }
@@ -66,10 +66,37 @@ export async function POST(request: Request) {
   } catch (error: any) {
     if (connection) await connection.rollback();
     console.error('[API_ERROR] /api/requisitions POST:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
-        return NextResponse.json({ error: 'Requisition with this ID or Number already exists.', details: error.message }, { status: 409 });
+    
+    let errorMessage = 'Failed to create requisition.';
+    let statusCode = 500;
+    let errorDetails = error.message || 'An unknown database error occurred.';
+
+    if (error.code) {
+      switch (error.code) {
+        case 'ER_DUP_ENTRY':
+          errorMessage = 'Requisition with this ID or Number already exists.';
+          statusCode = 409;
+          break;
+        case 'ER_NO_REFERENCED_ROW_2':
+          let field = 'a related record';
+          if (error.message.includes('fk_requisition_site')) field = 'Site ID for requisition header';
+          else if (error.message.includes('fk_requisition_user')) field = 'Requested By User ID';
+          else if (error.message.includes('fk_requisition_approver')) field = 'Approver ID';
+          else if (error.message.includes('fk_reqitem_category')) field = 'Item Category ID';
+          else if (error.message.includes('fk_reqitem_site')) field = 'Item Site ID';
+          errorMessage = `Invalid reference for ${field}. Please ensure the selected value exists.`;
+          statusCode = 400;
+          break;
+        case 'ER_BAD_NULL_ERROR':
+             errorMessage = `A required field was not provided or was invalid. Field: ${error.message.match(/Column '(\w+)'/)?.[1] || 'unknown'}`;
+             statusCode = 400;
+             break;
+        default:
+          // Keep generic error message but provide details if available
+          break;
+      }
     }
-    return NextResponse.json({ error: 'Failed to create requisition.', details: error.message, code: error.code }, { status: 500 });
+    return NextResponse.json({ error: errorMessage, details: errorDetails, code: error.code || 'UNKNOWN_DB_ERROR' }, { status: statusCode });
   } finally {
     if (connection) connection.release();
   }
