@@ -7,7 +7,7 @@ import { randomUUID } from 'crypto';
 export async function POST(request: Request) {
   let connection;
   try {
-    const requisitionData = await request.json() as RequisitionPayload;
+    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items'> & { items: Omit<RequisitionItem, 'estimatedUnitPrice'>[] };
     
     if (!requisitionData.id) requisitionData.id = randomUUID();
     if (!requisitionData.requisitionNumber || !requisitionData.requisitionDate || !requisitionData.requestedByName || !requisitionData.siteId) {
@@ -20,19 +20,20 @@ export async function POST(request: Request) {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
+    // totalEstimatedValue will default to 0.00 in DB as per schema
     await connection.execute(
-      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, justification, totalEstimatedValue, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, justification, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         requisitionData.id,
         requisitionData.requisitionNumber,
         new Date(requisitionData.requisitionDate).toISOString().slice(0, 19).replace('T', ' '),
-        requisitionData.requestedByUserId || null, // Assuming a mock or logged-in user ID will be passed
+        requisitionData.requestedByUserId || null,
         requisitionData.requestedByName,
         Number(requisitionData.siteId),
         requisitionData.status || 'Draft',
         requisitionData.justification,
-        requisitionData.totalEstimatedValue || 0,
+        // totalEstimatedValue is omitted, DB will use default 0.00
       ]
     );
 
@@ -41,17 +42,17 @@ export async function POST(request: Request) {
           await connection.rollback();
           return NextResponse.json({ error: `Item description and quantity are required. Item problematic: ${JSON.stringify(item)}` }, { status: 400 });
       }
+      // estimatedUnitPrice is omitted, DB will use default 0.00
       await connection.execute(
-        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, estimatedUnitPrice, notes, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
-          item.id || randomUUID(), // Ensure item has an ID
+          item.id || randomUUID(),
           requisitionData.id, 
           item.partNumber, 
           item.description, 
           item.categoryId ? Number(item.categoryId) : null, 
           Number(item.quantity), 
-          item.estimatedUnitPrice ? Number(item.estimatedUnitPrice) : 0, 
           item.notes
         ]
       );
@@ -82,7 +83,8 @@ export async function GET(request: Request) {
 
   let query = `
     SELECT 
-      r.id, r.requisitionNumber, r.requisitionDate, r.requestedByName, r.status, r.totalEstimatedValue,
+      r.id, r.requisitionNumber, r.requisitionDate, r.requestedByName, r.status, 
+      -- r.totalEstimatedValue, -- No longer primarily displayed, but might be in DB
       s.name as siteName, s.siteCode,
       u.name as requestorFullName
     FROM Requisition r
@@ -119,9 +121,9 @@ export async function GET(request: Request) {
     const [rows]: any[] = await pool.execute(query, queryParams);
     const requisitions = rows.map(row => ({
         ...row,
-        siteName: row.siteCode || row.siteName, // Prefer siteCode for display
-        requestedByName: row.requestorFullName || row.requestedByName, // Prefer joined name
-        totalEstimatedValue: parseFloat(row.totalEstimatedValue || 0)
+        siteName: row.siteCode || row.siteName,
+        requestedByName: row.requestorFullName || row.requestedByName,
+        // totalEstimatedValue is not transformed here as it's not a primary display field anymore
     }));
     return NextResponse.json(requisitions);
   } catch (error: any) {
@@ -129,3 +131,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch requisitions', details: error.message }, { status: 500 });
   }
 }
+
+    

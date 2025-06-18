@@ -1,6 +1,6 @@
 
 import React from 'react';
-import type { RequisitionPayload, RequisitionItem } from '@/types'; // Removed unused Site, Category
+import type { RequisitionPayload, RequisitionItem } from '@/types';
 
 interface PrintableRequisitionProps {
   requisitionData: RequisitionPayload;
@@ -20,15 +20,11 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     : 'N/A';
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
-  // Use siteName directly from requisitionData if available from API join
   const siteName = requisitionData.siteName || (requisitionData.siteId ? `Site ID: ${requisitionData.siteId}`: 'N/A');
 
-  const formatCurrency = (value: number | undefined | null) => {
-    if (value === undefined || value === null) return '0.00';
-    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  };
+  // Price formatting function removed as prices are not displayed
 
-  const printableItems = (items || []) as (RequisitionItem & {categoryName?: string})[]; // Expect categoryName from API
+  const printableItems = (items || []) as (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string})[];
 
   return (
     <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
@@ -65,8 +61,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
         </div>
       )}
 
-
-      {/* Items Table */}
+      {/* Items Table - Price columns removed */}
       <div className="mb-6 min-h-[250px]">
         <table className="w-full border-collapse border border-gray-400 text-xs">
           <thead>
@@ -75,23 +70,18 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
               <th className="border border-gray-400 p-2 text-left w-2/5">ITEM / SERVICE DESCRIPTION</th>
               <th className="border border-gray-400 p-2 text-left">CATEGORY</th>
               <th className="border border-gray-400 p-2 text-center">QTY</th>
-              <th className="border border-gray-400 p-2 text-right">EST. UNIT PRICE (MZN)</th>
-              <th className="border border-gray-400 p-2 text-right">EST. TOTAL (MZN)</th>
               <th className="border border-gray-400 p-2 text-left">NOTES</th>
             </tr>
           </thead>
           <tbody>
             {printableItems.map((item, index) => {
               const categoryName = item.categoryName || (item.categoryId ? `Cat. ID: ${item.categoryId}` : 'N/A');
-              const itemTotalEst = (item.quantity || 0) * (item.estimatedUnitPrice || 0);
               return (
                 <tr key={item.id || index}>
                   <td className="border border-gray-400 p-2 align-top">{item.partNumber || ''}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.description}</td>
                   <td className="border border-gray-400 p-2 align-top">{categoryName}</td>
                   <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
-                  <td className="border border-gray-400 p-2 text-right align-top">{item.estimatedUnitPrice ? formatCurrency(item.estimatedUnitPrice) : 'N/A'}</td>
-                  <td className="border border-gray-400 p-2 text-right align-top">{item.estimatedUnitPrice ? formatCurrency(itemTotalEst) : 'N/A'}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.notes || ''}</td>
                 </tr>
               );
@@ -103,25 +93,13 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
-                    <td className="border border-gray-400 p-2">&nbsp;</td>
-                    <td className="border border-gray-400 p-2">&nbsp;</td>
                 </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Total Estimated Value */}
-      {requisitionData.totalEstimatedValue !== undefined && (
-        <div className="flex justify-end mb-6">
-          <div className="w-2/5 text-xs">
-            <div className="flex justify-between font-bold text-sm pt-1 mt-1 border-t-2 border-gray-700">
-              <span>TOTAL ESTIMATED VALUE</span>
-              <span>MZN {formatCurrency(requisitionData.totalEstimatedValue)}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Total Estimated Value section removed */}
 
       {/* Signatures / Approval Section (Placeholder) */}
       <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-3 gap-4">
@@ -138,7 +116,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
           <p className="text-xs">Signature & Date</p>
         </div>
         <div>
-          <p className="mb-1">Approved By (Finance):</p>
+          <p className="mb-1">Approved By (Procurement/Finance):</p>
           <p className="font-semibold text-gray-400">(Pending)</p>
           <div className="mt-8 border-b border-black w-4/5"></div>
           <p className="text-xs">Signature & Date</p>
@@ -148,3 +126,5 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     </div>
   );
 }
+
+    

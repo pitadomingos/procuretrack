@@ -24,40 +24,40 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { randomUUID } from 'crypto';
 
-
-const defaultItem: RequisitionItem = { id: '', partNumber: '', description: '', categoryId: null, quantity: 1, estimatedUnitPrice: 0.00, notes: '' };
+// Removed estimatedUnitPrice from defaultItem
+const defaultItem: Omit<RequisitionItem, 'estimatedUnitPrice'> = { id: '', partNumber: '', description: '', categoryId: null, quantity: 1, notes: '' };
 
 interface RequisitionFormValues {
-  requestedByUserId: string | null; // Changed from requestedByName to ID
-  requestedByNameDisplay: string; // For display, can be fetched or entered
+  requestedByUserId: string | null;
+  requestedByNameDisplay: string;
   siteId: string | null;
   requisitionDate: string;
   requisitionNumberDisplay: string;
   justification: string;
-  items: RequisitionItem[];
+  items: Omit<RequisitionItem, 'estimatedUnitPrice'>[]; // Items in form don't need price
 }
 
 // Placeholder for actual logged-in user logic
-const MOCK_LOGGED_IN_USER_ID = 'user_005'; // e.g., Gil Lunguze
+const MOCK_LOGGED_IN_USER_ID = 'user_005';
 const MOCK_LOGGED_IN_USER_NAME = 'Gil Lunguze';
 
 
 export function RequisitionForm() {
   const { toast } = useToast();
   const router = useRouter();
-  const [totalEstimatedValue, setTotalEstimatedValue] = useState(0);
+  // totalEstimatedValue state is removed as it's no longer displayed or calculated in form
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
 
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [users, setUsers] = useState<User[]>([]); // For requestor dropdown
+  const [users, setUsers] = useState<User[]>([]);
 
 
   const form = useForm<RequisitionFormValues>({
     defaultValues: {
-      requestedByUserId: MOCK_LOGGED_IN_USER_ID, // Default to mock logged in user
-      requestedByNameDisplay: MOCK_LOGGED_IN_USER_NAME, // For display
+      requestedByUserId: MOCK_LOGGED_IN_USER_ID,
+      requestedByNameDisplay: MOCK_LOGGED_IN_USER_NAME,
       siteId: null,
       requisitionDate: format(new Date(), 'yyyy-MM-dd'),
       requisitionNumberDisplay: 'Loading REQ...',
@@ -78,7 +78,7 @@ export function RequisitionForm() {
       const [sitesRes, categoriesRes, usersRes, nextReqNumRes] = await Promise.all([
         fetch('/api/sites'),
         fetch('/api/categories'),
-        fetch('/api/users'), // Fetch users for requestor selection
+        fetch('/api/users'),
         fetch('/api/requisitions/next-requisition-number')
       ]);
 
@@ -88,8 +88,18 @@ export function RequisitionForm() {
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       else toast({ title: "Error", description: "Could not load categories.", variant: "destructive" });
       
-      if (usersRes.ok) setUsers(await usersRes.json());
-      else toast({ title: "Error", description: "Could not load users.", variant: "destructive" });
+      if (usersRes.ok) {
+        const fetchedUsers = await usersRes.json();
+        setUsers(fetchedUsers);
+         // Set default requestor after users are fetched
+        const defaultUser = fetchedUsers.find((u:User) => u.id === MOCK_LOGGED_IN_USER_ID);
+        if (defaultUser) {
+            form.setValue('requestedByUserId', defaultUser.id);
+            form.setValue('requestedByNameDisplay', defaultUser.name);
+        }
+      } else {
+        toast({ title: "Error", description: "Could not load users.", variant: "destructive" });
+      }
       
       if (nextReqNumRes.ok) {
         const data = await nextReqNumRes.json();
@@ -98,13 +108,6 @@ export function RequisitionForm() {
         form.setValue('requisitionNumberDisplay', 'REQ-ERROR');
         toast({ title: "Error", description: "Could not load next requisition number.", variant: "destructive" });
       }
-      // Set default requestor based on mock (or future auth)
-      const defaultUser = users.find(u => u.id === MOCK_LOGGED_IN_USER_ID);
-      if (defaultUser) {
-        form.setValue('requestedByUserId', defaultUser.id);
-        form.setValue('requestedByNameDisplay', defaultUser.name);
-      }
-
 
     } catch (error) {
       toast({ title: "Error Loading Data", description: "Could not load initial form data for requisitions.", variant: "destructive" });
@@ -112,24 +115,13 @@ export function RequisitionForm() {
     } finally {
         setIsLoadingInitialData(false);
     }
-  }, [form, toast, users]); // Added users to dependency array
+  }, [form, toast]);
 
   useEffect(() => {
     fetchInitialData();
   }, [fetchInitialData]);
 
-  const watchedItems = form.watch('items');
-
-  useEffect(() => {
-    const items = watchedItems || [];
-    let calculatedTotal = 0;
-    items.forEach((item: RequisitionItem) => {
-        const quantity = Number(item.quantity) || 0;
-        const unitPrice = Number(item.estimatedUnitPrice) || 0;
-        calculatedTotal += quantity * unitPrice;
-    });
-    setTotalEstimatedValue(parseFloat(calculatedTotal.toFixed(2)));
-  }, [watchedItems]);
+  // Removed useEffect for calculating totalEstimatedValue as it's no longer used in the form
 
   const handleRequestorChange = (userId: string | null) => {
     const selectedUser = users.find(u => u.id === userId);
@@ -148,25 +140,24 @@ export function RequisitionForm() {
     }
     setIsSubmitting(true);
 
-    const payload: RequisitionPayload = {
-      id: crypto.randomUUID(), // Server will generate ID if not provided, but good practice for items
+    const payload: Omit<RequisitionPayload, 'totalEstimatedValue' | 'items'> & { items: Omit<RequisitionItem, 'estimatedUnitPrice'>[] } = {
+      id: crypto.randomUUID(),
       requisitionNumber: formData.requisitionNumberDisplay,
       requisitionDate: new Date(formData.requisitionDate).toISOString(),
       requestedByUserId: formData.requestedByUserId,
-      requestedByName: formData.requestedByNameDisplay, // Send the display name as well
+      requestedByName: formData.requestedByNameDisplay,
       siteId: formData.siteId ? Number(formData.siteId) : null,
-      status: 'Draft', // New requisitions start as Draft
+      status: 'Draft',
       justification: formData.justification,
       items: formData.items.map(item => ({
-        id: item.id || crypto.randomUUID(), // Ensure each item has an ID
+        id: item.id || crypto.randomUUID(),
         partNumber: item.partNumber,
         description: item.description,
         categoryId: item.categoryId ? Number(item.categoryId) : null,
         quantity: Number(item.quantity),
-        estimatedUnitPrice: item.estimatedUnitPrice ? Number(item.estimatedUnitPrice) : 0,
         notes: item.notes,
       })),
-      totalEstimatedValue: totalEstimatedValue,
+      // totalEstimatedValue is intentionally omitted from the payload
     };
 
     try {
@@ -184,21 +175,14 @@ export function RequisitionForm() {
       const result = await response.json();
       toast({ title: 'Requisition Saved', description: `Requisition ${result.requisitionNumber} has been saved with ID ${result.requisitionId}.` });
       
-      // Navigate to print preview page
       router.push(`/requisitions/${result.requisitionId}/print`);
       
-      // Optionally, reset form for a new entry after successful submission and navigation
-      // fetchInitialData(); // to get new req number and reset other fields
-      // form.reset(); // reset specific fields as needed
-
     } catch (error: any) {
       toast({ title: 'Error Saving Requisition', description: error.message || 'An unexpected error occurred.', variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const formatValue = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   if (isLoadingInitialData) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /> Loading form data...</div>;
@@ -261,27 +245,25 @@ export function RequisitionForm() {
             <Separator />
             <h3 className="text-lg font-medium font-headline">Requested Items</h3>
             {fields.map((itemField, index) => {
-              const itemQuantity = form.watch(`items.${index}.quantity`) || 0;
-              const itemEstUnitPrice = form.watch(`items.${index}.estimatedUnitPrice`) || 0;
-              const itemTotalEst = (Number(itemQuantity) * Number(itemEstUnitPrice));
               return (
                 <Card key={itemField.id} className="p-4 space-y-4 relative mb-4 shadow-sm">
+                  {/* Adjusted grid to remove price columns */}
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-x-4 gap-y-2 items-end">
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => (
-                      <FormItem className="lg:col-span-2">
+                      <FormItem className="lg:col-span-2"> {/* Was 2 */}
                         <FormLabel>Part Number</FormLabel>
                         <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => (
-                      <FormItem className="lg:col-span-3">
+                      <FormItem className="lg:col-span-4"> {/* Was 3 */}
                         <FormLabel>Description</FormLabel>
                         <FormControl><Input placeholder="Item or service description" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                      <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => (
-                      <FormItem className="lg:col-span-2">
+                      <FormItem className="lg:col-span-2"> {/* Was 2 */}
                         <FormLabel>Category</FormLabel>
                         <Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ''}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
@@ -291,25 +273,14 @@ export function RequisitionForm() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => (
-                      <FormItem className="lg:col-span-1">
+                      <FormItem className="lg:col-span-1"> {/* Was 1 */}
                         <FormLabel>Quantity</FormLabel>
                         <FormControl><Input type="number" placeholder="0" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name={`items.${index}.estimatedUnitPrice`} render={({ field }) => (
-                      <FormItem className="lg:col-span-1">
-                        <FormLabel>Est. Unit Price (MZN)</FormLabel>
-                        <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormItem className="lg:col-span-2">
-                      <FormLabel>Est. Total (MZN)</FormLabel>
-                      <div className="h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm text-muted-foreground flex items-center">{formatValue(itemTotalEst)}</div>
-                    </FormItem>
                      <FormField control={form.control} name={`items.${index}.notes`} render={({ field }) => (
-                      <FormItem className="lg:col-span-1">
+                      <FormItem className="lg:col-span-3"> {/* Was 1, expanded to fill */}
                         <FormLabel>Item Notes</FormLabel>
                         <FormControl><Input placeholder="Optional notes" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
@@ -323,10 +294,8 @@ export function RequisitionForm() {
 
             <Separator className="my-6"/>
 
-            <div className="flex justify-between items-start mt-8">
-              <div className="space-y-2 text-left border p-4 rounded-md bg-muted/20">
-                <div className="text-xl font-bold font-headline">Total Estimated Value (MZN): <span className="font-semibold">{formatValue(totalEstimatedValue)}</span></div>
-              </div>
+            {/* Removed Total Estimated Value display */}
+            <div className="flex justify-end items-start mt-8">
               <div className="flex flex-col gap-3 w-auto md:w-1/3">
                 <Button type="submit" size="lg" className="w-full" disabled={isSubmitting || !form.formState.isValid || isLoadingInitialData}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
@@ -339,9 +308,11 @@ export function RequisitionForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          This requisition will be saved as a Draft. Further approval steps will be required.
+          This requisition will be saved as a Draft. Prices will be added by the procurement team. Further approval steps will be required.
         </p>
       </CardFooter>
     </Card>
   );
 }
+
+    

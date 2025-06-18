@@ -241,8 +241,8 @@ export interface QuoteItem {
   customerRef?: string;
   description: string;
   quantity: number;
-  unitPrice: number;
-  quoteId?: string; // This is the foreign key to Quote table
+  unitPrice: number; // Retaining for QuoteItem as it's client-facing
+  quoteId?: string; 
 }
 
 export type QuoteStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Sent to Client' | 'Archived';
@@ -274,13 +274,13 @@ export type RequisitionStatus = 'Draft' | 'Submitted for Approval' | 'Approved' 
 
 export interface RequisitionItem {
   id: string;
-  requisitionId?: string; // Foreign key to Requisition table
+  requisitionId?: string;
   partNumber?: string | null;
   description: string;
   categoryId: number | null;
-  categoryName?: string; // For display purposes
+  categoryName?: string;
   quantity: number;
-  estimatedUnitPrice?: number | null;
+  estimatedUnitPrice?: number | null; // Marking as optional
   notes?: string | null;
 }
 
@@ -290,14 +290,14 @@ export interface RequisitionPayload {
   requisitionDate: string; 
   requestedByUserId?: string | null; 
   requestedByName: string; 
-  requestorFullName?: string; // From joining User table
+  requestorFullName?: string;
   siteId: number | null; 
-  siteName?: string; // From joining Site table
-  siteCode?: string; // From joining Site table
+  siteName?: string;
+  siteCode?: string;
   status: RequisitionStatus;
   justification?: string | null;
-  items: RequisitionItem[];
-  totalEstimatedValue?: number;
+  items: RequisitionItem[]; // Or Omit<RequisitionItem, 'estimatedUnitPrice'>[] if strictly not sending
+  totalEstimatedValue?: number; // Marking as optional
   createdAt?: string; 
   updatedAt?: string; 
 }
@@ -365,3 +365,5 @@ export interface SurveyFormValues {
   mostUsedFeatures: string;
   suggestions: string;
 }
+
+    
