@@ -10,19 +10,18 @@ async function createRequisitionItemsTable() {
           partNumber VARCHAR(255) NULL,
           description TEXT NOT NULL,
           categoryId INT NULL,
-          siteId INT NULL, -- Added siteId column
+          siteId INT NULL, 
           quantity INT NOT NULL,
-          estimatedUnitPrice DECIMAL(12, 2) DEFAULT 0.00,
           notes TEXT NULL,
           createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
           updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           FOREIGN KEY (requisitionId) REFERENCES Requisition(id) ON DELETE CASCADE,
           FOREIGN KEY (categoryId) REFERENCES Category(id) ON DELETE SET NULL,
-          FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL -- Added FK for siteId
+          FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL
       );
     `;
     await db.pool.execute(createTableQuery);
-    console.log('RequisitionItem table created or already exists successfully with siteId column and foreign key.');
+    console.log('RequisitionItem table created or already exists successfully (schema updated: estimatedUnitPrice removed, siteId present).');
   } catch (error) {
     console.error('Error creating RequisitionItem table:', error);
   } finally {
@@ -31,3 +30,4 @@ async function createRequisitionItemsTable() {
 }
 
 createRequisitionItemsTable();
+
