@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
 import type { QuotePayload, QuoteStatus } from '@/types'; 
-import { ArrowLeft, Printer, Loader2, ThumbsUp, ThumbsDown, Edit, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, Loader2, Edit, FileText } from 'lucide-react'; // Removed ThumbsUp, ThumbsDown
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +20,7 @@ function PrintQuotePageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [logoDataUri, setLogoDataUri] = useState<string | undefined>(undefined);
-  const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const [isProcessingAction, setIsProcessingAction] = useState(false); // Kept for edit, print potentially
 
 
   const fetchQuoteDataForPrint = useCallback(async () => {
@@ -79,44 +79,6 @@ function PrintQuotePageContent() {
     window.print();
   };
   
-  const handleApproveQuote = async () => {
-    if (!quoteData || !quoteData.id) return;
-    setIsProcessingAction(true);
-    try {
-      const response = await fetch(`/api/quotes/${quoteData.id}/approve`, { method: 'POST' });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Approval failed.' }));
-        throw new Error(errorData.error || `Approval failed for Quote ${quoteData.id}.`);
-      }
-      const result = await response.json();
-      toast({ title: "Quote Approved", description: result.message || `${quoteData.quoteNumber} marked as Approved.`});
-      fetchQuoteDataForPrint(); 
-    } catch (err: any) {
-      toast({ title: "Error Approving Quote", description: err.message, variant: "destructive" });
-    } finally {
-      setIsProcessingAction(false);
-    }
-  };
-
-  const handleRejectQuote = async () => {
-    if (!quoteData || !quoteData.id) return;
-    setIsProcessingAction(true);
-    try {
-      const response = await fetch(`/api/quotes/${quoteData.id}/reject`, { method: 'POST' });
-       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Rejection failed.' }));
-        throw new Error(errorData.error || `Rejection failed for Quote ${quoteData.id}.`);
-      }
-      const result = await response.json();
-      toast({ title: "Quote Rejected", description: result.message || `${quoteData.quoteNumber} marked as Rejected.`});
-      fetchQuoteDataForPrint(); 
-    } catch (err: any) {
-      toast({ title: "Error Rejecting Quote", description: err.message, variant: "destructive" });
-    } finally {
-      setIsProcessingAction(false);
-    }
-  };
-  
   const handleEditQuote = () => {
     if (!quoteData || !quoteId) return;
     router.push(`/create-document?editQuoteId=${quoteId}`); 
@@ -156,7 +118,7 @@ function PrintQuotePageContent() {
   }
   
   const canEdit = quoteData.status === 'Draft' || quoteData.status === 'Pending Approval';
-  const showApprovalActions = quoteData.status === 'Pending Approval';
+  // Approval actions are removed from this page, handled in /approvals
 
   return (
     <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
@@ -186,16 +148,6 @@ function PrintQuotePageContent() {
                 <Button onClick={handleEditQuote} variant="outline" size="sm" disabled={isProcessingAction}>
                   <Edit className="mr-2 h-4 w-4" /> Edit Quote
                 </Button>
-              )}
-              {showApprovalActions && (
-                <>
-                  <Button onClick={handleApproveQuote} size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700" disabled={isProcessingAction}>
-                    {isProcessingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsUp className="mr-2 h-4 w-4" />} Approve
-                  </Button>
-                  <Button onClick={handleRejectQuote} size="sm" variant="outline" className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700" disabled={isProcessingAction}>
-                    {isProcessingAction ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ThumbsDown className="mr-2 h-4 w-4" />} Reject
-                  </Button>
-                </>
               )}
                <Button onClick={handlePrint} size="sm" variant="default">
                 <Printer className="mr-2 h-4 w-4" /> Print Quote
