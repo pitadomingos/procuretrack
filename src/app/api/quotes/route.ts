@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../backend/db.js';
 import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
@@ -90,15 +91,16 @@ export async function POST(request: Request) {
         }
         
         try {
+          const rawApproverId = quoteData.approverId;
+          const finalApproverId = (rawApproverId === "" || rawApproverId === undefined) ? null : rawApproverId;
+
           await connection.execute(
             `INSERT INTO Quote (id, quoteNumber, quoteDate, clientId, creatorEmail, subTotal, vatAmount, grandTotal, currency, termsAndConditions, notes, status, approverId, approvalDate, createdAt, updatedAt)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-             ON DUPLICATE KEY UPDATE
-               quoteDate=VALUES(quoteDate), clientId=VALUES(clientId), creatorEmail=VALUES(creatorEmail), subTotal=VALUES(subTotal), vatAmount=VALUES(vatAmount), grandTotal=VALUES(grandTotal), currency=VALUES(currency), termsAndConditions=VALUES(termsAndConditions), notes=VALUES(notes), status=VALUES(status), approverId=VALUES(approverId), approvalDate=VALUES(approvalDate), updatedAt=NOW()`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
             [
               quoteData.id, quoteData.quoteNumber, new Date(quoteData.quoteDate as string).toISOString().slice(0, 19).replace('T', ' '), quoteData.clientId, quoteData.creatorEmail,
               quoteData.subTotal, quoteData.vatAmount, quoteData.grandTotal, quoteData.currency,
-              quoteData.termsAndConditions, quoteData.notes, quoteData.status, quoteData.approverId,
+              quoteData.termsAndConditions, quoteData.notes, quoteData.status, finalApproverId,
               quoteData.approvalDate ? new Date(quoteData.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null
             ]
           );
@@ -138,6 +140,8 @@ export async function POST(request: Request) {
     try {
       quoteDataFromForm = await request.json() as QuotePayload;
       console.log(`[API_INFO] /api/quotes POST JSON: Received quote data: ${JSON.stringify(quoteDataFromForm).substring(0, 500)}...`);
+      console.log(`[API_INFO] /api/quotes POST JSON: Received approverId: '${quoteDataFromForm.approverId}', Type: ${typeof quoteDataFromForm.approverId}`);
+
 
       if (!quoteDataFromForm.id || !quoteDataFromForm.clientId || !quoteDataFromForm.quoteNumber) {
         console.error('[API_ERROR] /api/quotes POST JSON: Missing required fields (id, clientId, quoteNumber). Data:', quoteDataFromForm);
@@ -149,6 +153,11 @@ export async function POST(request: Request) {
       console.log('[API_INFO] /api/quotes POST JSON: Database connection obtained.');
       await connection.beginTransaction();
       console.log('[API_INFO] /api/quotes POST JSON: Database transaction started.');
+
+      const rawApproverId = quoteDataFromForm.approverId;
+      const finalApproverId = (rawApproverId === "" || rawApproverId === undefined) ? null : rawApproverId;
+      console.log(`[API_INFO] /api/quotes POST JSON: Final approverId for DB: '${finalApproverId}', Type: ${typeof finalApproverId}`);
+
 
       await connection.execute(
         `INSERT INTO Quote (id, quoteNumber, quoteDate, clientId, creatorEmail, subTotal, vatAmount, grandTotal, currency, termsAndConditions, notes, status, approverId, approvalDate, createdAt, updatedAt)
@@ -166,8 +175,8 @@ export async function POST(request: Request) {
           quoteDataFromForm.termsAndConditions,
           quoteDataFromForm.notes,
           quoteDataFromForm.status,
-          quoteDataFromForm.approverId, // Now included
-          quoteDataFromForm.approvalDate ? new Date(quoteDataFromForm.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null, // Now included
+          finalApproverId, 
+          quoteDataFromForm.approvalDate ? new Date(quoteDataFromForm.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null,
         ]
       );
       console.log(`[API_INFO] /api/quotes POST JSON: Quote header inserted for ID: ${quoteDataFromForm.id}.`);

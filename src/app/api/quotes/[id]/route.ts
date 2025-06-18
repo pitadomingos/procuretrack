@@ -73,6 +73,7 @@ export async function PUT(
   try {
     const quoteData = await request.json() as QuotePayload;
     console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Data:`, JSON.stringify(quoteData).substring(0, 500));
+    console.log(`[API_INFO] /api/quotes PUT JSON: Received approverId for update: '${quoteData.approverId}', Type: ${typeof quoteData.approverId}`);
 
     connection = await pool.getConnection();
     await connection.beginTransaction();
@@ -83,6 +84,11 @@ export async function PUT(
         return NextResponse.json({ error: `Quote with ID ${quoteId} not found for update.` }, { status: 404 });
     }
     
+    const rawApproverId = quoteData.approverId;
+    const finalApproverId = (rawApproverId === "" || rawApproverId === undefined) ? null : rawApproverId;
+    console.log(`[API_INFO] /api/quotes PUT JSON: Final approverId for DB update: '${finalApproverId}', Type: ${typeof finalApproverId}`);
+
+
     await connection.execute(
       `UPDATE Quote SET 
         quoteNumber = ?, quoteDate = ?, clientId = ?, creatorEmail = ?, 
@@ -94,7 +100,7 @@ export async function PUT(
         quoteData.quoteNumber, new Date(quoteData.quoteDate).toISOString().slice(0, 19).replace('T', ' '), quoteData.clientId, quoteData.creatorEmail,
         quoteData.subTotal, quoteData.vatAmount, quoteData.grandTotal, quoteData.currency,
         quoteData.termsAndConditions, quoteData.notes, quoteData.status, 
-        quoteData.approverId,
+        finalApproverId,
         quoteData.approvalDate ? new Date(quoteData.approvalDate).toISOString().slice(0, 19).replace('T', ' ') : null,
         quoteId
       ]
@@ -133,6 +139,7 @@ export async function PUT(
   } catch (error: any) {
     if (connection) await connection.rollback();
     console.error(`[API_ERROR] /api/quotes/${quoteId} PUT:`, error);
+    console.error(`[API_ERROR_DETAILS] /api/quotes PUT JSON: Code: ${error.code}, Message: ${error.message}, Stack: ${error.stack}`);
     return NextResponse.json({ error: `Failed to update quote with ID ${quoteId}.`, details: error.message, code: error.code }, { status: 500 });
   } finally {
     if (connection) connection.release();
