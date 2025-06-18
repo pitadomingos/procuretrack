@@ -6,8 +6,10 @@ import { GroupedStatCard } from '@/components/dashboard/grouped-stat-card';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { MonthlyStatusChart } from '@/components/dashboard/monthly-status-chart';
 import { SitePOValueStatusChart } from '@/components/dashboard/site-po-value-status-chart';
+import { UsersByRoleChart } from '@/components/dashboard/users-by-role-chart'; // New Import
+import { TagsByStatusChart } from '@/components/dashboard/tags-by-status-chart'; // New Import
 import { ActivityLogTable } from '@/components/shared/activity-log-table';
-import { activityLogData } from '@/lib/mock-data'; 
+import { activityLogData } from '@/lib/mock-data';
 import type { GroupedStatCardItem, FetchedDashboardStats, SubStat } from '@/types';
 import { Loader2, AlertTriangle, RefreshCw, Users, ShoppingCart, Truck, ClipboardList, Fuel, FileText as QuoteIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,7 +36,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Goods Received',
@@ -43,7 +45,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Approved POs (Open)', value: 'N/A' },
       { label: 'POs with GRN Activity', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Purchase Requisitions',
@@ -60,7 +62,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Total Vehicles/Tags', value: 'N/A' },
       { label: 'Total Fuel Records', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Client Quotations',
@@ -71,7 +73,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected Quotes', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
 ];
 
@@ -84,7 +86,7 @@ export default function DashboardPage() {
     month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
     year: new Date().getFullYear().toString(),
   });
-  const [refreshKey, setRefreshKey] = useState(0); // Used to force re-render/re-fetch of charts
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchDashboardStats = useCallback(async (filters?: { month?: string; year?: string }) => {
     setIsLoadingStats(true);
@@ -163,7 +165,7 @@ export default function DashboardPage() {
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to dashboard:', filters);
     setCurrentFilters({ month: filters.month, year: filters.year });
-    setRefreshKey(prevKey => prevKey + 1); // Force re-fetch in charts
+    setRefreshKey(prevKey => prevKey + 1); 
   };
   
   const handleRefreshAllData = () => {
@@ -190,21 +192,21 @@ export default function DashboardPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {isLoadingStats ? (
           initialDashboardCardsConfig.map((cardConfig, index) => (
-            <Card key={index} className="shadow-lg flex flex-col h-[190px]"> {/* Adjusted height */}
-              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-1 pt-3 px-3"> {/* Reduced padding */}
-                <Skeleton className="h-4 w-3/5" /> {/* Adjusted skeleton size */}
+            <Card key={index} className="shadow-lg flex flex-col h-[190px]">
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-1 pt-3 px-3">
+                <Skeleton className="h-4 w-3/5" /> 
                 <Skeleton className="h-5 w-5 rounded-full" />
               </CardHeader>
-              <CardContent className="pt-1 px-3 flex-grow"> {/* Reduced padding */}
-                <Skeleton className="h-6 w-1/2 mb-2" /> {/* Adjusted skeleton size */}
-                <div className="space-y-1.5"> {/* Adjusted spacing */}
-                  <Skeleton className="h-3 w-full" /> {/* Adjusted skeleton size */}
+              <CardContent className="pt-1 px-3 flex-grow">
+                <Skeleton className="h-6 w-1/2 mb-2" /> 
+                <div className="space-y-1.5"> 
+                  <Skeleton className="h-3 w-full" /> 
                   <Skeleton className="h-3 w-4/5" />
                   <Skeleton className="h-3 w-3/4" />
                 </div>
               </CardContent>
-               <CardFooter className="pt-2 pb-3 px-3"> {/* Reduced padding */}
-                  <Skeleton className="h-7 w-full" /> {/* Adjusted skeleton size */}
+               <CardFooter className="pt-2 pb-3 px-3"> 
+                  <Skeleton className="h-7 w-full" /> 
                </CardFooter>
             </Card>
           ))
@@ -229,10 +231,11 @@ export default function DashboardPage() {
       <section className="grid gap-6 lg:grid-cols-2">
         <MonthlyStatusChart key={`monthly-${refreshKey}`} filters={currentFilters} />
         <SitePOValueStatusChart key={`site-po-${refreshKey}`} filters={currentFilters} />
+        <UsersByRoleChart key={`users-role-${refreshKey}`} /> {/* Added User Roles Chart */}
+        <TagsByStatusChart key={`tags-status-${refreshKey}`} /> {/* Added Tags Status Chart */}
       </section>
 
       <section>
-        {/* Activity log will be made dynamic in a subsequent step */}
         <ActivityLogTable activities={activityLogData.slice(0, 5)} maxHeight="300px" />
       </section>
     </div>
