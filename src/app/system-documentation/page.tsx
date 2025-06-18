@@ -52,8 +52,8 @@ export default function SystemDocumentationPage() {
                 <h3 className="text-lg font-medium text-foreground">2.2 Backend API (Data Services)</h3>
                  <ul className="list-disc list-inside ml-4">
                   <li><strong>Framework:</strong> Node.js with Express.js.</li>
-                  <li><strong>Language:</strong> JavaScript (as per existing `backend/` folder scripts).</li>
-                  <li><strong>Purpose:</strong> Provides RESTful APIs for core data operations (CRUD) against the MySQL database. This API is consumed by the Next.js frontend (e.g., via `fetch` in Server Components or Route Handlers).</li>
+                  <li><strong>Language:</strong> JavaScript (as per existing ` + "`backend/`" + ` folder scripts).</li>
+                  <li><strong>Purpose:</strong> Provides RESTful APIs for core data operations (CRUD) against the MySQL database. This API is consumed by the Next.js frontend (e.g., via \`fetch\` in Server Components or Route Handlers).</li>
                   <li><strong>Authentication (Future):</strong> Token-based authentication (e.g., JWT) will be implemented to secure API endpoints.</li>
                 </ul>
               </div>
@@ -69,14 +69,14 @@ export default function SystemDocumentationPage() {
                 <h3 className="text-lg font-medium text-foreground">2.4 Database</h3>
                 <ul className="list-disc list-inside ml-4">
                   <li><strong>Type:</strong> MySQL (Relational Database Management System).</li>
-                  <li><strong>Interaction:</strong> The Express.js backend API primarily handles direct database connections and queries using the `mysql2` library.</li>
-                  <li><strong>Schema Management:</strong> Database schema is defined and managed through JavaScript scripts located in the `scripts/` directory (e.g., `create_*.js`, `alter_*.js`).</li>
+                  <li><strong>Interaction:</strong> The Express.js backend API primarily handles direct database connections and queries using the \`mysql2\` library.</li>
+                  <li><strong>Schema Management:</strong> Database schema is defined and managed through JavaScript scripts located in the \`scripts/\` directory (e.g., \`create_*.js\`, \`alter_*.js\`).</li>
                 </ul>
               </div>
               <div>
                 <h3 className="text-lg font-medium text-foreground">2.5 Hosting & Deployment</h3>
                  <ul className="list-disc list-inside ml-4">
-                  <li><strong>Frontend (Next.js):</strong> Firebase App Hosting, configured via `apphosting.yaml`. This platform supports server-side rendering, API routes, and other Next.js features.</li>
+                  <li><strong>Frontend (Next.js):</strong> Firebase App Hosting, configured via \`apphosting.yaml\`. This platform supports server-side rendering, API routes, and other Next.js features.</li>
                   <li><strong>Backend API (Express.js):</strong> Can be deployed in several ways:
                     <ul className="list-circle list-inside ml-6">
                       <li>Co-located with Next.js on Firebase App Hosting if configured to serve Express apps.</li>
@@ -139,20 +139,20 @@ export default function SystemDocumentationPage() {
           <section>
             <h2 className="text-xl font-semibold mb-2 text-foreground">3. Frontend Overview</h2>
             <ul className="list-disc list-inside ml-4 space-y-2">
-              <li><strong>Routing:</strong> Utilizes the Next.js App Router. Routes are defined by folder structure within `src/app/`. Dynamic routes use bracket notation (e.g., `src/app/purchase-orders/[id]/page.tsx`).</li>
+              <li><strong>Routing:</strong> Utilizes the Next.js App Router. Routes are defined by folder structure within \`src/app/\`. Dynamic routes use bracket notation (e.g., \`src/app/purchase-orders/[id]/page.tsx\`).</li>
               <li><strong>State Management:</strong>
                 <ul className="list-circle list-inside ml-6">
-                  <li><strong>Local Component State:</strong> `useState` and `useEffect` hooks for managing state within individual components.</li>
-                  <li><strong>Global State:</strong> React Context API is used for simpler global state needs (e.g., `SidebarProvider` for sidebar open/close state, `ThemeProvider` for dark/light mode). For more complex global state or server cache management, libraries like Zustand or React Query might be considered in the future.</li>
-                  <li><strong>Server Cache & Mutations:</strong> Data fetching primarily relies on `fetch` within Server Components or API Route Handlers. Server Actions are used for mutations, inherently providing a mechanism for revalidating data or redirecting.</li>
+                  <li><strong>Local Component State:</strong> \`useState\` and \`useEffect\` hooks for managing state within individual components.</li>
+                  <li><strong>Global State:</strong> React Context API is used for simpler global state needs (e.g., \`SidebarProvider\` for sidebar open/close state, \`ThemeProvider\` for dark/light mode). For more complex global state or server cache management, libraries like Zustand or React Query might be considered in the future.</li>
+                  <li><strong>Server Cache & Mutations:</strong> Data fetching primarily relies on \`fetch\` within Server Components or API Route Handlers. Server Actions are used for mutations, inherently providing a mechanism for revalidating data or redirecting.</li>
                 </ul>
               </li>
               <li><strong>UI Conventions:</strong> Follows the design principles of ShadCN UI, emphasizing composability and accessibility. Tailwind CSS is used for all styling, promoting utility-first design.</li>
               <li><strong>Key UI Components:</strong>
                 <ul className="list-circle list-inside ml-6">
-                  <li>`AppLayout`, `AppHeader`, `AppSidebar`: Define the main application structure.</li>
-                  <li>`DataTable`: A reusable component for displaying tabular data with sorting and filtering capabilities (custom built).</li>
-                  <li>Forms (e.g., `POForm`, `QuoteForm`, `RequisitionForm`): Built using React Hook Form for validation and submission handling.</li>
+                  <li>\`AppLayout\`, \`AppHeader\`, \`AppSidebar\`: Define the main application structure.</li>
+                  <li>\`DataTable\`: A reusable component for displaying tabular data with sorting and filtering capabilities (custom built).</li>
+                  <li>Forms (e.g., \`POForm\`, \`QuoteForm\`, \`RequisitionForm\`): Built using React Hook Form for validation and submission handling.</li>
                   <li>ShadCN UI Primitives: Buttons, Cards, Dialogs, Selects, Inputs, etc., form the building blocks of the UI.</li>
                 </ul>
               </li>
@@ -163,28 +163,28 @@ export default function SystemDocumentationPage() {
             <h2 className="text-xl font-semibold mb-2 text-foreground">4. Backend API Details</h2>
             <p>The backend is split into two main parts: the data-centric Express.js API and Next.js API Routes/Server Actions for frontend-specific backend logic.</p>
             <h3 className="text-lg font-medium mt-3 mb-1 text-foreground">4.1 Express.js API (Data Services)</h3>
-            <p>Located in `backend/`. Primarily handles CRUD operations against the database.</p>
+            <p>Located in \`backend/\`. Primarily handles CRUD operations against the database.</p>
             <ul className="list-disc list-inside ml-4">
-                <li>GET `/api/suppliers`: Fetches all suppliers.</li>
-                <li>GET `/api/purchase-orders`: Fetches all purchase orders.</li>
-                <li>GET `/api/purchase-orders/:poId`: Fetches a single purchase order by ID.</li>
-                <li>GET `/api/purchase-orders/:poId/items`: Fetches items for a specific PO.</li>
-                <li>POST `/api/upload/*`: Placeholder endpoints for various CSV file uploads (functionality partially implemented via Next.js API routes).</li>
+                <li>GET \`/api/suppliers\`: Fetches all suppliers.</li>
+                <li>GET \`/api/purchase-orders\`: Fetches all purchase orders.</li>
+                <li>GET \`/api/purchase-orders/:poId\`: Fetches a single purchase order by ID.</li>
+                <li>GET \`/api/purchase-orders/:poId/items\`: Fetches items for a specific PO.</li>
+                <li>POST \`/api/upload/*\`: Placeholder endpoints for various CSV file uploads (functionality partially implemented via Next.js API routes).</li>
             </ul>
             <h3 className="text-lg font-medium mt-3 mb-1 text-foreground">4.2 Next.js API Routes & Server Actions</h3>
-            <p>Located in `src/app/api/` (for API routes) and within components for Server Actions.</p>
+            <p>Located in \`src/app/api/\` (for API routes) and within components for Server Actions.</p>
             <ul className="list-disc list-inside ml-4">
-              <li>CRUD endpoints for: `approvers`, `categories`, `clients`, `purchase-orders`, `quotes`, `requisitions`, `sites`, `suppliers`, `tags`, `users`.</li>
+              <li>CRUD endpoints for: \`approvers\`, \`categories\`, \`clients\`, \`purchase-orders\`, \`quotes\`, \`requisitions\`, \`sites\`, \`suppliers\`, \`tags\`, \`users\`.</li>
               <li>Specialized GET endpoints for:
                 <ul className="list-circle list-inside ml-6">
-                  <li>Next PO/Quote/Requisition numbers (e.g., `/api/purchase-orders/next-po-number`).</li>
-                  <li>Pending approval queues (e.g., `/api/purchase-orders/pending-approval`).</li>
-                  <li>Dashboard statistics and chart data (e.g., `/api/dashboard-stats`, `/api/charts/*`).</li>
+                  <li>Next PO/Quote/Requisition numbers (e.g., \`/api/purchase-orders/next-po-number\`).</li>
+                  <li>Pending approval queues (e.g., \`/api/purchase-orders/pending-approval\`).</li>
+                  <li>Dashboard statistics and chart data (e.g., \`/api/dashboard-stats\`, \`/api/charts/*\`).</li>
                 </ul>
               </li>
-              <li>POST endpoints for actions like approving/rejecting documents (e.g., `/api/purchase-orders/[poId]/approve`).</li>
-              <li>POST endpoints for CSV uploads (e.g., `/api/clients` handles CSV if content-type is multipart/form-data).</li>
-              <li>API for PDF generation: `src/pages/api/generate-po-pdf.ts` (using Playwright).</li>
+              <li>POST endpoints for actions like approving/rejecting documents (e.g., \`/api/purchase-orders/[poId]/approve\`).</li>
+              <li>POST endpoints for CSV uploads (e.g., \`/api/clients\` handles CSV if content-type is multipart/form-data).</li>
+              <li>API for PDF generation: \`src/pages/api/generate-po-pdf.ts\` (using Playwright).</li>
             </ul>
              <p className="mt-2">Request/response formats are typically JSON. Authentication is planned for future implementation.</p>
           </section>
@@ -192,7 +192,7 @@ export default function SystemDocumentationPage() {
           <section>
             <h2 className="text-xl font-semibold mb-2 text-foreground">5. Database Schema</h2>
             <p>
-              The database is MySQL. Schema definition and initial data seeding are managed by scripts in the `scripts/` directory.
+              The database is MySQL. Schema definition and initial data seeding are managed by scripts in the \`scripts/\` directory.
               Key tables include:
             </p>
             <ul className="list-disc list-inside ml-4 space-y-1">
@@ -213,7 +213,7 @@ export default function SystemDocumentationPage() {
               <li><strong>FuelRecord:</strong> Logs fuel consumption (date, tag, site, driver, odometer, quantity, cost).</li>
               <li><strong>ActivityLog:</strong> (Schema exists) Intended for tracking system and user actions.</li>
             </ul>
-            <p className="mt-1">Relationships are enforced using foreign keys (e.g., `POItem.poId` references `PurchaseOrder.id`).</p>
+            <p className="mt-1">Relationships are enforced using foreign keys (e.g., \`POItem.poId\` references \`PurchaseOrder.id\`).</p>
           </section>
 
           <section>
@@ -223,33 +223,33 @@ export default function SystemDocumentationPage() {
                 <ul className="list-circle list-inside ml-6">
                   <li>Ensure Node.js and npm/yarn are installed.</li>
                   <li>Set up a MySQL database instance (local or cloud-based).</li>
-                  <li>Configure environment variables (e.g., in a `.env` file locally, or via hosting provider settings for deployment) for database connection details (host, user, password, database name), API keys, etc. The `backend/db.js` file uses these variables.</li>
+                  <li>Configure environment variables (e.g., in a \`.env\` file locally, or via hosting provider settings for deployment) for database connection details (host, user, password, database name), API keys, etc. The \`backend/db.js\` file uses these variables.</li>
                 </ul>
               </li>
               <li><strong>Database Initialization:</strong>
                 <ul className="list-circle list-inside ml-6">
-                  <li>Run the table creation scripts from the `scripts/` directory (e.g., `node scripts/create_users_table.js`) in the correct order to set up the database schema.</li>
-                  <li>Optionally, run `insert_*.js` scripts to populate tables with sample data.</li>
-                  <li>Run any `alter_*.js` migration scripts if updating an existing database.</li>
+                  <li>Run the table creation scripts from the \`scripts/\` directory (e.g., \`node scripts/create_users_table.js\`) in the correct order to set up the database schema.</li>
+                  <li>Optionally, run \`insert_*.js\` scripts to populate tables with sample data.</li>
+                  <li>Run any \`alter_*.js\` migration scripts if updating an existing database.</li>
                 </ul>
               </li>
-              <li><strong>Build Application:</strong> Run `npm run build` (or `yarn build`) to create an optimized production build of the Next.js application.</li>
+              <li><strong>Build Application:</strong> Run \`npm run build\` (or \`yarn build\`) to create an optimized production build of the Next.js application.</li>
               <li><strong>Deploy Frontend (Next.js):</strong>
                 <ul className="list-circle list-inside ml-6">
                   <li>For Firebase App Hosting:
                     <ol className="list-decimal list-inside ml-8">
-                      <li>Ensure Firebase CLI is installed and configured (`firebase login`).</li>
-                      <li>Initialize Firebase in the project if not already done (`firebase init hosting`).</li>
-                      <li>Configure `apphosting.yaml` for server-side rendering settings, instance count, etc.</li>
-                      <li>Deploy using `firebase deploy --only hosting`.</li>
+                      <li>Ensure Firebase CLI is installed and configured (\`firebase login\`).</li>
+                      <li>Initialize Firebase in the project if not already done (\`firebase init hosting\`).</li>
+                      <li>Configure \`apphosting.yaml\` for server-side rendering settings, instance count, etc.</li>
+                      <li>Deploy using \`firebase deploy --only hosting\`.</li>
                     </ol>
                   </li>
                 </ul>
               </li>
               <li><strong>Deploy Backend API (Express.js):</strong>
                 <ul className="list-circle list-inside ml-6">
-                  <li>If co-locating with Next.js on App Hosting, ensure `apphosting.yaml` is set up to serve the Express app.</li>
-                  <li>If deploying separately (e.g., Cloud Run), package the `backend/` directory, configure its `Dockerfile` or service settings, and deploy to the chosen platform. Ensure the Next.js app's API calls point to the correct deployed backend URL.</li>
+                  <li>If co-locating with Next.js on App Hosting, ensure \`apphosting.yaml\` is set up to serve the Express app.</li>
+                  <li>If deploying separately (e.g., Cloud Run), package the \`backend/\` directory, configure its \`Dockerfile\` or service settings, and deploy to the chosen platform. Ensure the Next.js app's API calls point to the correct deployed backend URL.</li>
                 </ul>
               </li>
               <li><strong>SSL Certificate:</strong> Ensure SSL is configured for production deployments (usually handled by the hosting provider like Firebase App Hosting).</li>
@@ -280,7 +280,7 @@ export default function SystemDocumentationPage() {
                 <ul className="list-circle list-inside ml-6">
                   <li><code>globals.css</code>: Global stylesheets, Tailwind base styles, and CSS variables for ShadCN UI themes.</li>
                   <li><code>layout.tsx</code>: Root layout component.</li>
-                  <li><code>page.tsx</code>: Entry point for the dashboard page (`/`).</li>
+                  <li><code>page.tsx</code>: Entry point for the dashboard page (\`/\`).</li>
                   <li><code>(group)/route/page.tsx</code>: Pattern for pages and route segments.</li>
                   <li><code>api/</code>: Contains backend API route handlers managed by Next.js.</li>
                 </ul>
@@ -290,26 +290,26 @@ export default function SystemDocumentationPage() {
                 <strong><code>src/components/</code></strong>: Reusable React components.
                 <ul className="list-circle list-inside ml-6">
                   <li><code>ui/</code>: ShadCN UI components.</li>
-                  <li><code>shared/</code>: Custom reusable components (e.g., `FilterBar`, `DataTable`).</li>
-                  <li><code>layout/</code>: Application structure components (e.g., `AppLayout`, `AppHeader`, `AppSidebar`).</li>
-                  <li>Feature-specific folders (e.g., `dashboard/`, `purchase-orders/`, `management/`).</li>
+                  <li><code>shared/</code>: Custom reusable components (e.g., \`FilterBar\`, \`DataTable\`).</li>
+                  <li><code>layout/</code>: Application structure components (e.g., \`AppLayout\`, \`AppHeader\`, \`AppSidebar\`).</li>
+                  <li>Feature-specific folders (e.g., \`dashboard/\`, \`purchase-orders/\`, \`management/\`).</li>
                 </ul>
               </li>
               <li>
                 <Library className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
                 <strong><code>src/lib/</code></strong>: Utility functions and libraries.
                 <ul className="list-circle list-inside ml-6">
-                  <li><code>utils.ts</code>: General utility functions (e.g., `cn`).</li>
+                  <li><code>utils.ts</code>: General utility functions (e.g., \`cn\`).</li>
                   <li><code>mock-data.ts</code>: Contains mock data (phasing out as backend integration completes).</li>
                 </ul>
               </li>
               <li>
                 <Settings2 className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
-                <strong><code>src/config/</code></strong>: Application-level configurations (e.g., `site.ts` for navigation).</li>
+                <strong><code>src/config/</code></strong>: Application-level configurations (e.g., \`site.ts\` for navigation).</li>
               </li>
               <li>
                 <Type className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
-                <strong><code>src/types/</code></strong>: TypeScript type definitions (`index.ts`).</li>
+                <strong><code>src/types/</code></strong>: TypeScript type definitions (\`index.ts\`).</li>
               </li>
               <li>
                 <BrainCircuit className="inline-block h-5 w-5 mr-2 text-primary align-text-bottom" />
@@ -425,3 +425,5 @@ export default function SystemDocumentationPage() {
     </div>
   );
 }
+
+    
