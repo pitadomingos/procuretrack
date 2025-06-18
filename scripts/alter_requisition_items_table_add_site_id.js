@@ -23,7 +23,7 @@ async function alterRequisitionItemsTableAddSiteId() {
         ADD COLUMN siteId INT NULL AFTER categoryId;
       `;
       await connection.execute(addColumnQuery);
-      console.log("Successfully added 'siteId' column to RequisitionItem table.");
+      console.log("Successfully added 'siteId' column (INT NULL) to RequisitionItem table.");
 
       console.log("Attempting to add foreign key constraint 'fk_reqitem_site'...");
       const addForeignKeyQuery = `

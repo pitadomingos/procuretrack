@@ -92,7 +92,10 @@ export async function POST(request: Request) {
           break;
         case 'ER_NO_REFERENCED_ROW_2':
           let field = 'a related record';
-          if (error.message.includes('fk_requisition_site')) field = 'Site ID for requisition header';
+          const fkMatch = error.message.match(/FOREIGN KEY \(`(\w+)`\)/);
+          if (fkMatch && fkMatch[1]) {
+              field = `field '${fkMatch[1]}'`;
+          } else if (error.message.includes('fk_requisition_site')) field = 'Site ID for requisition header';
           else if (error.message.includes('fk_requisition_user')) field = 'Requested By User ID';
           else if (error.message.includes('fk_requisition_approver')) field = 'Approver ID';
           else if (error.message.includes('fk_reqitem_category')) field = 'Item Category ID';
@@ -103,6 +106,13 @@ export async function POST(request: Request) {
         case 'ER_BAD_NULL_ERROR':
              errorMessage = `A required field was not provided or was invalid. Field: ${error.message.match(/Column '(\w+)'/)?.[1] || 'unknown'}`;
              statusCode = 400;
+             break;
+        case 'ER_BAD_FIELD_ERROR': // MySQL code 1054 for Unknown column
+             const columnMatch = error.message.match(/Unknown column '(\w+)'/);
+             const unknownColumn = columnMatch ? columnMatch[1] : 'an unknown column';
+             errorMessage = `Database error: Unknown column '${unknownColumn}' in field list.`;
+             errorDetails = `The database table (likely RequisitionItem if '${unknownColumn}' is 'siteId') is missing the '${unknownColumn}' column or it's misspelled in the query. Please ensure database migrations have been run correctly. Original DB error: ${error.message}`;
+             statusCode = 500; 
              break;
         default:
           // Keep generic error message but provide details if available
