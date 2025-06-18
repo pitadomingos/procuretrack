@@ -5,12 +5,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { DataTable, type ColumnDef } from '@/components/shared/data-table';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { Button } from '@/components/ui/button';
-import { Download, Eye, Loader2, AlertTriangle, UploadCloud } from 'lucide-react';
+import { Download, Eye, Loader2, AlertTriangle, UploadCloud, Edit2, Trash2 } from 'lucide-react';
 import type { PurchaseOrderPayload, QuotePayload, RequisitionPayload, FuelRecord } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
 
 interface DocumentListViewProps {
   documentType: 'po' | 'grn' | 'quote' | 'requisition' | 'fuel';
@@ -116,13 +119,31 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<DocumentData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const API_BASE_URLS = {
+    po: '/api/purchase-orders',
+    quote: '/api/quotes',
+    requisition: '/api/requisitions',
+    fuel: '/api/fuel-records',
+    grn: '/api/grn' // Placeholder, GRN list view might differ
+  };
 
   const fetchDocuments = useCallback(async (filters?: any) => {
-    let apiUrl = '';
-    const queryParams = new URLSearchParams();
+    const apiUrlBase = API_BASE_URLS[documentType];
+    if (!apiUrlBase) {
+      setError(`List view for ${documentType.toUpperCase()}s is not configured.`);
+      setDocuments([]);
+      return;
+    }
 
+    const queryParams = new URLSearchParams();
     const defaultMonth = (new Date().getMonth() + 1).toString().padStart(2, '0');
     const defaultYear = new Date().getFullYear().toString();
 
@@ -134,30 +155,15 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
     if (filters?.tagId && filters.tagId !== 'all') queryParams.append('tagId', filters.tagId);
     if (filters?.driver && filters.driver.trim() !== '') queryParams.append('driver', filters.driver);
+    // For Requisitions specifically, you might want a status filter
+    if (documentType === 'requisition' && filters?.status && filters.status !== 'all') queryParams.append('status', filters.status);
 
-    if (documentType === 'po') apiUrl = '/api/purchase-orders';
-    else if (documentType === 'quote') apiUrl = '/api/quotes';
-    else if (documentType === 'requisition') apiUrl = '/api/requisitions'; // Still mock
-    else if (documentType === 'fuel') apiUrl = '/api/fuel-records'; // Still mock
-    else {
-      setDocuments([]);
-      setError(`List view for ${documentType.toUpperCase()}s is not yet implemented or uses mock data.`);
-      toast({ title: "List View Information", description: `The list view for ${documentType.toUpperCase()}s may be using mock data or is not fully implemented.`});
-      if (documentType === 'requisition' || documentType === 'fuel') {
-        // Load mock data for these types if API isn't ready
-        // Example: setDocuments(documentType === 'requisition' ? mockRequisitionsData : mockFuelRecordsData);
-        // For now, we will assume API routes might exist but could be mock.
-        // If API returns empty or error, it will be handled by the try-catch block.
-      } else {
-        return;
-      }
-    }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${apiUrl}?${queryParams.toString()}`);
+      const response = await fetch(`${apiUrlBase}?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Failed to fetch ${documentType.toUpperCase()}s.`);
@@ -184,6 +190,8 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
         approverId: filters.approver,
         siteId: filters.site,
         tagId: filters.tag,
+        // Pass status specifically for requisitions if present
+        status: documentType === 'requisition' ? filters.status : undefined,
     };
     delete apiFilters.requestor;
     delete apiFilters.approver;
@@ -208,12 +216,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     const formData = new FormData();
     formData.append('file', file);
 
-    let uploadUrl = '';
-    if (documentType === 'fuel') uploadUrl = '/api/fuel-records';
-    else if (documentType === 'quote') uploadUrl = '/api/quotes';
-    else if (documentType === 'po') uploadUrl = '/api/purchase-orders';
-    // Add other types like Requisition if they support CSV upload later
-
+    const uploadUrl = API_BASE_URLS[documentType];
     if (!uploadUrl) {
         toast({ title: "Upload Error", description: `CSV Upload not configured for ${documentType}.`, variant: "destructive"});
         setIsUploading(false);
@@ -221,15 +224,9 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     }
 
     try {
-        const response = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData,
-        });
-
-        const result = await response.json(); // Try to parse JSON regardless of status
-        if (!response.ok) {
-             throw new Error(result.error || result.message || 'File upload failed. Server error.');
-        }
+        const response = await fetch(uploadUrl, { method: 'POST', body: formData });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || result.message || 'File upload failed.');
         
         toast({ title: "Upload Processing", description: result.message || "File processed." });
         if (result.errors && result.errors.length > 0) {
@@ -237,56 +234,104 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
                 toast({ title: "Upload Warning", description: errMsg, variant: "destructive", duration: 7000 });
             });
         }
-        fetchDocuments(); // Refresh list after upload
+        fetchDocuments();
     } catch (error: any) {
         toast({ title: "Upload Error", description: error.message, variant: "destructive" });
     } finally {
         setIsUploading(false);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = ''; // Reset file input
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const openDeleteDialog = (doc: DocumentData) => {
+    setDocumentToDelete(doc);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!documentToDelete || !documentToDelete.id) return;
+    setIsDeleting(true);
+    
+    const deleteUrl = `${API_BASE_URLS[documentType]}/${documentToDelete.id}`;
+
+    try {
+      const response = await fetch(deleteUrl, { method: 'DELETE' });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to delete ${documentType}.`);
+      }
+      toast({ title: "Success", description: `${documentType.toUpperCase()} deleted successfully.` });
+      fetchDocuments(); // Refresh list
+    } catch (error: any) {
+      toast({ title: `Error Deleting ${documentType.toUpperCase()}`, description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    }
+  };
 
   const renderRowActions = (doc: DocumentData) => {
-    if (documentType === 'po' && doc.id) {
-      return (
-        <Link href={`/purchase-orders/${doc.id}/print`} passHref legacyBehavior={false}>
-          <Button variant="outline" size="sm" title="View PO Details"><Eye className="mr-1 h-4 w-4" /> View</Button>
-        </Link>
-      );
+    const docId = doc.id;
+    let printPath = '';
+    let editPath = ''; // For future use
+    let canDelete = false;
+
+    if (documentType === 'po' && docId) {
+      printPath = `/purchase-orders/${docId}/print`;
+      if ((doc as PurchaseOrderPayload).status === 'Draft' || (doc as PurchaseOrderPayload).status === 'Pending Approval') {
+          // editPath = `/create-document?editPoId=${docId}`; // Example edit path for PO
+          canDelete = (doc as PurchaseOrderPayload).status === 'Draft'; // Or Pending Approval if allowed
+      }
+    } else if (documentType === 'quote' && docId) {
+      printPath = `/quotes/${docId}/print`;
+      if ((doc as QuotePayload).status === 'Draft' || (doc as QuotePayload).status === 'Pending Approval') {
+        // editPath = `/create-document?editQuoteId=${docId}`;
+        canDelete = (doc as QuotePayload).status === 'Draft';
+      }
+    } else if (documentType === 'requisition' && docId) {
+      printPath = `/requisitions/${docId}/print`;
+      if ((doc as RequisitionPayload).status === 'Draft') {
+          // editPath = `/create-document?editRequisitionId=${docId}`; // Needs RequisitionForm to handle edit
+          canDelete = true;
+      }
     }
-    if (documentType === 'quote' && doc.id) {
-      return (
-        <Link href={`/quotes/${doc.id}/print`} passHref legacyBehavior={false}>
-          <Button variant="outline" size="sm" title="View Quote Details"><Eye className="mr-1 h-4 w-4" /> View</Button>
-        </Link>
-      );
-    }
-    if (documentType === 'requisition' && doc.id) {
-      return (
-        <Link href={`/requisitions/${doc.id}/print`} passHref legacyBehavior={false}>
-          <Button variant="outline" size="sm" title="View Requisition Details"><Eye className="mr-1 h-4 w-4" /> View</Button>
-        </Link>
-      );
-    }
-    if (documentType === 'fuel' && doc.id) {
-        // No print preview for fuel records, so maybe an edit/view modal in future
-        return (
-            <Button variant="outline" size="sm" title="View Fuel Record Details (Not Implemented)" disabled><Eye className="mr-1 h-4 w-4" /> View</Button>
-        );
-    }
-    return null;
+    // Fuel records don't have a print page or standard edit form yet.
+
+    return (
+      <div className="space-x-1">
+        {printPath && (
+          <Link href={printPath} passHref legacyBehavior={false}>
+            <Button variant="outline" size="sm" title={`View ${documentType.toUpperCase()} Details`}><Eye className="h-4 w-4" /></Button>
+          </Link>
+        )}
+        {/* Placeholder for Edit button
+        {editPath && (
+          <Link href={editPath} passHref legacyBehavior={false}>
+            <Button variant="outline" size="sm" title={`Edit ${documentType.toUpperCase()}`}><Edit2 className="h-4 w-4" /></Button>
+          </Link>
+        )}
+        */}
+        {canDelete && (
+            <Button variant="destructive" size="sm" title={`Delete ${documentType.toUpperCase()}`} onClick={() => openDeleteDialog(doc)} disabled={isDeleting}>
+                <Trash2 className="h-4 w-4" />
+            </Button>
+        )}
+      </div>
+    );
   };
+
 
   let columnsToUse: ColumnDef<any>[] = [];
   let listTitle = '';
-  let showApproverFilter = false;
-  let showRequestorFilter = true;
-  let showSiteFilter = true;
-  let showTagFilter = false;
-  let showDriverFilter = false;
+  let filterConfig = {
+    showApproverFilter: false,
+    showRequestorFilter: true,
+    showSiteFilter: true,
+    showTagFilter: false,
+    showDriverFilter: false,
+    showStatusFilter: false, // New for requisitions
+  };
   let showUploadCsv = false;
   let csvTemplateLink = '';
 
@@ -294,30 +339,22 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   if (documentType === 'po') {
     columnsToUse = poColumns as ColumnDef<any>[];
     listTitle = 'Purchase Orders';
-    showApproverFilter = true;
-    // showUploadCsv = true; // PO Header upload can be complex, usually items are separate
-    // csvTemplateLink = '/templates/purchase_orders_template.csv'; 
+    filterConfig = { ...filterConfig, showApproverFilter: true };
   } else if (documentType === 'quote') {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';
-    showSiteFilter = false; // Quotes are client-based, not site-based for Jachris
-    showRequestorFilter = false; // Quotes might have a creatorEmail, not a standard requestor user
-    showUploadCsv = true;
-    csvTemplateLink = '/templates/quotes_template.csv';
+    filterConfig = { ...filterConfig, showSiteFilter: false, showRequestorFilter: false }; // Quotes might have creator, not standard requestor user
+    showUploadCsv = true; csvTemplateLink = '/templates/quotes_template.csv';
   } else if (documentType === 'requisition') {
     columnsToUse = requisitionColumns as ColumnDef<any>[];
     listTitle = 'Purchase Requisitions';
-    // Requisitions are internal, might not need approver filter here directly, but requestor and site are key
+    filterConfig = { ...filterConfig, showStatusFilter: true }; // Enable status filter for requisitions
   } else if (documentType === 'fuel') {
     columnsToUse = fuelRecordColumns as ColumnDef<any>[];
     listTitle = 'Fuel Records';
-    showRequestorFilter = false; // Fuel records have a recorder, not a requestor in the same sense
-    showTagFilter = true;
-    showDriverFilter = true;
-    // showUploadCsv = true; // CSV upload for fuel records can be enabled
-    // csvTemplateLink = '/templates/fuel_records_template.csv';
+    filterConfig = { ...filterConfig, showRequestorFilter: false, showTagFilter: true, showDriverFilter: true };
+    // showUploadCsv = true; csvTemplateLink = '/templates/fuel_records_template.csv'; // Can be enabled later
   } else {
-     // Default or GRN (which is not a primary list view yet)
      columnsToUse = [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
      listTitle = `${documentType.toUpperCase()}s`;
   }
@@ -332,11 +369,12 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       <CardContent>
         <FilterBar
           onFilterApply={handleFilterApply}
-          showApproverFilter={showApproverFilter}
-          showRequestorFilter={showRequestorFilter}
-          showSiteFilter={showSiteFilter}
-          showTagFilter={showTagFilter}
-          showDriverFilter={showDriverFilter}
+          showApproverFilter={filterConfig.showApproverFilter}
+          showRequestorFilter={filterConfig.showRequestorFilter}
+          showSiteFilter={filterConfig.showSiteFilter}
+          showTagFilter={filterConfig.showTagFilter}
+          showDriverFilter={filterConfig.showDriverFilter}
+          // showStatusFilter={filterConfig.showStatusFilter} // Prop needs to be added to FilterBar if we want it
         />
         <div className="mt-4 flex justify-end gap-2">
           {showUploadCsv && (
@@ -353,10 +391,6 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
               )}
             </>
           )}
-          {/* Excel download can be re-enabled when reporting is more mature */}
-          {/* <Button onClick={handleDownloadExcel} variant="outline">
-            <Download className="mr-2 h-4 w-4" /> Download to Excel
-          </Button> */}
         </div>
         <div className="mt-4">
           {isLoading ? (
@@ -382,6 +416,29 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
           )}
         </div>
       </CardContent>
+       {documentToDelete && (
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this {documentType.toUpperCase()}? This action cannot be undone.
+                {(documentType === 'po' || documentType === 'quote' || documentType === 'requisition') && 
+                 (documentToDelete as any).status !== 'Draft' && 
+                 <span className="font-bold text-destructive block mt-2">Warning: This document is not in 'Draft' status. Deleting it may have unintended consequences.</span>
+                }
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting} onClick={() => setIsDeleteDialogOpen(false)}>Cancel</AlertDialogCancel>
+              <Button onClick={confirmDelete} variant="destructive" disabled={isDeleting}>
+                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </Card>
   );
 }

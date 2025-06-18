@@ -1,14 +1,13 @@
 
 import React from 'react';
-import type { RequisitionPayload, RequisitionItem, Site, Category } from '@/types';
-import { mockSitesData, mockCategoriesData } from '@/lib/mock-data'; // For fetching names
+import type { RequisitionPayload, RequisitionItem } from '@/types'; // Removed unused Site, Category
 
 interface PrintableRequisitionProps {
   requisitionData: RequisitionPayload;
-  logoDataUri?: string; // Similar to PrintablePO
+  logoDataUri?: string; 
 }
 
-const JACHRIS_COMPANY_DETAILS = { // Re-use or centralize this
+const JACHRIS_COMPANY_DETAILS = { 
   name: 'JACHRIS MOZAMBIQUE (LTD)',
   logoUrl: '/jachris-logo.png',
 };
@@ -21,16 +20,15 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     : 'N/A';
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
-  const siteName = requisitionData.siteId 
-    ? mockSitesData.find(s => s.id === requisitionData.siteId)?.name || `Site ID: ${requisitionData.siteId}`
-    : 'N/A';
+  // Use siteName directly from requisitionData if available from API join
+  const siteName = requisitionData.siteName || (requisitionData.siteId ? `Site ID: ${requisitionData.siteId}`: 'N/A');
 
   const formatCurrency = (value: number | undefined | null) => {
     if (value === undefined || value === null) return '0.00';
     return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const printableItems = (items || []) as RequisitionItem[];
+  const printableItems = (items || []) as (RequisitionItem & {categoryName?: string})[]; // Expect categoryName from API
 
   return (
     <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
@@ -84,9 +82,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
           </thead>
           <tbody>
             {printableItems.map((item, index) => {
-              const categoryName = item.categoryId 
-                ? mockCategoriesData.find(c => c.id === item.categoryId)?.category || `Cat. ID: ${item.categoryId}`
-                : 'N/A';
+              const categoryName = item.categoryName || (item.categoryId ? `Cat. ID: ${item.categoryId}` : 'N/A');
               const itemTotalEst = (item.quantity || 0) * (item.estimatedUnitPrice || 0);
               return (
                 <tr key={item.id || index}>
@@ -100,7 +96,6 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
                 </tr>
               );
             })}
-            {/* Fill empty rows for consistent table height */}
             {Array.from({ length: Math.max(0, 8 - printableItems.length) }).map((_, i) => (
                 <tr key={`empty-${i}`}>
                     <td className="border border-gray-400 p-2 h-7">&nbsp;</td>
@@ -153,4 +148,3 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     </div>
   );
 }
-

@@ -242,7 +242,7 @@ export interface QuoteItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  quoteId?: string; 
+  quoteId?: string; // This is the foreign key to Quote table
 }
 
 export type QuoteStatus = 'Draft' | 'Pending Approval' | 'Approved' | 'Rejected' | 'Sent to Client' | 'Archived';
@@ -270,15 +270,18 @@ export interface QuotePayload {
   updatedAt?: string; 
 }
 
+export type RequisitionStatus = 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
+
 export interface RequisitionItem {
   id: string;
-  partNumber?: string;
+  requisitionId?: string; // Foreign key to Requisition table
+  partNumber?: string | null;
   description: string;
   categoryId: number | null;
+  categoryName?: string; // For display purposes
   quantity: number;
   estimatedUnitPrice?: number | null;
-  notes?: string;
-  requisitionId?: string; 
+  notes?: string | null;
 }
 
 export interface RequisitionPayload {
@@ -287,12 +290,16 @@ export interface RequisitionPayload {
   requisitionDate: string; 
   requestedByUserId?: string | null; 
   requestedByName: string; 
+  requestorFullName?: string; // From joining User table
   siteId: number | null; 
-  status: 'Draft' | 'Submitted for Approval' | 'Approved' | 'Rejected' | 'Closed';
-  justification?: string;
+  siteName?: string; // From joining Site table
+  siteCode?: string; // From joining Site table
+  status: RequisitionStatus;
+  justification?: string | null;
   items: RequisitionItem[];
   totalEstimatedValue?: number;
-  siteName?: string; 
+  createdAt?: string; 
+  updatedAt?: string; 
 }
 
 export type TagStatus = 'Active' | 'Inactive' | 'Under Maintenance' | 'Sold' | 'Decommissioned';
@@ -358,5 +365,3 @@ export interface SurveyFormValues {
   mostUsedFeatures: string;
   suggestions: string;
 }
-
-    

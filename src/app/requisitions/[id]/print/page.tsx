@@ -26,7 +26,7 @@ function PrintRequisitionPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const reqRes = await fetch(`/api/requisitions/${requisitionId}`); // Mocked API
+      const reqRes = await fetch(`/api/requisitions/${requisitionId}`); 
       if (!reqRes.ok) {
         const errorData = await reqRes.json().catch(() => ({ message: 'Failed to fetch requisition details.' }));
         throw new Error(errorData.message || `Failed to fetch requisition: ${reqRes.statusText}`);
@@ -34,7 +34,6 @@ function PrintRequisitionPageContent() {
       const data: RequisitionPayload = await reqRes.json();
       setRequisitionData(data);
 
-      // Fetch logo (similar to other print pages)
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
         if (logoResponse.ok) {
@@ -70,7 +69,6 @@ function PrintRequisitionPageContent() {
     window.print();
   };
   
-  // PDF Download for Requisitions - Placeholder for now
   const handleDownloadPdf = async () => {
     toast({
       title: 'Feature Not Implemented',

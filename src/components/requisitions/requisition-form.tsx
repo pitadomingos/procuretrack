@@ -17,16 +17,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Trash2, Save, Eye, Loader2 } from 'lucide-react';
-import type { Site, Category as CategoryType, RequisitionItem, RequisitionPayload } from '@/types';
+import type { Site, Category as CategoryType, RequisitionItem, RequisitionPayload, User } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
+import { randomUUID } from 'crypto';
 
-const defaultItem: RequisitionItem = { id: crypto.randomUUID(), partNumber: '', description: '', categoryId: null, quantity: 1, estimatedUnitPrice: 0.00, notes: '' };
+
+const defaultItem: RequisitionItem = { id: '', partNumber: '', description: '', categoryId: null, quantity: 1, estimatedUnitPrice: 0.00, notes: '' };
 
 interface RequisitionFormValues {
-  requestedByName: string;
+  requestedByUserId: string | null; // Changed from requestedByName to ID
+  requestedByNameDisplay: string; // For display, can be fetched or entered
   siteId: string | null;
   requisitionDate: string;
   requisitionNumberDisplay: string;
@@ -34,8 +37,10 @@ interface RequisitionFormValues {
   items: RequisitionItem[];
 }
 
-const MOCK_REQUESTOR_USER_ID = 'USR_MOCK_001';
-const MOCK_REQUESTOR_NAME = 'Mock User';
+// Placeholder for actual logged-in user logic
+const MOCK_LOGGED_IN_USER_ID = 'user_005'; // e.g., Gil Lunguze
+const MOCK_LOGGED_IN_USER_NAME = 'Gil Lunguze';
+
 
 export function RequisitionForm() {
   const { toast } = useToast();
@@ -46,15 +51,18 @@ export function RequisitionForm() {
 
   const [sites, setSites] = useState<Site[]>([]);
   const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [users, setUsers] = useState<User[]>([]); // For requestor dropdown
+
 
   const form = useForm<RequisitionFormValues>({
     defaultValues: {
-      requestedByName: MOCK_REQUESTOR_NAME,
+      requestedByUserId: MOCK_LOGGED_IN_USER_ID, // Default to mock logged in user
+      requestedByNameDisplay: MOCK_LOGGED_IN_USER_NAME, // For display
       siteId: null,
       requisitionDate: format(new Date(), 'yyyy-MM-dd'),
       requisitionNumberDisplay: 'Loading REQ...',
       justification: '',
-      items: [defaultItem],
+      items: [{...defaultItem, id: crypto.randomUUID()}],
     },
     mode: 'onBlur',
   });
@@ -67,9 +75,10 @@ export function RequisitionForm() {
   const fetchInitialData = useCallback(async () => {
     setIsLoadingInitialData(true);
     try {
-      const [sitesRes, categoriesRes, nextReqNumRes] = await Promise.all([
+      const [sitesRes, categoriesRes, usersRes, nextReqNumRes] = await Promise.all([
         fetch('/api/sites'),
         fetch('/api/categories'),
+        fetch('/api/users'), // Fetch users for requestor selection
         fetch('/api/requisitions/next-requisition-number')
       ]);
 
@@ -79,6 +88,9 @@ export function RequisitionForm() {
       if (categoriesRes.ok) setCategories(await categoriesRes.json());
       else toast({ title: "Error", description: "Could not load categories.", variant: "destructive" });
       
+      if (usersRes.ok) setUsers(await usersRes.json());
+      else toast({ title: "Error", description: "Could not load users.", variant: "destructive" });
+      
       if (nextReqNumRes.ok) {
         const data = await nextReqNumRes.json();
         form.setValue('requisitionNumberDisplay', data.nextRequisitionNumber || 'REQ-ERROR');
@@ -86,13 +98,21 @@ export function RequisitionForm() {
         form.setValue('requisitionNumberDisplay', 'REQ-ERROR');
         toast({ title: "Error", description: "Could not load next requisition number.", variant: "destructive" });
       }
+      // Set default requestor based on mock (or future auth)
+      const defaultUser = users.find(u => u.id === MOCK_LOGGED_IN_USER_ID);
+      if (defaultUser) {
+        form.setValue('requestedByUserId', defaultUser.id);
+        form.setValue('requestedByNameDisplay', defaultUser.name);
+      }
+
+
     } catch (error) {
       toast({ title: "Error Loading Data", description: "Could not load initial form data for requisitions.", variant: "destructive" });
       form.setValue('requisitionNumberDisplay', 'REQ-ERROR');
     } finally {
         setIsLoadingInitialData(false);
     }
-  }, [form, toast]);
+  }, [form, toast, users]); // Added users to dependency array
 
   useEffect(() => {
     fetchInitialData();
@@ -111,24 +131,34 @@ export function RequisitionForm() {
     setTotalEstimatedValue(parseFloat(calculatedTotal.toFixed(2)));
   }, [watchedItems]);
 
+  const handleRequestorChange = (userId: string | null) => {
+    const selectedUser = users.find(u => u.id === userId);
+    form.setValue('requestedByNameDisplay', selectedUser ? selectedUser.name : 'N/A (User ID if not found)');
+    form.setValue('requestedByUserId', userId);
+  };
+
   const onSubmitAndPreview = async (formData: RequisitionFormValues) => {
     if (!formData.items || formData.items.length === 0) {
       toast({ title: "Validation Error", description: "Please add at least one item to the requisition.", variant: "destructive" });
       return;
     }
+    if (!formData.requestedByUserId) {
+      toast({ title: "Validation Error", description: "Please select a requestor.", variant: "destructive" });
+      return;
+    }
     setIsSubmitting(true);
 
     const payload: RequisitionPayload = {
-      id: `MOCK-REQID-${Date.now()}`, // Mock ID generation
+      id: crypto.randomUUID(), // Server will generate ID if not provided, but good practice for items
       requisitionNumber: formData.requisitionNumberDisplay,
       requisitionDate: new Date(formData.requisitionDate).toISOString(),
-      requestedByUserId: MOCK_REQUESTOR_USER_ID,
-      requestedByName: formData.requestedByName,
+      requestedByUserId: formData.requestedByUserId,
+      requestedByName: formData.requestedByNameDisplay, // Send the display name as well
       siteId: formData.siteId ? Number(formData.siteId) : null,
-      status: 'Draft',
+      status: 'Draft', // New requisitions start as Draft
       justification: formData.justification,
       items: formData.items.map(item => ({
-        id: item.id,
+        id: item.id || crypto.randomUUID(), // Ensure each item has an ID
         partNumber: item.partNumber,
         description: item.description,
         categoryId: item.categoryId ? Number(item.categoryId) : null,
@@ -152,8 +182,14 @@ export function RequisitionForm() {
       }
 
       const result = await response.json();
-      toast({ title: 'Requisition Saved (Simulated)', description: `Requisition ${payload.requisitionNumber} has been saved.` });
+      toast({ title: 'Requisition Saved', description: `Requisition ${result.requisitionNumber} has been saved with ID ${result.requisitionId}.` });
+      
+      // Navigate to print preview page
       router.push(`/requisitions/${result.requisitionId}/print`);
+      
+      // Optionally, reset form for a new entry after successful submission and navigation
+      // fetchInitialData(); // to get new req number and reset other fields
+      // form.reset(); // reset specific fields as needed
 
     } catch (error: any) {
       toast({ title: 'Error Saving Requisition', description: error.message || 'An unexpected error occurred.', variant: "destructive" });
@@ -180,7 +216,18 @@ export function RequisitionForm() {
             <div className="grid md:grid-cols-3 gap-4">
               <FormField control={form.control} name="requisitionNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>Requisition Number</FormLabel> <FormControl><Input {...field} readOnly /></FormControl> <FormMessage /> </FormItem> )} />
               <FormField control={form.control} name="requisitionDate" rules={{ required: 'Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requisition Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="requestedByName" rules={{ required: 'Requested By name is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requested By</FormLabel> <FormControl><Input placeholder="Enter your name" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField 
+                control={form.control} name="requestedByUserId" rules={{ required: 'Requested By is required' }}
+                render={({ field }) => ( 
+                <FormItem> 
+                  <FormLabel>Requested By</FormLabel> 
+                  <Select onValueChange={(value) => { field.onChange(value); handleRequestorChange(value); }} value={field.value || ''}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select Requestor" /></SelectTrigger></FormControl>
+                      <SelectContent>{users.map(u => (<SelectItem key={u.id} value={u.id}>{u.name} ({u.email || u.role})</SelectItem>))}</SelectContent>
+                  </Select>
+                  <FormMessage /> 
+                </FormItem> 
+              )} />
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -223,7 +270,7 @@ export function RequisitionForm() {
                     <FormField control={form.control} name={`items.${index}.partNumber`} render={({ field }) => (
                       <FormItem className="lg:col-span-2">
                         <FormLabel>Part Number</FormLabel>
-                        <FormControl><Input placeholder="Optional" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Optional" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => (
@@ -236,7 +283,7 @@ export function RequisitionForm() {
                      <FormField control={form.control} name={`items.${index}.categoryId`} rules={{ required: 'Category is required' }} render={({ field }) => (
                       <FormItem className="lg:col-span-2">
                         <FormLabel>Category</FormLabel>
-                        <Select onValueChange={(v) => field.onChange(Number(v))} value={field.value?.toString() || ''}>
+                        <Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ''}>
                           <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
                           <SelectContent>{categories.map(cat => (<SelectItem key={cat.id} value={cat.id.toString()}>{cat.category}</SelectItem>))}</SelectContent>
                         </Select>
@@ -264,7 +311,7 @@ export function RequisitionForm() {
                      <FormField control={form.control} name={`items.${index}.notes`} render={({ field }) => (
                       <FormItem className="lg:col-span-1">
                         <FormLabel>Item Notes</FormLabel>
-                        <FormControl><Input placeholder="Optional notes" {...field} /></FormControl>
+                        <FormControl><Input placeholder="Optional notes" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
                     )} />
                   </div>

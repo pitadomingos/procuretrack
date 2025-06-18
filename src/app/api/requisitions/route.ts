@@ -1,30 +1,74 @@
 
 import { NextResponse } from 'next/server';
-import type { RequisitionPayload } from '@/types';
-import { mockRequisitionsData } from '@/lib/mock-data'; // Using mock data
-
-// Mock database for requisitions
-const MOCK_REQUISITIONS_DB: RequisitionPayload[] = [...mockRequisitionsData];
+import { pool } from '../../../../backend/db.js';
+import type { RequisitionPayload, RequisitionItem } from '@/types';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
+  let connection;
   try {
     const requisitionData = await request.json() as RequisitionPayload;
     
-    const newRequisitionId = `MOCK-REQID-${Date.now()}`; 
-    const newRequisition: RequisitionPayload = {
-      ...requisitionData,
-      id: newRequisitionId,
-      status: 'Draft', // Default status
-    };
-    MOCK_REQUISITIONS_DB.push(newRequisition);
+    if (!requisitionData.id) requisitionData.id = randomUUID();
+    if (!requisitionData.requisitionNumber || !requisitionData.requisitionDate || !requisitionData.requestedByName || !requisitionData.siteId) {
+        return NextResponse.json({ error: 'Missing required fields for requisition header.' }, { status: 400 });
+    }
+    if (!requisitionData.items || requisitionData.items.length === 0) {
+        return NextResponse.json({ error: 'Requisition must have at least one item.' }, { status: 400 });
+    }
 
-    console.log('Mocked saving requisition:', newRequisition);
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
 
-    return NextResponse.json({ message: 'Requisition saved successfully (simulated)', requisitionId: newRequisitionId }, { status: 201 });
+    await connection.execute(
+      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, justification, totalEstimatedValue, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        requisitionData.id,
+        requisitionData.requisitionNumber,
+        new Date(requisitionData.requisitionDate).toISOString().slice(0, 19).replace('T', ' '),
+        requisitionData.requestedByUserId || null, // Assuming a mock or logged-in user ID will be passed
+        requisitionData.requestedByName,
+        Number(requisitionData.siteId),
+        requisitionData.status || 'Draft',
+        requisitionData.justification,
+        requisitionData.totalEstimatedValue || 0,
+      ]
+    );
+
+    for (const item of requisitionData.items) {
+      if (!item.description || !item.quantity) {
+          await connection.rollback();
+          return NextResponse.json({ error: `Item description and quantity are required. Item problematic: ${JSON.stringify(item)}` }, { status: 400 });
+      }
+      await connection.execute(
+        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, estimatedUnitPrice, notes, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          item.id || randomUUID(), // Ensure item has an ID
+          requisitionData.id, 
+          item.partNumber, 
+          item.description, 
+          item.categoryId ? Number(item.categoryId) : null, 
+          Number(item.quantity), 
+          item.estimatedUnitPrice ? Number(item.estimatedUnitPrice) : 0, 
+          item.notes
+        ]
+      );
+    }
+
+    await connection.commit();
+    return NextResponse.json({ message: 'Requisition created successfully', requisitionId: requisitionData.id, requisitionNumber: requisitionData.requisitionNumber }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Error creating requisition (mock):', error);
-    return NextResponse.json({ error: 'Failed to create requisition.', details: error.message }, { status: 500 });
+    if (connection) await connection.rollback();
+    console.error('[API_ERROR] /api/requisitions POST:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+        return NextResponse.json({ error: 'Requisition with this ID or Number already exists.', details: error.message }, { status: 409 });
+    }
+    return NextResponse.json({ error: 'Failed to create requisition.', details: error.message, code: error.code }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }
 
@@ -32,29 +76,56 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
-  // Add other filters like siteId, requestedByUserId if needed for requisitions
+  const siteId = searchParams.get('siteId');
+  const requestedByUserId = searchParams.get('requestedByUserId');
+  const status = searchParams.get('status');
 
-  // Basic filtering simulation for month and year on mock data
-  let filteredRequisitions = MOCK_REQUISITIONS_DB;
+  let query = `
+    SELECT 
+      r.id, r.requisitionNumber, r.requisitionDate, r.requestedByName, r.status, r.totalEstimatedValue,
+      s.name as siteName, s.siteCode,
+      u.name as requestorFullName
+    FROM Requisition r
+    LEFT JOIN Site s ON r.siteId = s.id
+    LEFT JOIN User u ON r.requestedByUserId = u.id
+    WHERE 1=1
+  `;
+  const queryParams: (string | number)[] = [];
 
   if (month && month !== 'all') {
-    filteredRequisitions = filteredRequisitions.filter(req => {
-      const reqMonth = new Date(req.requisitionDate).getMonth() + 1;
-      return reqMonth.toString().padStart(2, '0') === month;
-    });
+    query += ' AND MONTH(r.requisitionDate) = ?';
+    queryParams.push(parseInt(month, 10));
   }
   if (year && year !== 'all') {
-    filteredRequisitions = filteredRequisitions.filter(req => {
-      const reqYear = new Date(req.requisitionDate).getFullYear();
-      return reqYear.toString() === year;
-    });
+    query += ' AND YEAR(r.requisitionDate) = ?';
+    queryParams.push(parseInt(year, 10));
   }
-  // Add more filtering logic here based on other params
+  if (siteId && siteId !== 'all') {
+    query += ' AND r.siteId = ?';
+    queryParams.push(parseInt(siteId, 10));
+  }
+  if (requestedByUserId && requestedByUserId !== 'all') {
+    query += ' AND r.requestedByUserId = ?';
+    queryParams.push(requestedByUserId);
+  }
+  if (status && status !== 'all') {
+    query += ' AND r.status = ?';
+    queryParams.push(status);
+  }
+
+  query += ' ORDER BY r.requisitionDate DESC, r.requisitionNumber DESC';
 
   try {
-    return NextResponse.json(filteredRequisitions);
-  } catch (error) {
-    console.error('Error fetching requisitions (mock):', error);
-    return NextResponse.json({ error: 'Failed to fetch requisitions' }, { status: 500 });
+    const [rows]: any[] = await pool.execute(query, queryParams);
+    const requisitions = rows.map(row => ({
+        ...row,
+        siteName: row.siteCode || row.siteName, // Prefer siteCode for display
+        requestedByName: row.requestorFullName || row.requestedByName, // Prefer joined name
+        totalEstimatedValue: parseFloat(row.totalEstimatedValue || 0)
+    }));
+    return NextResponse.json(requisitions);
+  } catch (error: any) {
+    console.error('[API_ERROR] /api/requisitions GET:', error);
+    return NextResponse.json({ error: 'Failed to fetch requisitions', details: error.message }, { status: 500 });
   }
 }
