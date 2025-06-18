@@ -3,7 +3,7 @@
 
 import { SurveyForm } from '@/components/survey/survey-form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MessageSquareQuestion } from 'lucide-react';
+import { MessageCircleQuestion } from 'lucide-react'; // Corrected Icon
 
 export default function SurveyPage() {
   return (
@@ -11,7 +11,7 @@ export default function SurveyPage() {
       <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
         <CardHeader>
           <div className="flex items-center space-x-3">
-            <MessageSquareQuestion className="h-8 w-8 text-primary" />
+            <MessageCircleQuestion className="h-8 w-8 text-primary" /> {/* Corrected Icon Usage */}
             <div>
               <CardTitle className="font-headline text-2xl">Application Feedback Survey</CardTitle>
               <CardDescription>
@@ -30,3 +30,4 @@ export default function SurveyPage() {
     </div>
   );
 }
+
