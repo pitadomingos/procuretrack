@@ -6,8 +6,8 @@ import { GroupedStatCard } from '@/components/dashboard/grouped-stat-card';
 import { FilterBar } from '@/components/shared/filter-bar';
 import { MonthlyStatusChart } from '@/components/dashboard/monthly-status-chart';
 import { SitePOValueStatusChart } from '@/components/dashboard/site-po-value-status-chart';
-import { RequisitionsByStatusChart } from '@/components/dashboard/requisitions-by-status-chart'; // New Chart
-import { QuotesByStatusChart } from '@/components/dashboard/quotes-by-status-chart'; // New Chart
+import { RequisitionsByStatusChart } from '@/components/dashboard/requisitions-by-status-chart';
+import { QuotesByStatusChart } from '@/components/dashboard/quotes-by-status-chart';
 import { ActivityLogTable } from '@/components/shared/activity-log-table';
 import type { GroupedStatCardItem, FetchedDashboardStats, SubStat, ActivityLogEntry } from '@/types';
 import { Loader2, AlertTriangle, RefreshCw, Users, ShoppingCart, Truck, ClipboardList, Fuel, FileText as QuoteIcon } from 'lucide-react';
@@ -36,7 +36,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Link to PO tab
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Goods Received',
@@ -45,7 +45,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Approved POs (Open)', value: 'N/A' },
       { label: 'POs with GRN Activity', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Link to GRN tab
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Purchase Requisitions',
@@ -53,7 +53,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
     subStats: [
       { label: 'Total Requisitions', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Link to Requisition tab
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Fuel Management',
@@ -62,7 +62,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Total Vehicles/Tags', value: 'N/A' },
       { label: 'Total Fuel Records', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Link to Fuel tab
+    viewMoreLink: '/create-document', 
   },
   {
     title: 'Client Quotations',
@@ -73,7 +73,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected Quotes', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', // Link to Quote tab
+    viewMoreLink: '/create-document', 
   },
 ];
 
@@ -103,8 +103,9 @@ export default function DashboardPage() {
     try {
       const response = await fetch(`/api/dashboard-stats?${queryParams.toString()}`);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch dashboard stats');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error from dashboard-stats API.' }));
+        const errorMessage = errorData.error || errorData.details || errorData.message || 'Failed to fetch dashboard stats.';
+        throw new Error(errorMessage);
       }
       const data: FetchedDashboardStats = await response.json();
 
@@ -167,17 +168,18 @@ export default function DashboardPage() {
     setIsLoadingActivity(true);
     setActivityError(null);
     try {
-      const response = await fetch('/api/activity-log?limit=5'); // Fetch recent 5 activities
+      const response = await fetch('/api/activity-log?limit=5'); 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch activity log');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response from activity log API.' }));
+        const errorMessage = errorData.error || errorData.details || errorData.message || 'Failed to fetch activity log.';
+        throw new Error(errorMessage);
       }
       const data: ActivityLogEntry[] = await response.json();
       setActivityLog(data);
     } catch (err: any) {
       setActivityError(err.message || 'An unexpected error occurred while fetching activities.');
       console.error("Error fetching activity log:", err);
-      toast({ title: "Error Loading Activity", description: `Could not load activity log: ${err.message}`, variant: "destructive" });
+      toast({ title: "Error Loading Activity", description: err.message || 'Could not load activity log.', variant: "destructive" });
     } finally {
       setIsLoadingActivity(false);
     }
