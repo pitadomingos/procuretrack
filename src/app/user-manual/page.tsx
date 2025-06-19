@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   BookUser, FilePlus2, CheckCircle, Settings, AlertCircle, ArrowRight, UploadCloud, LayoutDashboard,
-  BarChart3, ListChecks as ListChecksIcon, Printer, HelpCircle, Fuel, Truck, FileSignature,
+  BarChart3, ListChecks, Printer, HelpCircle, Fuel, Truck, FileSignature,
   ClipboardList, Tag, Package, Users, Building, CaseSensitive, Edit2, Eye, Trash2, Info,
   FileCode2, Workflow, ShoppingCart, Palette
 } from "lucide-react";
@@ -156,7 +156,7 @@ export default function UserManualPage() {
           </section>
 
           <section id="approvals">
-            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><UserCheck className="mr-2 h-6 w-6 text-primary" />5. My Approvals Page</h2>
+            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><CheckCircle className="mr-2 h-6 w-6 text-primary" />5. My Approvals Page</h2>
             <p>
               This consolidated page lists all documents (Purchase Orders, Client Quotes, Purchase Requisitions) assigned to you (currently mocked as 'pita.domingos@jachris.com') that are in 'Pending Approval' status.
             </p>
@@ -202,7 +202,7 @@ export default function UserManualPage() {
           </section>
           
           <section id="activity-log-page">
-            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><ListChecksIcon className="mr-2 h-6 w-6 text-primary" />8. Activity Log Page</h2>
+            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><ListChecks className="mr-2 h-6 w-6 text-primary" />8. Activity Log Page</h2>
             <p>
              Tracks system and user activities. The Dashboard shows the latest 20 entries. The dedicated "Activity Log" page provides a comprehensive view with filtering by:
             </p>
