@@ -4,30 +4,24 @@ import { pool } from '../../../../backend/db.js'; // Ensure this path is correct
 import type { ActivityLogEntry } from '@/types';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const limitParam = searchParams.get('limit');
-  let limit = limitParam ? parseInt(limitParam, 10) : 100; // Default to 100 logs if no limit specified
-
-  if (isNaN(limit) || limit <= 0) {
-    // If invalid, default to a safe value rather than erroring out, or adjust as needed.
-    console.warn(`[API_WARN] /api/activity-log GET: Invalid limit parameter "${limitParam}". Defaulting to 100.`);
-    limit = 100; 
-  }
+  // Forcing no limit for now to simplify diagnosis
+  console.log('[API_INFO] /api/activity-log GET: Fetching ALL activity logs (limit removed for diagnosis).');
 
   let connection;
   try {
     connection = await pool.getConnection();
-    console.log(`[API_INFO] /api/activity-log GET: Fetching activity log with limit: ${limit}`);
+    console.log(`[API_INFO] /api/activity-log GET: Database connection obtained.`);
 
-    // Diagnostic: Using direct interpolation for LIMIT after validation
+    // Simplest possible query - REMOVED LIMIT CLAUSE ENTIRELY
     const query = `
       SELECT id, user, action, timestamp, details
       FROM ActivityLog
       ORDER BY timestamp DESC
-      LIMIT ${limit}
     `;
-    // const [rows]: any[] = await connection.execute(query, [limit]); // Original
-    const [rows]: any[] = await connection.execute(query); // Changed for diagnostic
+    
+    console.log(`[API_INFO] /api/activity-log GET: Executing query: ${query.replace(/\s+/g, ' ').trim()}`);
+    // NO PARAMETERS PASSED to execute()
+    const [rows]: any[] = await connection.execute(query); 
 
     console.log(`[API_INFO] /api/activity-log GET: Successfully fetched ${rows.length} activity log entries.`);
     
@@ -45,7 +39,7 @@ export async function GET(request: Request) {
     // Log more details from the error object if they exist
     const errorCode = error.code || 'N/A';
     const sqlMessage = error.sqlMessage || error.message; // Prefer sqlMessage if available
-    const details = `Error Code: ${errorCode}. Message: ${sqlMessage}.`;
+    const details = `Error Code: ${errorCode}. Message: ${sqlMessage}. SQL State: ${error.sqlState || 'N/A'}`;
     
     return NextResponse.json(
         { 
