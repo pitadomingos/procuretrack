@@ -13,9 +13,9 @@ import { CheckSquare, PackageSearch, Loader2, FileSearch, AlertTriangle, Printer
 import type { POItemPayload, PurchaseOrderPayload, ApprovedPOForSelect, GRNItemFormData, Site, ConfirmedGRNDetails, ConfirmedGRNItemDetails } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { PrintableGRN } from '@/components/receiving/printable-grn'; // Import the new component
+import { PrintableGRN } from '@/components/receiving/printable-grn'; 
 
-const MOCK_RECEIVED_BY_USER = 'GRN User'; // Placeholder for logged-in user
+const MOCK_RECEIVED_BY_USER = 'GRN User'; 
 
 export function GRNInterface() {
   const { toast } = useToast();
@@ -56,7 +56,6 @@ export function GRNInterface() {
         setErrorMessages(prev => ({ ...prev, poSelect: `Failed to load POs: ${err.message || posRes.statusText}` }));
       }
       
-      // Fetch logo for printable component (once)
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
         if (logoResponse.ok) {
@@ -172,7 +171,7 @@ export function GRNInterface() {
 
     const grnDetails: ConfirmedGRNDetails = {
       grnDate: grnDate,
-      grnNumber: `GRN-${Date.now().toString().slice(-6)}`, // Placeholder GRN Number
+      grnNumber: `GRN-${Date.now().toString().slice(-6)}`, 
       poNumber: loadedPOHeader.poNumber,
       poId: loadedPOHeader.id,
       supplierName: loadedPOHeader.supplierDetails?.supplierName || loadedPOHeader.supplierId,
@@ -182,17 +181,8 @@ export function GRNInterface() {
       items: itemsReceivedForGRN,
     };
 
-    // Simulate GRN submission
     console.log("GRN Data to be 'saved':", grnDetails);
 
-    // In a real app, here you would:
-    // 1. POST grnDetails to a new API endpoint (e.g., /api/grn)
-    // 2. That API endpoint would:
-    //    a. Create a new GRN record in the database.
-    //    b. Create GRNItem records.
-    //    c. Update POItem.quantityReceived and POItem.itemStatus for each affected item.
-    //    d. Potentially update PurchaseOrder.status (e.g., to 'Partially Received' or 'Fully Received').
-    //    e. All within a database transaction.
 
     setConfirmedGrnData(grnDetails);
     setShowGrnConfirmedView(true);
@@ -208,14 +198,13 @@ export function GRNInterface() {
   const handleCreateNewGRN = () => {
     setShowGrnConfirmedView(false);
     setConfirmedGrnData(null);
-    // Reset form fields
     setGrnDate(format(new Date(), 'yyyy-MM-dd'));
     setSelectedPOId('');
     setDeliveryNote('');
     setOverallGrnNotes('');
     setLoadedPOHeader(null);
     setGrnItems([]);
-    fetchInitialData(); // Refresh PO list
+    fetchInitialData(); 
   };
 
   const handlePrintGRN = () => {
@@ -235,22 +224,26 @@ export function GRNInterface() {
 
   if (showGrnConfirmedView && confirmedGrnData) {
     return (
-      <Card className="shadow-xl">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">GRN Confirmed: {confirmedGrnData.grnNumber}</CardTitle>
-          <CardDescription>Goods received for PO: {confirmedGrnData.poNumber}. Review details below.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="my-4 flex flex-wrap gap-2 print-hidden">
-            <Button onClick={handlePrintGRN} variant="outline"><Printer className="mr-2 h-4 w-4" /> Print GRN</Button>
-            <Button onClick={handleDownloadGRNPDF} variant="outline" disabled><Download className="mr-2 h-4 w-4" /> Download PDF (Soon)</Button>
-            <Button onClick={handleCreateNewGRN}><FilePlus className="mr-2 h-4 w-4" /> Create New GRN</Button>
-          </div>
-          <div className="printable-po-content-wrapper border rounded-md p-2 print:border-none print:p-0">
-            <PrintableGRN grnData={confirmedGrnData} logoDataUri={logoDataUri} />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="print-page-container">
+        <div className="print-page-inner-container">
+          <Card className="shadow-xl">
+            <CardHeader>
+              <CardTitle className="font-headline text-2xl">GRN Confirmed: {confirmedGrnData.grnNumber}</CardTitle>
+              <CardDescription>Goods received for PO: {confirmedGrnData.poNumber}. Review details below.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="my-4 flex flex-wrap gap-2 print:hidden print-hidden">
+                <Button onClick={handlePrintGRN} variant="outline"><Printer className="mr-2 h-4 w-4" /> Print GRN</Button>
+                <Button onClick={handleDownloadGRNPDF} variant="outline" disabled><Download className="mr-2 h-4 w-4" /> Download PDF (Soon)</Button>
+                <Button onClick={handleCreateNewGRN}><FilePlus className="mr-2 h-4 w-4" /> Create New GRN</Button>
+              </div>
+              <div className="printable-grn-content">
+                <PrintableGRN grnData={confirmedGrnData} logoDataUri={logoDataUri} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     );
   }
 

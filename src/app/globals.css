@@ -112,8 +112,8 @@ body {
   nav,
   aside,
   footer,
-  div[data-sidebar="sidebar"],
-  .print-hidden {
+  div[data-sidebar="sidebar"], /* Hides the main app sidebar */
+  .print-hidden { /* General class to hide elements like buttons */
     display: none !important;
     visibility: hidden !important;
   }
@@ -129,40 +129,41 @@ body {
     border: none !important;
   }
 
+  /* Specific inner container that might hold the printable component */
   .print-page-inner-container {
      padding: 0 !important;
      margin: 0 !important;
-     max-width: 100% !important;
+     max-width: 100% !important; /* Ensure it doesn't shrink */
      background-color: #ffffff !important; /* Ensure this is also white */
   }
 
+  /* Reset styles for the component that directly wraps the printable content */
   .printable-po-content-wrapper,
-  .printable-quote-content,
-  .printable-requisition-content,
-  .printable-grn-content {
+  .printable-quote-content, 
+  .printable-requisition-content, 
+  .printable-grn-content { 
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0 !important; /* Minimal padding for content, adjust if needed */
     width: 100% !important;
-    max-width: 100% !important;
+    max-width: 100% !important; /* Ensure it takes full width */
     background-color: #ffffff !important;
-    page-break-inside: avoid;
+    page-break-inside: avoid; /* Try to prevent breaking content across pages */
   }
-
-  /* Reset any card styling that might cause issues for the main PO card */
-  .print-page-card { /* This class is on the Card on the print preview page, but should be hidden by .print-hidden */
+  
+  .print-page-card { 
     box-shadow: none !important;
     border: none !important;
-    padding: 0 !important;
+    padding: 0 !important; 
     margin: 0 !important;
     background-color: #ffffff !important;
   }
 
   /* Attempt to control page breaks and sizing better */
   @page {
-    size: A4 portrait;
-    margin: 0.75cm;
+    size: A4 portrait; 
+    margin: 0.75cm; 
   }
 
   /* Remove transitions and transforms that might interfere with print */
@@ -174,9 +175,9 @@ body {
 
   /* Ensure table borders are visible and simple for print */
   table, th, td {
-    border: 1px solid #000000 !important;
+    border: 1px solid #000000 !important; /* Simple black border for tables */
   }
   th, td {
-    padding: 4pt !important;
+    padding: 4pt !important; /* Adjust padding for print */
   }
 }

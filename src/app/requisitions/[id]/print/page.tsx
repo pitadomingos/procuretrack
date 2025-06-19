@@ -95,7 +95,8 @@ function PrintRequisitionPageContent() {
 
   const handleEditRequisition = () => {
     if (!requisitionData || !requisitionId) return;
-    toast({ title: 'Info', description: 'Requisition editing via the main form is not yet fully supported. This action is a placeholder.' });
+    // Navigate to the edit page using the create-document route with a query parameter
+    router.push(`/create-document?editRequisitionId=${requisitionId}`);
   };
 
 
@@ -131,12 +132,12 @@ function PrintRequisitionPageContent() {
     );
   }
   
-  const canEditRequisition = requisitionData.status === 'Draft' || requisitionData.status === 'Pending Approval';
+  const canEditRequisition = requisitionData.status === 'Draft' || requisitionData.status === 'Pending Approval' || requisitionData.status === 'Rejected';
 
 
   return (
-    <div className="print-page-container bg-gray-100 min-h-screen py-2 print:bg-white print:py-0">
-      <div className="print-page-inner-container container mx-auto max-w-4xl print:max-w-full print:p-0">
+    <div className="print-page-container">
+      <div className="print-page-inner-container">
         <Card className="mb-6 print:hidden shadow-lg">
           <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
@@ -158,7 +159,7 @@ function PrintRequisitionPageContent() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Close Preview
               </Button>
               {canEditRequisition && (
-                <Button onClick={handleEditRequisition} variant="outline" size="sm" title="Edit Requisition (Placeholder)">
+                <Button onClick={handleEditRequisition} variant="outline" size="sm" title="Edit Requisition">
                   <Edit className="mr-2 h-4 w-4" /> Edit
                 </Button>
               )}
@@ -172,7 +173,7 @@ function PrintRequisitionPageContent() {
           </CardContent>
         </Card>
         
-        <div className="printable-po-content-wrapper bg-white p-2 sm:p-4 print:p-0 shadow-lg">
+        <div className="printable-requisition-content">
          <PrintableRequisition requisitionData={requisitionData} logoDataUri={logoDataUri} />
         </div>
       </div>
