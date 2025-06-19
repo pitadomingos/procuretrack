@@ -1,6 +1,11 @@
 
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { BookUser, FilePlus2, CheckCircle, Settings, AlertCircle, ArrowRight, UploadCloud, LayoutDashboard, BarChart3, ListChecks as ListChecksIcon, Printer, HelpCircle, Fuel, Truck, FileSignature, ClipboardList, TagIcon as TagLucideIcon, Users, Building, PackageIcon as PackageIconLucide, CaseSensitive, Workflow, Palette, FileCode2, Info, ShoppingCart, Edit2, Eye, Trash2, Package as PackageComponentIcon, Edit } from "lucide-react";
+import {
+  BookUser, FilePlus2, CheckCircle, Settings, AlertCircle, ArrowRight, UploadCloud, LayoutDashboard,
+  BarChart3, ListChecks as ListChecksIcon, Printer, HelpCircle, Fuel, Truck, FileSignature,
+  ClipboardList, Tag as TagLucideIcon, Package as PackageIcon, Users, Building, CaseSensitive, Edit2, Eye, Trash2, Edit, Palette, Info, FileCode2, Workflow, ShoppingCart
+} from "lucide-react";
 
 export default function UserManualPage() {
   return (
@@ -48,7 +53,7 @@ export default function UserManualPage() {
               <li><strong>Filter Bar:</strong> Allows filtering of dashboard statistics by month and year.</li>
               <li><strong>Statistic Cards:</strong> Display summarized counts for Users, Purchase Orders, Goods Received, Requisitions, Fuel Management, and Client Quotes.</li>
               <li><strong>Charts:</strong> Visual representations of Monthly PO Status, PO Value by Site & Status, Requisitions by Status, and Quotes by Status.</li>
-              <li><strong>Recent Activity Log:</strong> Shows the latest 20 system and user activities.</li>
+              <li><strong>Recent Activity Log:</strong> Shows the latest 20 system and user activities fetched from the database.</li>
               <li><strong>Refresh Data:</strong> A button to manually refresh all dashboard data.</li>
             </ul>
           </section>
@@ -82,7 +87,7 @@ export default function UserManualPage() {
                     <ul className="list-['--'] list-inside ml-6">
                        <li><strong>View/Print (<Eye className="inline h-4 w-4" />):</strong> Opens a print-friendly preview page with options to print or download PDF.</li>
                        <li><strong>Edit (<Edit className="inline h-4 w-4" />):</strong> Available for 'Draft', 'Pending Approval', 'Rejected' POs. Takes you back to the PO form.</li>
-                       <li><strong>Delete (<Trash2 className="inline h-4 w-4 text-destructive" />):</strong> Available for 'Draft' and 'Rejected' POs.</li>
+                       <li><strong>Delete (<Trash2 className="inline h-4 w-4 text-destructive" />):</strong> Available for 'Draft' and 'Rejected' POs. A confirmation dialog will appear.</li>
                     </ul>
                   </li>
                 </ul>
@@ -116,7 +121,7 @@ export default function UserManualPage() {
                   <li><strong>Load Existing Quote for Editing:</strong> Type an existing Quote number and click "Load". Editable if in 'Draft' or 'Pending Approval' status.</li>
                   <li><strong>Terms & Notes:</strong> Add specific terms and conditions or additional notes for the client.</li>
                   <li><strong>Submission & Status:</strong> Assigning an approver and saving typically sets the status to 'Pending Approval'. If no approver is assigned, the Quote is saved as 'Draft'.</li>
-                  <li><strong>List View Actions:</strong> Similar to POs (View/Print, Edit for 'Draft'/'Pending Approval', Delete for 'Draft'/'Rejected').</li>
+                  <li><strong>List View Actions:</strong> Similar to POs (View/Print, Edit for 'Draft'/'Pending Approval', Delete for 'Draft'/'Rejected'). A confirmation dialog will appear for deletion.</li>
                 </ul>
               </div>
 
@@ -125,9 +130,9 @@ export default function UserManualPage() {
                 <p>Internal requests for goods or services. Accessible via "Create Document" &rarr; "Requisitions" tab.</p>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Create New Requisition:</strong> Select requestor, site/department for the requisition header, date, assign an approver (optional). Add line items with part numbers, descriptions, categories, quantities, and item-specific justification.</li>
-                   <li><strong>Load Existing Requisition for Editing:</strong> Available via "List of Requisitions" &rarr; Edit icon. Editable if in 'Draft', 'Pending Approval', or 'Rejected' status.</li>
+                   <li><strong>Load Existing Requisition for Editing:</strong> Available via "List of Requisitions" &rarr; Edit icon (<Edit className="inline h-4 w-4" />). Editable if in 'Draft', 'Pending Approval', or 'Rejected' status.</li>
                   <li><strong>Submission & Status:</strong> Assigning an approver and saving typically sets the status to 'Pending Approval'. If no approver is assigned, the Requisition is saved as 'Draft'. Editing a 'Rejected' Requisition and re-assigning an approver will move it to 'Pending Approval'.</li>
-                  <li><strong>List View Actions:</strong> Similar to POs (View/Print, Edit for 'Draft'/'Pending Approval'/'Rejected', Delete for 'Draft'/'Rejected').</li>
+                  <li><strong>List View Actions:</strong> Similar to POs (View/Print, Edit for 'Draft'/'Pending Approval'/'Rejected', Delete for 'Draft'/'Rejected'). A confirmation dialog will appear for deletion.</li>
                 </ul>
               </div>
 
@@ -137,7 +142,7 @@ export default function UserManualPage() {
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Record Entry:</strong> Select date, tag (vehicle/equipment), site, enter driver name, odometer reading, fuel quantity, unit cost, and other optional details like Requisition No. or Invoice No.</li>
                   <li><strong>Total Cost:</strong> Calculated automatically.</li>
-                  <li><strong>List View:</strong> Displays logged records. "Distance Travelled" between entries for the same tag is calculated and shown.</li>
+                  <li><strong>List View:</strong> Displays logged records. "Distance Travelled" between entries for the same tag is calculated and shown. Filters for list view include Month, Year, Site, Tag, and Driver name.</li>
                 </ul>
               </div>
             </div>
@@ -160,11 +165,11 @@ export default function UserManualPage() {
           <section id="management">
             <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><Settings className="mr-2 h-6 w-6 text-primary" />6. Management Section</h2>
             <p>
-              The Management hub allows administrators to configure core data entities required for the application's operation. Each sub-section provides a list view with Add, Edit, and Delete capabilities.
+              The Management hub allows administrators to configure core data entities required for the application's operation. Each sub-section provides a list view with Add, Edit, and Delete capabilities (with confirmation dialogs).
             </p>
             <ul className="list-disc list-inside ml-4 mt-1 space-y-2">
               <li><strong>Sites (<Building className="inline h-4 w-4" />):</strong> Manage company sites, locations, or departments (name, location, site code). Used in PO items, Requisition headers, and Tag assignments.</li>
-              <li><strong>Suppliers (<PackageComponentIcon className="inline h-4 w-4" />):</strong> Manage vendor details (code, name, contact info, etc.). <strong className="text-primary">CSV Upload available.</strong> Download template for format.</li>
+              <li><strong>Suppliers (<PackageIcon className="inline h-4 w-4" />):</strong> Manage vendor details (code, name, contact info, etc.). <strong className="text-primary">CSV Upload available.</strong> Download template for format.</li>
               <li><strong>Approvers (<Users className="inline h-4 w-4" />):</strong> Define users who can approve documents (POs, Quotes, Requisitions) and optionally set their approval limits.</li>
               <li><strong>Users (<Users className="inline h-4 w-4" />):</strong> Manage system user accounts, roles (Admin, Creator, Approver, etc.), and active status. Site access is displayed but managed separately (future feature).</li>
               <li><strong>Categories (<TagLucideIcon className="inline h-4 w-4" />):</strong> Define item/service categories used in POs and Requisitions.</li>
@@ -189,8 +194,8 @@ export default function UserManualPage() {
             <p className="mt-1">Placeholder sections for GRN, specific Quote, Requisition, and Fuel analytics show potential future charts.</p>
           </section>
           
-          <section id="activity-log">
-            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><ListChecksIcon className="mr-2 h-6 w-6 text-primary" />8. Activity Log</h2>
+          <section id="activity-log-page">
+            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><ListChecksIcon className="mr-2 h-6 w-6 text-primary" />8. Activity Log Page</h2>
             <p>
              Tracks system and user activities. The Dashboard shows the latest 20 entries. The dedicated "Activity Log" page provides a comprehensive view with filtering by:
             </p>
@@ -198,7 +203,7 @@ export default function UserManualPage() {
               <li>Month and Year</li>
               <li>User name (partial match)</li>
               <li>Action description (partial match)</li>
-              <li>Limit of records displayed (default 200).</li>
+              <li>Limit of records displayed (default 200, but can be overridden).</li>
             </ul>
             <p className="mt-1">This data is fetched directly from the `ActivityLog` table in the database.</p>
           </section>
