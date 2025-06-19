@@ -8,10 +8,10 @@ export async function GET(request: Request) {
   const limitParam = searchParams.get('limit');
   const month = searchParams.get('month');
   const year = searchParams.get('year');
-  const userFilter = searchParams.get('userFilter'); // Expect 'userFilter' from frontend
-  const actionTypeFilter = searchParams.get('actionTypeFilter'); // Expect 'actionTypeFilter' from frontend
+  const userFilter = searchParams.get('userFilter');
+  const actionTypeFilter = searchParams.get('actionTypeFilter');
 
-  let limit = 100; 
+  let limit = 100;
   if (limitParam) {
     const parsedLimit = parseInt(limitParam, 10);
     if (!isNaN(parsedLimit) && parsedLimit > 0) {
@@ -34,12 +34,22 @@ export async function GET(request: Request) {
     const queryParams: (string | number)[] = [];
 
     if (month && month !== 'all') {
-      whereClauses.push("MONTH(timestamp) = ?");
-      queryParams.push(parseInt(month, 10));
+      const parsedMonth = parseInt(month, 10);
+      if(!isNaN(parsedMonth)){
+        whereClauses.push("MONTH(timestamp) = ?");
+        queryParams.push(parsedMonth);
+      } else {
+        console.warn(`[API_WARN] /api/activity-log GET: Invalid month value received: ${month}. Ignoring month filter.`);
+      }
     }
     if (year && year !== 'all') {
-      whereClauses.push("YEAR(timestamp) = ?");
-      queryParams.push(parseInt(year, 10));
+      const parsedYear = parseInt(year, 10);
+      if(!isNaN(parsedYear)){
+        whereClauses.push("YEAR(timestamp) = ?");
+        queryParams.push(parsedYear);
+      } else {
+        console.warn(`[API_WARN] /api/activity-log GET: Invalid year value received: ${year}. Ignoring year filter.`);
+      }
     }
     if (userFilter && userFilter.trim() !== '') {
       whereClauses.push("user LIKE ?");
@@ -59,7 +69,8 @@ export async function GET(request: Request) {
     
     console.log(`[API_INFO] /api/activity-log GET: Executing query: ${query.replace(/\s+/g, ' ').trim()} with params: ${JSON.stringify(queryParams)}`);
     
-    const [rows]: any[] = await connection.execute(query, queryParams); 
+    // Changed from connection.execute to connection.query
+    const [rows]: any[] = await connection.query(query, queryParams); 
 
     console.log(`[API_INFO] /api/activity-log GET: Successfully fetched ${rows.length} activity log entries.`);
     
