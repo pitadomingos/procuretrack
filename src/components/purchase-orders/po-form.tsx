@@ -320,11 +320,11 @@ export function POForm({ poIdToEditProp }: POFormProps) {
       }
       const requisitionData: RequisitionPayload = await response.json();
 
-      // Pre-fill header info from requisition
+      // Pre-fill PO header info from requisition
       form.setValue('requestedByName', requisitionData.requestedByName || requisitionData.requestorFullName || '');
-      if (requisitionData.siteId) {
-        form.setValue('overallSiteId', requisitionData.siteId.toString());
-      }
+      // DO NOT set form.setValue('overallSiteId', requisitionData.siteId.toString());
+      // The PO's overallSiteId is independent.
+
       // Add a note indicating source
       const currentNotes = form.getValues('notes') || '';
       form.setValue('notes', `${currentNotes}\nItems loaded from Requisition: ${requisitionData.requisitionNumber}`.trim());
@@ -337,14 +337,16 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         partNumber: reqItem.partNumber || '',
         description: reqItem.description,
         categoryId: reqItem.categoryId,
-        siteId: reqItem.siteId, // Item specific site from requisition
+        siteId: requisitionData.siteId, // Each PO item's siteId comes from the Requisition's header siteId
         uom: (reqItem as any).uom || 'EA', // Assuming RequisitionItem might have uom, fallback to EA
         quantity: reqItem.quantity,
         unitPrice: 0.00, // Price to be filled by PO creator
+        quantityReceived: 0, // Initialize received quantity
+        itemStatus: 'Pending', // Initialize item status
       }));
 
       replace(newPOItems); // Replace existing items with new ones
-      toast({ title: 'Items Loaded', description: `Items from Requisition ${requisitionData.requisitionNumber} loaded.` });
+      toast({ title: 'Items Loaded', description: `Items from Requisition ${requisitionData.requisitionNumber} loaded. Each item's site set to Req Header Site ID: ${requisitionData.siteId}.` });
     } catch (error: any) {
       toast({ title: 'Error Loading Requisition Items', description: error.message, variant: 'destructive' });
     } finally {
@@ -573,10 +575,10 @@ export function POForm({ poIdToEditProp }: POFormProps) {
               <h3 className="text-lg font-medium font-headline mb-2 mt-4">PO Configuration</h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 items-center"> 
                 <FormField
-                  control={form.control} name="overallSiteId" rules={{ required: 'Overall PO Site is required' }}
+                  control={form.control} name="overallSiteId" // This field is optional at PO header level
                   render={({ field }) => (
                     <FormItem className="lg:col-span-1">
-                      <FormLabel>Overall PO Site</FormLabel>
+                      <FormLabel>Overall PO Site (Optional)</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select Site" /></SelectTrigger></FormControl>
                         <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>
