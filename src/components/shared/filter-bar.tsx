@@ -18,7 +18,7 @@ const months: FilterOption[] = [
 const monthsWithAll: FilterOption[] = [{ value: 'all', label: 'All Months' }, ...months];
 
 const currentYear = new Date().getFullYear();
-const years: FilterOption[] = Array.from({ length: 10 }, (_, i) => ({ // Increased to 10 years
+const years: FilterOption[] = Array.from({ length: 10 }, (_, i) => ({
   value: (currentYear - i).toString(),
   label: (currentYear - i).toString(),
 }));
@@ -33,12 +33,19 @@ interface FilterBarProps {
     creatorUserId?: string;
     tagId?: string;
     driver?: string;
+    user?: string; // For generic user name filter (e.g., Activity Log)
+    action?: string; // For generic action type filter (e.g., Activity Log)
+    status?: string; // For status filter, e.g., Requisitions
   }) => void;
   showApproverFilter?: boolean;
   showRequestorFilter?: boolean;
   showSiteFilter?: boolean;
   showTagFilter?: boolean;
   showDriverFilter?: boolean;
+  showUserFilter?: boolean;
+  showActionTypeFilter?: boolean;
+  showStatusFilter?: boolean; // Added for Requisition status
+  statusOptions?: FilterOption[]; // Options for the status dropdown
 }
 
 export function FilterBar({
@@ -48,6 +55,10 @@ export function FilterBar({
   showSiteFilter = false,
   showTagFilter = false,
   showDriverFilter = false,
+  showUserFilter = false,
+  showActionTypeFilter = false,
+  showStatusFilter = false,
+  statusOptions = [],
 }: FilterBarProps) {
   const { toast } = useToast();
   const [isLoadingFilters, setIsLoadingFilters] = useState(false);
@@ -68,40 +79,50 @@ export function FilterBar({
   const [selectedTag, setSelectedTag] = useState<string>('all');
   
   const [driverName, setDriverName] = useState<string>('');
+  const [userNameFilter, setUserNameFilter] = useState<string>('');
+  const [actionTypeFilterText, setActionTypeFilterText] = useState<string>(''); // Renamed from actionTypeFilter to avoid conflict with prop
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+
 
   const fetchFilterData = useCallback(async () => {
     setIsLoadingFilters(true);
     try {
       const promises = [];
       if (showSiteFilter) promises.push(fetch('/api/sites'));
+      else promises.push(Promise.resolve(null)); 
+
       if (showApproverFilter) promises.push(fetch('/api/approvers'));
+      else promises.push(Promise.resolve(null));
+
       if (showRequestorFilter) promises.push(fetch('/api/users'));
+      else promises.push(Promise.resolve(null));
+
       if (showTagFilter) promises.push(fetch('/api/tags'));
+      else promises.push(Promise.resolve(null));
+
 
       const responses = await Promise.all(promises);
-      const data = await Promise.all(responses.map(res => res.ok ? res.json() : Promise.resolve([])));
+      const data = await Promise.all(responses.map(res => res && res.ok ? res.json() : Promise.resolve([])));
 
-      let currentDataIndex = 0;
-      if (showSiteFilter) {
-        const siteData: Site[] = data[currentDataIndex++];
+      if (showSiteFilter && data[0]) {
+        const siteData: Site[] = data[0];
         setSites([{ value: 'all', label: 'All Sites' }, ...siteData.map(s => ({ value: s.id.toString(), label: `${s.siteCode || s.name} (${s.name})` }))]);
       }
-      if (showApproverFilter) {
-        const approverData: Approver[] = data[currentDataIndex++];
+      if (showApproverFilter && data[1]) {
+        const approverData: Approver[] = data[1];
         setApprovers([{ value: 'all', label: 'All Approvers' }, ...approverData.map(a => ({ value: a.id, label: a.name }))]);
       }
-      if (showRequestorFilter) {
-        const userData: User[] = data[currentDataIndex++];
-        // Assuming all users can be requestors, or filter by role if needed
+      if (showRequestorFilter && data[2]) {
+        const userData: User[] = data[2];
         setRequestors([{ value: 'all', label: 'All Requestors' }, ...userData.map(u => ({ value: u.id, label: u.name }))]);
       }
-      if (showTagFilter) {
-        const tagData: Tag[] = data[currentDataIndex++];
+      if (showTagFilter && data[3]) {
+        const tagData: Tag[] = data[3];
         setTags([{ value: 'all', label: 'All Tags' }, ...tagData.map(t => ({ value: t.id, label: `${t.tagNumber} (${t.make || ''} ${t.model || t.type || ''})`}))]);
       }
 
     } catch (error) {
-      toast({ title: 'Error', description: 'Could not load filter options from server.', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Could not load some filter options from server.', variant: 'destructive' });
       console.error("Error fetching filter data:", error);
     } finally {
       setIsLoadingFilters(false);
@@ -121,6 +142,9 @@ export function FilterBar({
       creatorUserId: showRequestorFilter ? selectedRequestor : undefined,
       tagId: showTagFilter ? selectedTag : undefined,
       driver: showDriverFilter ? driverName : undefined,
+      user: showUserFilter ? userNameFilter : undefined,
+      action: showActionTypeFilter ? actionTypeFilterText : undefined,
+      status: showStatusFilter ? selectedStatus : undefined,
     });
   };
 
@@ -189,6 +213,44 @@ export function FilterBar({
                 />
             </div>
         )}
+        {showUserFilter && (
+          <div>
+            <label htmlFor="user-name-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Filter by User</label>
+            <Input
+                id="user-name-filter"
+                placeholder="Enter user name..."
+                value={userNameFilter}
+                onChange={(e) => setUserNameFilter(e.target.value)}
+                disabled={isLoadingFilters}
+            />
+          </div>
+        )}
+        {showActionTypeFilter && (
+          <div>
+            <label htmlFor="action-type-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Filter by Action</label>
+            <Input
+                id="action-type-filter"
+                placeholder="e.g., Created, Approved..."
+                value={actionTypeFilterText}
+                onChange={(e) => setActionTypeFilterText(e.target.value)}
+                disabled={isLoadingFilters}
+            />
+          </div>
+        )}
+        {showStatusFilter && statusOptions.length > 0 && (
+          <div>
+            <label htmlFor="status-filter" className="mb-1 block text-sm font-medium text-card-foreground/80">Status</label>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoadingFilters}>
+              <SelectTrigger id="status-filter"><SelectValue placeholder="Select Status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {statusOptions.map((option: FilterOption) => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
       <Button onClick={handleApplyFilters} className="mt-4 sm:mt-0 sm:self-end" disabled={isLoadingFilters}>
         {isLoadingFilters ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Filter className="mr-2 h-4 w-4" />}
@@ -197,3 +259,4 @@ export function FilterBar({
     </div>
   );
 }
+

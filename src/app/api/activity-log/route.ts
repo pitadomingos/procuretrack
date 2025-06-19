@@ -1,27 +1,65 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js'; // Ensure this path is correct
+import { pool } from '../../../../backend/db.js';
 import type { ActivityLogEntry } from '@/types';
 
 export async function GET(request: Request) {
-  // Forcing no limit for now to simplify diagnosis
-  console.log('[API_INFO] /api/activity-log GET: Fetching ALL activity logs (limit removed for diagnosis).');
+  const { searchParams } = new URL(request.url);
+  const limitParam = searchParams.get('limit');
+  const month = searchParams.get('month');
+  const year = searchParams.get('year');
+  const userFilter = searchParams.get('userFilter'); // Expect 'userFilter' from frontend
+  const actionTypeFilter = searchParams.get('actionTypeFilter'); // Expect 'actionTypeFilter' from frontend
+
+  let limit = 100; 
+  if (limitParam) {
+    const parsedLimit = parseInt(limitParam, 10);
+    if (!isNaN(parsedLimit) && parsedLimit > 0) {
+      limit = parsedLimit;
+    }
+  }
+
+  console.log(`[API_INFO] /api/activity-log GET: Received params - limit: ${limit}, month: ${month}, year: ${year}, userFilter: ${userFilter}, actionTypeFilter: ${actionTypeFilter}`);
 
   let connection;
   try {
     connection = await pool.getConnection();
     console.log(`[API_INFO] /api/activity-log GET: Database connection obtained.`);
 
-    // Simplest possible query - REMOVED LIMIT CLAUSE ENTIRELY
-    const query = `
+    let query = `
       SELECT id, user, action, timestamp, details
       FROM ActivityLog
-      ORDER BY timestamp DESC
     `;
+    const whereClauses: string[] = [];
+    const queryParams: (string | number)[] = [];
+
+    if (month && month !== 'all') {
+      whereClauses.push("MONTH(timestamp) = ?");
+      queryParams.push(parseInt(month, 10));
+    }
+    if (year && year !== 'all') {
+      whereClauses.push("YEAR(timestamp) = ?");
+      queryParams.push(parseInt(year, 10));
+    }
+    if (userFilter && userFilter.trim() !== '') {
+      whereClauses.push("user LIKE ?");
+      queryParams.push(`%${userFilter.trim()}%`);
+    }
+    if (actionTypeFilter && actionTypeFilter.trim() !== '') {
+      whereClauses.push("action LIKE ?");
+      queryParams.push(`%${actionTypeFilter.trim()}%`);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+
+    query += ` ORDER BY timestamp DESC LIMIT ?`;
+    queryParams.push(limit);
     
-    console.log(`[API_INFO] /api/activity-log GET: Executing query: ${query.replace(/\s+/g, ' ').trim()}`);
-    // NO PARAMETERS PASSED to execute()
-    const [rows]: any[] = await connection.execute(query); 
+    console.log(`[API_INFO] /api/activity-log GET: Executing query: ${query.replace(/\s+/g, ' ').trim()} with params: ${JSON.stringify(queryParams)}`);
+    
+    const [rows]: any[] = await connection.execute(query, queryParams); 
 
     console.log(`[API_INFO] /api/activity-log GET: Successfully fetched ${rows.length} activity log entries.`);
     
@@ -30,22 +68,21 @@ export async function GET(request: Request) {
         timestamp: new Date(row.timestamp).toLocaleString('en-GB', { 
             day: '2-digit', month: 'short', year: 'numeric', 
             hour: '2-digit', minute: '2-digit', hour12: true 
-        }) // Format for display
+        })
     }));
 
     return NextResponse.json(activityLog);
   } catch (error: any) {
     console.error('[API_ERROR] /api/activity-log GET: Error fetching activity log:', error);
-    // Log more details from the error object if they exist
     const errorCode = error.code || 'N/A';
-    const sqlMessage = error.sqlMessage || error.message; // Prefer sqlMessage if available
+    const sqlMessage = error.sqlMessage || error.message;
     const details = `Error Code: ${errorCode}. Message: ${sqlMessage}. SQL State: ${error.sqlState || 'N/A'}`;
     
     return NextResponse.json(
         { 
             error: 'Failed to fetch activity log data from the database.', 
             details: details,
-            rawErrorMessage: error.message // Keep original message for client-side if needed
+            rawErrorMessage: error.message
         }, 
         { status: 500 }
     );
