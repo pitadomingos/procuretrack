@@ -134,6 +134,8 @@ export interface POItemPayload {
   description: string;
   categoryId: number | null;
   siteId?: number | null;
+  siteName?: string; // Added for displaying site name directly
+  siteCode?: string; // Added for displaying site code directly
   uom: string;
   quantity: number;
   unitPrice: number;
@@ -177,7 +179,7 @@ export interface PurchaseOrderPayload {
   approverName?: string;
   approverSignatureUrl?: string;
   quoteNo?: string;
-  siteId?: number | null; 
+  siteId?: number | null; // Overall PO SiteId (nullable as per recent change)
 }
 
 
@@ -397,5 +399,29 @@ export interface GRNItemFormData extends POItemPayload {
   receiveNowQty: number;
   outstandingQty: number;
   itemSpecificNotes?: string;
+  siteDisplay?: string; // To display site name/code for the item
 }
-    
+
+export interface ConfirmedGRNItemDetails {
+  id?: number; // POItem ID
+  partNumber?: string | null;
+  description: string;
+  siteDisplay?: string; // Site from POItem
+  uom: string;
+  quantityOrdered: number;
+  quantityPreviouslyReceived: number;
+  quantityReceivedThisGRN: number;
+  quantityOutstandingAfterGRN: number;
+  itemSpecificNotes?: string;
+}
+export interface ConfirmedGRNDetails {
+  grnDate: string;
+  grnNumber: string; // Placeholder for now
+  poNumber: string;
+  poId?: number;
+  supplierName?: string | null;
+  deliveryNoteNumber?: string;
+  overallGrnNotes?: string;
+  receivedByUser: string; // Mocked for now
+  items: ConfirmedGRNItemDetails[];
+}

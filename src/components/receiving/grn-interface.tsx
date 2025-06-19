@@ -9,12 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckSquare, PackageSearch, Loader2, FileSearch, AlertTriangle } from 'lucide-react';
-import type { POItemPayload, PurchaseOrderPayload, ApprovedPOForSelect, GRNItemFormData, Site } from '@/types';
+import { CheckSquare, PackageSearch, Loader2, FileSearch, AlertTriangle, Printer, Download, FilePlus } from 'lucide-react';
+import type { POItemPayload, PurchaseOrderPayload, ApprovedPOForSelect, GRNItemFormData, Site, ConfirmedGRNDetails, ConfirmedGRNItemDetails } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { PrintableGRN } from '@/components/receiving/printable-grn'; // Import the new component
 
-const MOCK_RECEIVED_BY_USER = 'GRN User'; // Placeholder
+const MOCK_RECEIVED_BY_USER = 'GRN User'; // Placeholder for logged-in user
 
 export function GRNInterface() {
   const { toast } = useToast();
@@ -23,53 +24,54 @@ export function GRNInterface() {
   const [grnDate, setGrnDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [selectedPOId, setSelectedPOId] = useState<string>('');
   const [deliveryNote, setDeliveryNote] = useState<string>('');
-  const [receivingSiteId, setReceivingSiteId] = useState<string>('');
   const [overallGrnNotes, setOverallGrnNotes] = useState<string>('');
 
   // Data state
   const [approvedPOsForSelect, setApprovedPOsForSelect] = useState<ApprovedPOForSelect[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
   const [loadedPOHeader, setLoadedPOHeader] = useState<PurchaseOrderPayload | null>(null);
   const [grnItems, setGrnItems] = useState<GRNItemFormData[]>([]);
   
   // UI state
   const [isLoadingPOsForSelect, setIsLoadingPOsForSelect] = useState(false);
-  const [isLoadingSites, setIsLoadingSites] = useState(false);
   const [isLoadingPODetails, setIsLoadingPODetails] = useState(false);
   const [isSubmittingGRN, setIsSubmittingGRN] = useState(false);
-  const [errorMessages, setErrorMessages] = useState<{ general?: string; poSelect?: string; sites?: string }>({});
+  const [errorMessages, setErrorMessages] = useState<{ general?: string; poSelect?: string; }>({});
+  const [logoDataUri, setLogoDataUri] = useState<string | undefined>(undefined);
+
+
+  // State for post-confirmation view
+  const [confirmedGrnData, setConfirmedGrnData] = useState<ConfirmedGRNDetails | null>(null);
+  const [showGrnConfirmedView, setShowGrnConfirmedView] = useState(false);
 
 
   const fetchInitialData = useCallback(async () => {
     setIsLoadingPOsForSelect(true);
-    setIsLoadingSites(true);
     setErrorMessages({});
     try {
-      const [posRes, sitesRes] = await Promise.all([
-        fetch('/api/purchase-orders/for-grn-selection'),
-        fetch('/api/sites')
-      ]);
-
+      const posRes = await fetch('/api/purchase-orders/for-grn-selection');
       if (posRes.ok) {
         setApprovedPOsForSelect(await posRes.json());
       } else {
         const err = await posRes.json().catch(() => ({}));
         setErrorMessages(prev => ({ ...prev, poSelect: `Failed to load POs: ${err.message || posRes.statusText}` }));
       }
-
-      if (sitesRes.ok) {
-        setSites(await sitesRes.json());
-      } else {
-        const err = await sitesRes.json().catch(() => ({}));
-        setErrorMessages(prev => ({ ...prev, sites: `Failed to load sites: ${err.message || sitesRes.statusText}` }));
-      }
+      
+      // Fetch logo for printable component (once)
+      try {
+        const logoResponse = await fetch('/jachris-logo.png'); 
+        if (logoResponse.ok) {
+            const logoBlob = await logoResponse.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => { setLogoDataUri(reader.result as string); };
+            reader.readAsDataURL(logoBlob);
+        } else { console.warn('Client-side logo fetch failed for GRN preview.'); }
+      } catch (logoError) { console.warn('Error fetching client-side logo for GRN preview:', logoError); }
 
     } catch (error: any) {
-      setErrorMessages(prev => ({ ...prev, general: `Error fetching initial data: ${error.message}`}));
+      setErrorMessages(prev => ({ ...prev, general: `Error fetching POs for selection: ${error.message}`}));
       toast({ title: "Error", description: "Could not load initial data for GRN form.", variant: "destructive" });
     } finally {
       setIsLoadingPOsForSelect(false);
-      setIsLoadingSites(false);
     }
   }, [toast]);
 
@@ -100,10 +102,12 @@ export function GRNInterface() {
       setGrnItems(
         data.poItems.map(item => {
           const outstanding = (item.quantity || 0) - (item.quantityReceived || 0);
+          const siteDisplay = item.siteCode || item.siteName || (item.siteId ? `Site ID ${item.siteId}` : 'N/A');
           return {
             ...item,
-            receiveNowQty: 0, // Initialize "Receive Now"
+            receiveNowQty: 0,
             outstandingQty: outstanding < 0 ? 0 : outstanding,
+            siteDisplay: siteDisplay,
           };
         })
       );
@@ -144,51 +148,84 @@ export function GRNInterface() {
       toast({ title: "No Items to Receive", description: "Please enter quantities for items you are receiving.", variant: "info" });
       return;
     }
-    if (!receivingSiteId) {
-      toast({ title: "Site Required", description: "Please select the receiving site.", variant: "destructive" });
-      return;
+    if (!selectedPOId || !loadedPOHeader) {
+        toast({ title: "PO Not Selected", description: "Please select a Purchase Order.", variant: "destructive"});
+        return;
     }
 
     setIsSubmittingGRN(true);
-    // Simulate GRN submission
-    const receivedSummary = grnItems
-      .filter(item => item.receiveNowQty > 0)
-      .map(item => `${item.description}: ${item.receiveNowQty} of ${item.outstandingQty} outstanding`)
-      .join('\n');
     
-    console.log({
-        grnDate,
-        poId: selectedPOId,
-        poNumber: loadedPOHeader?.poNumber,
-        supplier: loadedPOHeader?.supplierDetails?.supplierName || loadedPOHeader?.supplierId,
-        deliveryNote,
-        receivingSiteId,
-        receivedByUser: MOCK_RECEIVED_BY_USER,
-        overallGrnNotes,
-        itemsReceived: grnItems.filter(item => item.receiveNowQty > 0).map(i => ({
-            poItemId: i.id,
-            description: i.description,
-            qtyReceived: i.receiveNowQty,
-            itemNotes: i.itemSpecificNotes
-        }))
-    });
+    const itemsReceivedForGRN: ConfirmedGRNItemDetails[] = grnItems
+      .filter(item => item.receiveNowQty > 0)
+      .map(item => ({
+        id: item.id,
+        partNumber: item.partNumber,
+        description: item.description,
+        siteDisplay: item.siteDisplay || 'N/A',
+        uom: item.uom,
+        quantityOrdered: item.quantity,
+        quantityPreviouslyReceived: item.quantityReceived,
+        quantityReceivedThisGRN: item.receiveNowQty,
+        quantityOutstandingAfterGRN: item.outstandingQty - item.receiveNowQty,
+        itemSpecificNotes: item.itemSpecificNotes,
+      }));
 
+    const grnDetails: ConfirmedGRNDetails = {
+      grnDate: grnDate,
+      grnNumber: `GRN-${Date.now().toString().slice(-6)}`, // Placeholder GRN Number
+      poNumber: loadedPOHeader.poNumber,
+      poId: loadedPOHeader.id,
+      supplierName: loadedPOHeader.supplierDetails?.supplierName || loadedPOHeader.supplierId,
+      deliveryNoteNumber: deliveryNote,
+      overallGrnNotes: overallGrnNotes,
+      receivedByUser: MOCK_RECEIVED_BY_USER,
+      items: itemsReceivedForGRN,
+    };
+
+    // Simulate GRN submission
+    console.log("GRN Data to be 'saved':", grnDetails);
+
+    // In a real app, here you would:
+    // 1. POST grnDetails to a new API endpoint (e.g., /api/grn)
+    // 2. That API endpoint would:
+    //    a. Create a new GRN record in the database.
+    //    b. Create GRNItem records.
+    //    c. Update POItem.quantityReceived and POItem.itemStatus for each affected item.
+    //    d. Potentially update PurchaseOrder.status (e.g., to 'Partially Received' or 'Fully Received').
+    //    e. All within a database transaction.
+
+    setConfirmedGrnData(grnDetails);
+    setShowGrnConfirmedView(true);
+    setIsSubmittingGRN(false);
+    
     toast({
       title: "GRN Confirmed (Simulated)",
-      description: `Received items for PO ${loadedPOHeader?.poNumber}:\n${receivedSummary}\n\nThis is a UI simulation. Backend for GRN processing is pending.`,
-      duration: 7000,
+      description: `Received items for PO ${loadedPOHeader?.poNumber}. Backend saving is pending.`,
+      duration: 5000,
     });
+  };
 
-    // Reset form
+  const handleCreateNewGRN = () => {
+    setShowGrnConfirmedView(false);
+    setConfirmedGrnData(null);
+    // Reset form fields
     setGrnDate(format(new Date(), 'yyyy-MM-dd'));
     setSelectedPOId('');
     setDeliveryNote('');
-    setReceivingSiteId('');
     setOverallGrnNotes('');
     setLoadedPOHeader(null);
     setGrnItems([]);
-    setIsSubmittingGRN(false);
+    fetchInitialData(); // Refresh PO list
   };
+
+  const handlePrintGRN = () => {
+    window.print();
+  };
+
+  const handleDownloadGRNPDF = () => {
+    toast({ title: "Not Implemented", description: "PDF download for GRN is not yet available.", variant: "info"});
+  };
+
 
   const supplierInfo = loadedPOHeader?.supplierDetails 
     ? `${loadedPOHeader.supplierDetails.supplierName} (${loadedPOHeader.supplierDetails.supplierCode})`
@@ -196,8 +233,30 @@ export function GRNInterface() {
   
   const totalItemsToReceive = grnItems.reduce((sum, item) => sum + item.receiveNowQty, 0);
 
+  if (showGrnConfirmedView && confirmedGrnData) {
+    return (
+      <Card className="shadow-xl">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">GRN Confirmed: {confirmedGrnData.grnNumber}</CardTitle>
+          <CardDescription>Goods received for PO: {confirmedGrnData.poNumber}. Review details below.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="my-4 flex flex-wrap gap-2 print-hidden">
+            <Button onClick={handlePrintGRN} variant="outline"><Printer className="mr-2 h-4 w-4" /> Print GRN</Button>
+            <Button onClick={handleDownloadGRNPDF} variant="outline" disabled><Download className="mr-2 h-4 w-4" /> Download PDF (Soon)</Button>
+            <Button onClick={handleCreateNewGRN}><FilePlus className="mr-2 h-4 w-4" /> Create New GRN</Button>
+          </div>
+          <div className="printable-po-content-wrapper border rounded-md p-2 print:border-none print:p-0">
+            <PrintableGRN grnData={confirmedGrnData} logoDataUri={logoDataUri} />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+
   return (
-    <Card className="shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+    <Card className="shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 ease-in-out">
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Goods Received Note (GRN)</CardTitle>
         <CardDescription>Record items received against an approved Purchase Order.</CardDescription>
@@ -207,7 +266,7 @@ export function GRNInterface() {
         
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
           <div className="lg:col-span-2">
-            <Label htmlFor="po-select-grn">Select Purchase Order</Label>
+            <Label htmlFor="po-select-grn">Select Purchase Order *</Label>
             <Select 
               value={selectedPOId} 
               onValueChange={handlePOSelectionChange}
@@ -231,12 +290,12 @@ export function GRNInterface() {
           </div>
 
           <div>
-            <Label htmlFor="grn-date">GRN Date</Label>
+            <Label htmlFor="grn-date">GRN Date *</Label>
             <Input id="grn-date" type="date" value={grnDate} onChange={e => setGrnDate(e.target.value)} />
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="supplier-info">Supplier</Label>
             <Input id="supplier-info" value={loadedPOHeader ? supplierInfo : 'N/A'} readOnly className="bg-muted/50" />
@@ -244,18 +303,6 @@ export function GRNInterface() {
           <div>
             <Label htmlFor="delivery-note">Supplier Delivery Note No.</Label>
             <Input id="delivery-note" placeholder="Enter delivery note/invoice ref" value={deliveryNote} onChange={e => setDeliveryNote(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="receiving-site">Receiving Site</Label>
-            <Select value={receivingSiteId} onValueChange={setReceivingSiteId} disabled={isLoadingSites}>
-              <SelectTrigger id="receiving-site">
-                <SelectValue placeholder={isLoadingSites ? "Loading sites..." : "Select receiving site"} />
-              </SelectTrigger>
-              <SelectContent>
-                {sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.name} ({site.siteCode})</SelectItem>))}
-              </SelectContent>
-            </Select>
-             {errorMessages.sites && <p className="text-xs text-destructive mt-1">{errorMessages.sites}</p>}
           </div>
         </div>
 
@@ -273,20 +320,22 @@ export function GRNInterface() {
               <Table>
                 <TableHeader className="sticky top-0 bg-background shadow-sm">
                   <TableRow>
-                    <TableHead className="w-[250px]">Description</TableHead>
-                    <TableHead className="text-center w-[100px]">UOM</TableHead>
-                    <TableHead className="text-right w-[100px]">Ordered</TableHead>
-                    <TableHead className="text-right w-[120px]">Prev. Rec.</TableHead>
-                    <TableHead className="text-right w-[120px]">Outstanding</TableHead>
-                    <TableHead className="w-[130px] text-center">Receive Now</TableHead>
+                    <TableHead className="w-[200px]">Description</TableHead>
+                    <TableHead className="w-[100px]">Site</TableHead>
+                    <TableHead className="text-center w-[80px]">UOM</TableHead>
+                    <TableHead className="text-right w-[80px]">Ordered</TableHead>
+                    <TableHead className="text-right w-[100px]">Prev. Rec.</TableHead>
+                    <TableHead className="text-right w-[100px]">Outstanding</TableHead>
+                    <TableHead className="w-[120px] text-center">Receive Now *</TableHead>
                     <TableHead className="w-[80px]"></TableHead> 
-                    <TableHead className="w-[180px]">Item Notes</TableHead>
+                    <TableHead className="w-[150px]">Item Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {grnItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="py-2">{item.description}</TableCell>
+                      <TableCell className="py-2 text-xs">{item.siteDisplay}</TableCell>
                       <TableCell className="text-center py-2">{item.uom}</TableCell>
                       <TableCell className="text-right py-2">{item.quantity}</TableCell>
                       <TableCell className="text-right py-2">{item.quantityReceived || 0}</TableCell>
@@ -335,7 +384,7 @@ export function GRNInterface() {
             </div>
           </div>
         )}
-         {selectedPOId && !isLoadingPODetails && grnItems.length === 0 && (
+         {selectedPOId && !isLoadingPODetails && grnItems.length === 0 && !showGrnConfirmedView && (
             <div className="text-center py-6 text-muted-foreground">
                 <FileSearch className="mx-auto h-10 w-10 mb-2" />
                 <p>No items found for the selected PO, or all items have been fully received.</p>
@@ -345,7 +394,7 @@ export function GRNInterface() {
       <CardFooter className="flex justify-end">
         <Button 
             onClick={handleConfirmReceipt} 
-            disabled={isSubmittingGRN || isLoadingPODetails || grnItems.length === 0 || totalItemsToReceive === 0 || !receivingSiteId}
+            disabled={isSubmittingGRN || isLoadingPODetails || grnItems.length === 0 || totalItemsToReceive === 0 || !selectedPOId}
             size="lg"
         >
           {isSubmittingGRN ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckSquare className="mr-2 h-4 w-4" />}

@@ -41,10 +41,17 @@ export async function GET(
         }
     }
 
-    const [poItemRows]: any[] = await connection.execute(
-      'SELECT * FROM POItem WHERE poId = ?',
-      [poHeader.id]
-    );
+    // Fetch PO Items and join with Site table to get siteName and siteCode
+    const poItemsQuery = `
+      SELECT 
+        poi.*, 
+        s.name as siteName, 
+        s.siteCode 
+      FROM POItem poi
+      LEFT JOIN Site s ON poi.siteId = s.id
+      WHERE poi.poId = ?
+    `;
+    const [poItemRows]: any[] = await connection.execute(poItemsQuery, [poHeader.id]);
 
     const poItems: POItemPayload[] = poItemRows.map((item: any) => ({
         id: item.id,
@@ -53,11 +60,13 @@ export async function GET(
         description: item.description,
         categoryId: item.categoryId,
         siteId: item.siteId,
+        siteName: item.siteName, // From Site table
+        siteCode: item.siteCode, // From Site table
         uom: item.uom,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
-        quantityReceived: Number(item.quantityReceived || 0), // Fetch new field
-        itemStatus: item.itemStatus || 'Pending', // Fetch new field
+        quantityReceived: Number(item.quantityReceived || 0),
+        itemStatus: item.itemStatus || 'Pending',
     }));
     
     if (poItems.length === 0) {
