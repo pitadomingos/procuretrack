@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Code2, Layers, Database, Cloud, Users, ShieldCheck, Workflow, Palette, FileText, ArrowRightLeft } from "lucide-react";
+import { Code2, Layers, Database, Cloud, Users, ShieldCheck, Workflow, Palette, FileText, ArrowRightLeft, FileCode2 } from "lucide-react";
 
 export default function SystemDocumentationPage() {
   const keyFiles = [
@@ -35,7 +35,7 @@ export default function SystemDocumentationPage() {
       <Card className="shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ease-in-out">
         <CardHeader>
           <div className="flex items-center space-x-3">
-            <FileCode className="h-8 w-8 text-primary" />
+            <FileCode2 className="h-8 w-8 text-primary" />
             <div>
               <CardTitle className="font-headline text-2xl">System Documentation</CardTitle>
               <CardDescription>
