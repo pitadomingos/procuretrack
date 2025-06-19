@@ -93,63 +93,58 @@ body {
 }
 
 @media print {
-  /* Ensure the entire viewport and document are white */
-  html, body, #__next { /* Adding #__next which is often Next.js's root div */
+  html, body, #__next {
     background-color: #ffffff !important;
     color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important; /* Ensure full width usage */
-    min-height: 100% !important; /* Ensure full height usage */
-    height: auto; /* Allow content to flow */
+    width: 100% !important;
+    min-height: 100% !important;
+    height: auto;
     font-size: 10pt;
   }
 
-  /* Hide elements not meant for printing by default */
   header,
   nav,
   aside,
   footer,
-  div[data-sidebar="sidebar"], /* Hides the main app sidebar */
-  .print-hidden { /* General class to hide elements like buttons */
+  div[data-sidebar="sidebar"],
+  .print-hidden {
     display: none !important;
     visibility: hidden !important;
   }
 
-  /* Reset specific page wrapper for print preview pages */
   .print-page-container {
     background-color: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
-    min-height: auto !important; /* Reset min-height for print */
+    min-height: auto !important;
     width: 100% !important;
     box-shadow: none !important;
     border: none !important;
   }
 
-  /* Specific inner container that might hold the printable component */
   .print-page-inner-container {
      padding: 0 !important;
      margin: 0 !important;
-     max-width: 100% !important; /* Ensure it doesn't shrink */
-     background-color: #ffffff !important; /* Ensure this is also white */
+     max-width: 100% !important;
+     background-color: #ffffff !important;
   }
 
-  /* Reset styles for the component that directly wraps the printable content */
   .printable-po-content-wrapper,
-  .printable-quote-content, 
-  .printable-requisition-content, 
-  .printable-grn-content { 
+  .printable-quote-content-wrapper,
+  .printable-requisition-content-wrapper,
+  .printable-grn-content-wrapper {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 0 !important; /* Minimal padding for content, adjust if needed */
+    padding: 0 !important;
     width: 100% !important;
-    max-width: 100% !important; /* Ensure it takes full width */
+    max-width: 100% !important;
     background-color: #ffffff !important;
-    page-break-inside: avoid; /* Try to prevent breaking content across pages */
+    page-break-inside: avoid;
   }
   
   .print-page-card { 
@@ -160,24 +155,43 @@ body {
     background-color: #ffffff !important;
   }
 
-  /* Attempt to control page breaks and sizing better */
-  @page {
-    size: A4 portrait; 
-    margin: 0.75cm; 
-  }
-
-  /* Remove transitions and transforms that might interfere with print */
   *, *::before, *::after {
     transition: none !important;
     transform: none !important;
-    box-shadow: none !important; /* Remove all box shadows for print */
+    box-shadow: none !important;
   }
 
-  /* Ensure table borders are visible and simple for print */
   table, th, td {
-    border: 1px solid #000000 !important; /* Simple black border for tables */
+    border: 1px solid #000000 !important;
   }
   th, td {
-    padding: 4pt !important; /* Adjust padding for print */
+    padding: 4pt !important;
+  }
+
+  /* Styles for sticky footer in print */
+  .printable-document-wrapper {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 90vh !important; /* Use vh for viewport height of the page */
+    width: 100% !important;
+    background-color: #ffffff !important; /* Ensure wrapper is white */
+  }
+
+  .printable-document-main-content {
+    flex-grow: 1 !important;
+    background-color: #ffffff !important; /* Ensure main content area is white */
+  }
+
+  .printable-document-footer {
+    margin-top: auto !important; /* Push footer to bottom if content is short */
+    width: 100% !important;
+    page-break-before: auto !important;
+    page-break-inside: avoid !important; /* Try to keep footer content from splitting */
+    background-color: #ffffff !important; /* Ensure footer area is white */
+  }
+  
+  @page {
+    size: A4 portrait; 
+    margin: 0.75cm; /* Adjust as needed, affects printable area for 90vh */
   }
 }

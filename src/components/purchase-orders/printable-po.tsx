@@ -32,149 +32,146 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
   return (
-    <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}>
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h1 className="text-lg font-bold text-red-700">{JACHRIS_COMPANY_DETAILS.name}</h1>
-          <p>{JACHRIS_COMPANY_DETAILS.contactLine1}</p>
-          <p>{JACHRIS_COMPANY_DETAILS.address}</p>
-          <p className="text-red-700">{JACHRIS_COMPANY_DETAILS.website}</p>
-        </div>
-        <div className="text-right">
-          <img
-            src={currentLogoSrc}
-            alt="JACHRIS Logo"
-            className="h-12 mb-1 ml-auto"
-            data-ai-hint="company brand logo"
-             />
-          <h2 className="text-xl font-bold">Purchase Order</h2>
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center mb-2 pb-1 border-b-2 border-black">
-        <span className="text-lg font-bold text-red-700">{poData.poNumber}</span>
-        <span className="text-sm"><strong>Date:</strong> {poCreationDate}</span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-4 mb-4 text-xs">
-        <div>
-          <p className="mb-1"><strong>TO:</strong></p>
-          <div className="grid grid-cols-[max-content_1fr] gap-x-2">
-            <span>SUPPLIER NAME</span><span>: {supplierDetails?.supplierName || 'N/A'}</span>
-            <span>SUPPLIER ADDRESS</span><span>: {supplierDetails?.physicalAddress || 'N/A'}</span>
-            <span>SALES PERSON</span><span>: {supplierDetails?.salesPerson || 'N/A'}</span>
-            <span>CONTACT NUMBER</span><span>: {supplierDetails?.cellNumber || 'N/A'}</span>
-            <span>EMAIL ADDRESS</span><span>: {supplierDetails?.emailAddress || 'N/A'}</span>
+    <div className="printable-document-wrapper">
+      <div className="printable-document-main-content">
+        <div className="bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-lg font-bold text-red-700">{JACHRIS_COMPANY_DETAILS.name}</h1>
+              <p>{JACHRIS_COMPANY_DETAILS.contactLine1}</p>
+              <p>{JACHRIS_COMPANY_DETAILS.address}</p>
+              <p className="text-red-700">{JACHRIS_COMPANY_DETAILS.website}</p>
+            </div>
+            <div className="text-right">
+              <img
+                src={currentLogoSrc}
+                alt="JACHRIS Logo"
+                className="h-12 mb-1 ml-auto"
+                data-ai-hint="company brand logo"
+                 />
+              <h2 className="text-xl font-bold">Purchase Order</h2>
+            </div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className="inline-grid grid-cols-[max-content_1fr] gap-x-2">
-            <span>NUIT</span><span>: {supplierDetails?.nuitNumber || 'N/A'}</span>
-            <span>QUOTE No.</span><span>: {poData.quoteNo || 'N/A'}</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="mb-1 min-h-[300px]">
-        <table className="w-full border-collapse border border-black">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-black p-1 text-left">PART NUMBER</th>
-              <th className="border border-black p-1 text-left">DESCRIPTION</th>
-              <th className="border border-black p-1 text-left">ALLOCATION</th>
-              <th className="border border-black p-1 text-center">UNIT</th>
-              <th className="border border-black p-1 text-center">QTY ORD.</th>
-              {/* Optional: Add QTY REC. if needed for specific print views */}
-              {/* <th className="border border-black p-1 text-center">QTY REC.</th> */}
-              <th className="border border-black p-1 text-right">UNIT PRICE</th>
-              <th className="border border-black p-1 text-right">TOTAL (Excl VAT)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {printableItems.map((item, index) => (
-              <tr key={item.id || index}>
-                <td className="border border-black p-1 align-top">{item.partNumber || ''}</td>
-                <td className="border border-black p-1 align-top">{item.description}</td>
-                <td className="border border-black p-1 align-top">{item.siteDisplay || 'N/A'}</td>
-                <td className="border border-black p-1 text-center align-top">{item.uom}</td>
-                <td className="border border-black p-1 text-center align-top">{item.quantity}</td>
-                {/* Optional: Display quantityReceived
-                <td className="border border-black p-1 text-center align-top">{item.quantityReceived || 0}</td>
-                */}
-                <td className="border border-black p-1 text-right align-top">{formatCurrency(item.unitPrice)}</td>
-                <td className="border border-black p-1 text-right align-top">{formatCurrency(item.quantity * item.unitPrice)}</td>
-              </tr>
-            ))}
-            {Array.from({ length: Math.max(0, 10 - printableItems.length) }).map((_, i) => (
-                <tr key={`empty-${i}`}>
-                    <td className="border border-black p-1 h-6">&nbsp;</td>
-                    <td className="border border-black p-1">&nbsp;</td>
-                    <td className="border border-black p-1">&nbsp;</td>
-                    <td className="border border-black p-1">&nbsp;</td>
-                    <td className="border border-black p-1">&nbsp;</td>
-                    {/* Optional: Empty cell for QTY REC.
-                    <td className="border border-black p-1">&nbsp;</td>
-                    */}
-                    <td className="border border-black p-1">&nbsp;</td>
-                    <td className="border border-black p-1">&nbsp;</td>
+          <div className="flex justify-between items-center mb-2 pb-1 border-b-2 border-black">
+            <span className="text-lg font-bold text-red-700">{poData.poNumber}</span>
+            <span className="text-sm"><strong>Date:</strong> {poCreationDate}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-4 mb-4 text-xs">
+            <div>
+              <p className="mb-1"><strong>TO:</strong></p>
+              <div className="grid grid-cols-[max-content_1fr] gap-x-2">
+                <span>SUPPLIER NAME</span><span>: {supplierDetails?.supplierName || 'N/A'}</span>
+                <span>SUPPLIER ADDRESS</span><span>: {supplierDetails?.physicalAddress || 'N/A'}</span>
+                <span>SALES PERSON</span><span>: {supplierDetails?.salesPerson || 'N/A'}</span>
+                <span>CONTACT NUMBER</span><span>: {supplierDetails?.cellNumber || 'N/A'}</span>
+                <span>EMAIL ADDRESS</span><span>: {supplierDetails?.emailAddress || 'N/A'}</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="inline-grid grid-cols-[max-content_1fr] gap-x-2">
+                <span>NUIT</span><span>: {supplierDetails?.nuitNumber || 'N/A'}</span>
+                <span>QUOTE No.</span><span>: {poData.quoteNo || 'N/A'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-1 min-h-[300px]">
+            <table className="w-full border-collapse border border-black">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-black p-1 text-left">PART NUMBER</th>
+                  <th className="border border-black p-1 text-left">DESCRIPTION</th>
+                  <th className="border border-black p-1 text-left">ALLOCATION</th>
+                  <th className="border border-black p-1 text-center">UNIT</th>
+                  <th className="border border-black p-1 text-center">QTY ORD.</th>
+                  <th className="border border-black p-1 text-right">UNIT PRICE</th>
+                  <th className="border border-black p-1 text-right">TOTAL (Excl VAT)</th>
                 </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex justify-between mb-4 items-start">
-        <div className="w-2/3 pr-4">
-            <h4 className="font-bold mb-1">NOTES:</h4>
-            {poData.notes ? (
-              <p className="text-xs border border-black p-2 min-h-[60px] whitespace-pre-wrap break-words">
-                {poData.notes}
-              </p>
-            ) : (
-              <p className="text-xs border border-black p-2 min-h-[60px] text-gray-500 italic">
-                No notes provided.
-              </p>
-            )}
-        </div>
-        <div className="w-1/3 text-xs">
-          <div className="flex justify-between border-b border-black py-0.5">
-            <span>SUBTOTAL</span>
-            <span>{formatCurrency(poData.subTotal)}</span>
-          </div>
-          <div className="flex justify-between border-b border-black py-0.5">
-            <span>IVA (16%)</span>
-            <span>
-              {poData.currency === 'MZN' && !poData.pricesIncludeVat ? formatCurrency(poData.vatAmount) : (poData.pricesIncludeVat ? 'IVA Incl.' : 'N/A')}
-            </span>
-          </div>
-          <div className="flex justify-between font-bold pt-0.5">
-            <span>GRAND TOTAL</span>
-            <span>{poData.currency} {formatCurrency(poData.grandTotal)}</span>
+              </thead>
+              <tbody>
+                {printableItems.map((item, index) => (
+                  <tr key={item.id || index}>
+                    <td className="border border-black p-1 align-top">{item.partNumber || ''}</td>
+                    <td className="border border-black p-1 align-top">{item.description}</td>
+                    <td className="border border-black p-1 align-top">{item.siteDisplay || 'N/A'}</td>
+                    <td className="border border-black p-1 text-center align-top">{item.uom}</td>
+                    <td className="border border-black p-1 text-center align-top">{item.quantity}</td>
+                    <td className="border border-black p-1 text-right align-top">{formatCurrency(item.unitPrice)}</td>
+                    <td className="border border-black p-1 text-right align-top">{formatCurrency(item.quantity * item.unitPrice)}</td>
+                  </tr>
+                ))}
+                {Array.from({ length: Math.max(0, 10 - printableItems.length) }).map((_, i) => (
+                    <tr key={`empty-${i}`}>
+                        <td className="border border-black p-1 h-6">&nbsp;</td>
+                        <td className="border border-black p-1">&nbsp;</td>
+                        <td className="border border-black p-1">&nbsp;</td>
+                        <td className="border border-black p-1">&nbsp;</td>
+                        <td className="border border-black p-1">&nbsp;</td>
+                        <td className="border border-black p-1">&nbsp;</td>
+                        <td className="border border-black p-1">&nbsp;</td>
+                    </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
+      <div className="printable-document-footer bg-white p-4 font-sans text-xs" style={{ fontFamily: "'Arial', sans-serif" }}>
+        <div className="flex justify-between mb-4 items-start">
+          <div className="w-2/3 pr-4">
+              <h4 className="font-bold mb-1">NOTES:</h4>
+              {poData.notes ? (
+                <p className="text-xs border border-black p-2 min-h-[60px] whitespace-pre-wrap break-words">
+                  {poData.notes}
+                </p>
+              ) : (
+                <p className="text-xs border border-black p-2 min-h-[60px] text-gray-500 italic">
+                  No notes provided.
+                </p>
+              )}
+          </div>
+          <div className="w-1/3 text-xs">
+            <div className="flex justify-between border-b border-black py-0.5">
+              <span>SUBTOTAL</span>
+              <span>{formatCurrency(poData.subTotal)}</span>
+            </div>
+            <div className="flex justify-between border-b border-black py-0.5">
+              <span>IVA (16%)</span>
+              <span>
+                {poData.currency === 'MZN' && !poData.pricesIncludeVat ? formatCurrency(poData.vatAmount) : (poData.pricesIncludeVat ? 'IVA Incl.' : 'N/A')}
+              </span>
+            </div>
+            <div className="flex justify-between font-bold pt-0.5">
+              <span>GRAND TOTAL</span>
+              <span>{poData.currency} {formatCurrency(poData.grandTotal)}</span>
+            </div>
+          </div>
+        </div>
 
-      <div className="text-xs pt-2 border-t-2 border-black">
-        <h4 className="font-bold mb-2">Authorisation:</h4>
-        <div className="space-y-1">
-            <div className="flex">
-                <span className="w-32 font-medium">Requested By:</span>
-                <span>{poData.requestedByName || poData.creatorName || 'N/A'}</span>
-            </div>
-            <div className="flex">
-                <span className="w-32 font-medium">Approved By:</span>
-                <span>
-                    {poData.status === 'Approved' && poData.approverName
-                        ? poData.approverName
-                        : (poData.status === 'Approved' ? 'Approved (Name Missing)' : (poData.status === 'Rejected' ? 'Rejected' : 'Pending Approval'))}
-                </span>
-            </div>
-            {poData.status === 'Approved' && (
-                 <div className="flex">
-                    <span className="w-32 font-medium">Approval Date:</span>
-                    <span>{approvalDate}</span>
-                </div>
-            )}
+        <div className="text-xs pt-2 border-t-2 border-black">
+          <h4 className="font-bold mb-2">Authorisation:</h4>
+          <div className="space-y-1">
+              <div className="flex">
+                  <span className="w-32 font-medium">Requested By:</span>
+                  <span>{poData.requestedByName || poData.creatorName || 'N/A'}</span>
+              </div>
+              <div className="flex">
+                  <span className="w-32 font-medium">Approved By:</span>
+                  <span>
+                      {poData.status === 'Approved' && poData.approverName
+                          ? poData.approverName
+                          : (poData.status === 'Approved' ? 'Approved (Name Missing)' : (poData.status === 'Rejected' ? 'Rejected' : 'Pending Approval'))}
+                  </span>
+              </div>
+              {poData.status === 'Approved' && (
+                   <div className="flex">
+                      <span className="w-32 font-medium">Approval Date:</span>
+                      <span>{approvalDate}</span>
+                  </div>
+              )}
+          </div>
         </div>
       </div>
     </div>
