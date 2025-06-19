@@ -13,7 +13,7 @@ const JACHRIS_COMPANY_DETAILS = {
 };
 
 export function PrintableRequisition({ requisitionData, logoDataUri }: PrintableRequisitionProps) {
-  const { items } = requisitionData;
+  const { items, approverSignatureUrl } = requisitionData;
 
   const requisitionDateFormatted = requisitionData.requisitionDate 
     ? new Date(requisitionData.requisitionDate).toLocaleDateString('en-GB') 
@@ -99,7 +99,17 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
           {requisitionData.status === 'Approved' && requisitionData.approvalDate && (
             <p className="text-xs">Date: {approvalDateFormatted}</p>
           )}
-          <div className="mt-8 border-b border-black w-4/5"></div>
+           {requisitionData.status === 'Approved' && approverSignatureUrl && (
+            <div className="mt-2 h-16 w-32"> {/* Adjust size as needed */}
+              <img 
+                src={approverSignatureUrl} 
+                alt={`${requisitionData.approverName || 'Approver'}'s signature`} 
+                className="max-h-full max-w-full object-contain border border-dashed border-gray-300 p-1"
+                data-ai-hint="signature image" 
+              />
+            </div>
+          )}
+          <div className="mt-2 border-b border-black w-4/5"></div>
           <p className="text-xs">Signature & Date</p>
         </div>
       </div>

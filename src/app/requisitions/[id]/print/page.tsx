@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableRequisition } from '@/components/requisitions/printable-requisition';
-import type { RequisitionPayload } from '@/types';
+import type { RequisitionPayload, Approver } from '@/types';
 import { ArrowLeft, Printer, Download, Loader2, Edit } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -26,13 +26,30 @@ function PrintRequisitionPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const reqRes = await fetch(`/api/requisitions/${requisitionId}`); 
+      const [reqRes, approversRes] = await Promise.all([
+        fetch(`/api/requisitions/${requisitionId}`),
+        fetch('/api/approvers') 
+      ]);
+      
       if (!reqRes.ok) {
         const errorData = await reqRes.json().catch(() => ({ message: 'Failed to fetch requisition details.' }));
         throw new Error(errorData.message || `Failed to fetch requisition: ${reqRes.statusText}`);
       }
       const data: RequisitionPayload = await reqRes.json();
-      setRequisitionData(data);
+
+      let approverSignatureUrl: string | undefined = undefined;
+      if (approversRes.ok && data.status === 'Approved' && data.approverId) {
+        const allApprovers: Approver[] = await approversRes.json();
+        const approverDetails = allApprovers.find(a => a.id === data.approverId);
+        if (approverDetails) {
+          approverSignatureUrl = `/signatures/${approverDetails.id}.png`;
+        }
+      }
+      
+      setRequisitionData({
+        ...data,
+        approverSignatureUrl,
+      });
 
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
@@ -78,10 +95,7 @@ function PrintRequisitionPageContent() {
 
   const handleEditRequisition = () => {
     if (!requisitionData || !requisitionId) return;
-    // For now, navigating to the generic create page, which doesn't support editing requisitions yet.
-    // This will need to be updated if/when requisition editing is fully implemented in the form.
     toast({ title: 'Info', description: 'Requisition editing via the main form is not yet fully supported. This action is a placeholder.' });
-    // router.push(`/create-document?editRequisitionId=${requisitionId}`);
   };
 
 

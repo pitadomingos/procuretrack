@@ -174,6 +174,7 @@ export interface PurchaseOrderPayload {
   supplierName?: string;
   creatorName?: string;
   approverName?: string;
+  approverSignatureUrl?: string;
   quoteNo?: string;
   siteId?: number | null; 
 }
@@ -295,7 +296,7 @@ export interface RequisitionItem {
   categoryId: number | null;
   categoryName?: string;
   quantity: number;
-  justification?: string | null; // Renamed from notes
+  justification?: string | null; 
 }
 
 export interface RequisitionPayload {
@@ -305,15 +306,15 @@ export interface RequisitionPayload {
   requestedByUserId?: string | null; 
   requestedByName: string; 
   requestorFullName?: string;
-  siteId: number; // Header site ID is now mandatory for the payload
+  siteId: number; 
   siteName?: string;
   siteCode?: string;
   status: RequisitionStatus;
-  // justification field removed from header
-  items: RequisitionItem[]; // Items will use the updated RequisitionItem structure
+  items: RequisitionItem[]; 
   totalEstimatedValue?: number; 
   approverId?: string | null; 
   approverName?: string; 
+  approverSignatureUrl?: string;
   approvalDate?: string | null; 
   createdAt?: string; 
   updatedAt?: string; 
