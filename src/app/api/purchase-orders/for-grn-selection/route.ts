@@ -7,8 +7,7 @@ export async function GET(request: Request) {
   let connection;
   try {
     connection = await pool.getConnection();
-    // Select POs that are 'Approved' and potentially have items not fully received.
-    // This query can be further refined if more complex logic for "pending GRN" is needed.
+    // Select POs that are 'Approved' AND have at least one item not fully received.
     const query = `
       SELECT 
         po.id, 
@@ -18,8 +17,15 @@ export async function GET(request: Request) {
       FROM PurchaseOrder po
       LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
       WHERE po.status = 'Approved' 
+      AND EXISTS (
+        SELECT 1 
+        FROM POItem poi 
+        WHERE poi.poId = po.id 
+        AND (poi.itemStatus != 'Fully Received' OR poi.itemStatus IS NULL)
+      )
       ORDER BY po.creationDate DESC;
     `;
+    // Alternative check: AND EXISTS (SELECT 1 FROM POItem poi WHERE poi.poId = po.id AND poi.quantity > COALESCE(poi.quantityReceived, 0))
     const [rows]: any[] = await connection.execute(query);
 
     const results: ApprovedPOForSelect[] = rows.map((row: any) => ({
