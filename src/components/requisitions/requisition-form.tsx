@@ -32,13 +32,13 @@ const defaultItem: Omit<RequisitionItem, 'estimatedUnitPrice' | 'requisitionId' 
   categoryId: null, 
   quantity: 1, 
   notes: '',
-  siteId: null, // Item-level site
+  siteId: null, // Item-level site defaults to null
 };
 
 interface RequisitionFormValues {
   requestedByUserId: string | null;
   requestedByNameDisplay: string;
-  siteId: string | null; // Header-level site
+  // siteId: string | null; // REMOVED Header-level siteId from form values
   requisitionDate: string;
   requisitionNumberDisplay: string;
   justification: string;
@@ -65,7 +65,7 @@ export function RequisitionForm() {
     defaultValues: {
       requestedByUserId: MOCK_LOGGED_IN_USER_ID,
       requestedByNameDisplay: MOCK_LOGGED_IN_USER_NAME,
-      siteId: null,
+      // siteId: null, // REMOVED: Header siteId default
       requisitionDate: format(new Date(), 'yyyy-MM-dd'),
       requisitionNumberDisplay: 'Loading REQ...',
       justification: '',
@@ -104,7 +104,7 @@ export function RequisitionForm() {
         if (defaultUser) {
             form.setValue('requestedByUserId', defaultUser.id);
             form.setValue('requestedByNameDisplay', defaultUser.name);
-        } else if (fetchedUsers.length > 0) { // Fallback to first user if mock not found
+        } else if (fetchedUsers.length > 0) { 
             form.setValue('requestedByUserId', fetchedUsers[0].id);
             form.setValue('requestedByNameDisplay', fetchedUsers[0].name);
         }
@@ -150,11 +150,10 @@ export function RequisitionForm() {
       toast({ title: "Validation Error", description: "Please select a requestor.", variant: "destructive" });
       return;
     }
-     if (!formData.siteId) { // Ensure header site is selected
-      toast({ title: "Validation Error", description: "Please select a Site/Department for the requisition header.", variant: "destructive" });
-      return;
-    }
-    for (const item of formData.items) { // Ensure each item has a site
+    // Header siteId is no longer in formData directly, so validation for it here is removed.
+    // The Requisition.siteId in the DB is nullable.
+    
+    for (const item of formData.items) { 
         if (!item.siteId) {
             toast({ title: "Validation Error", description: `Please select a site for item: "${item.description || 'Unnamed Item'}".`, variant: "destructive" });
             return;
@@ -163,13 +162,13 @@ export function RequisitionForm() {
 
     setIsSubmitting(true);
 
-    const payload: Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'approverName' | 'approvalDate'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[], status: RequisitionPayload['status'], approverId?: string | null } = {
+    const payload: Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'approverName' | 'approvalDate' | 'siteName' | 'siteCode' | 'requestorFullName'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[], status: RequisitionPayload['status'], approverId?: string | null, siteId: number | null } = {
       id: crypto.randomUUID(),
       requisitionNumber: formData.requisitionNumberDisplay,
       requisitionDate: new Date(formData.requisitionDate).toISOString(),
       requestedByUserId: formData.requestedByUserId,
       requestedByName: formData.requestedByNameDisplay,
-      siteId: formData.siteId ? Number(formData.siteId) : null,
+      siteId: null, // Header siteId is now null as it's removed from the form. DB schema allows NULL.
       status: formData.approverId && formData.approverId !== NO_APPROVER_VALUE ? 'Pending Approval' : 'Draft',
       justification: formData.justification,
       approverId: (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? formData.approverId : null,
@@ -253,20 +252,8 @@ export function RequisitionForm() {
               )} />
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control} name="siteId" rules={{ required: 'Site/Dept. is required' }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Site/Department (Header) *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select a site" /></SelectTrigger></FormControl>
-                        <SelectContent>{sites.map(s => (<SelectItem key={s.id} value={s.id.toString()}>{s.name} ({s.siteCode})</SelectItem>))}</SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <div className="grid md:grid-cols-2 gap-4">
+                {/* REMOVED Header Site/Department Field */}
                  <FormField
                   control={form.control} name="approverId"
                   render={({ field }) => (
@@ -291,7 +278,7 @@ export function RequisitionForm() {
                 <FormField
                   control={form.control} name="justification" rules={{ required: 'Justification is required' }}
                   render={({ field }) => (
-                    <FormItem className="md:col-span-3 md:row-start-2">
+                    <FormItem className="md:col-span-2"> {/* Adjusted to col-span-2 to fill row if header site removed */}
                       <FormLabel>Justification *</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Briefly explain why these items are needed..." className="resize-none h-24" {...field} />
@@ -335,7 +322,7 @@ export function RequisitionForm() {
                       <FormItem className="lg:col-span-2">
                         <FormLabel>Item Site *</FormLabel>
                         <Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ''}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger></FormControl>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Select Site for Item" /></SelectTrigger></FormControl>
                           <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>
                         </Select>
                         <FormMessage />
@@ -359,7 +346,7 @@ export function RequisitionForm() {
                 </Card>
               );
             })}
-            <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID(), siteId: form.getValues('siteId') ? Number(form.getValues('siteId')) : null })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
+            <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID(), siteId: null })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
 
             <Separator className="my-6"/>
 
@@ -376,10 +363,11 @@ export function RequisitionForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          This requisition will be saved. If an approver is selected, it will be submitted for approval. Otherwise, it will be saved as a Draft.
+          This requisition will be saved. If an approver is selected, it will be submitted for approval. Otherwise, it will be saved as a Draft. Each item must have a site selected.
         </p>
       </CardFooter>
     </Card>
   );
 }
-
+    
+    
