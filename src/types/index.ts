@@ -177,7 +177,7 @@ export interface PurchaseOrderPayload {
   approverName?: string;
   approverSignatureUrl?: string;
   quoteNo?: string;
-  siteId?: number | null; // This is the PO Header siteId, now optional from form
+  siteId?: number | null; 
 }
 
 
@@ -307,7 +307,7 @@ export interface RequisitionPayload {
   requestedByUserId?: string | null; 
   requestedByName: string; 
   requestorFullName?: string;
-  siteId: number; // This is the header siteId, now mandatory
+  siteId: number; 
   siteName?: string;
   siteCode?: string;
   status: RequisitionStatus;
@@ -383,5 +383,19 @@ export interface SurveyFormValues {
   recommendationLikelihood: string;
   mostUsedFeatures: string;
   suggestions: string;
+}
+
+// For GRN Interface
+export interface ApprovedPOForSelect {
+  id: number;
+  poNumber: string;
+  supplierName: string | null;
+  creationDate: string;
+}
+
+export interface GRNItemFormData extends POItemPayload {
+  receiveNowQty: number;
+  outstandingQty: number;
+  itemSpecificNotes?: string;
 }
     
