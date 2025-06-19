@@ -102,28 +102,33 @@ body {
     padding: 0 !important;
     width: 100%;
     height: auto;
-    font-size: 10pt; /* Adjust base font size for print */
+    font-size: 10pt;
   }
 
   /* Hide elements not meant for printing by default */
-  header, nav, aside, footer, .print-hidden {
+  header, 
+  nav, 
+  aside, 
+  footer, 
+  div[data-sidebar="sidebar"], /* Explicitly hide the main sidebar component */
+  .print-hidden {
     display: none !important;
     visibility: hidden !important;
   }
   
   /* Ensure the printable area takes full width and has no weird shadows/borders */
-  .printable-po-content-wrapper { /* Applied to the div wrapping PrintablePO */
+  .printable-po-content-wrapper { /* Applied to the div wrapping PrintablePO/Quote/Requisition/GRN */
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 0 !important; /* Crucial to remove padding that might cause overflow */
+    padding: 0 !important; 
     width: 100% !important;
     max-width: 100% !important;
     background-color: #ffffff !important;
   }
 
   /* Reset any card styling that might cause issues for the main PO card */
-  .print-page-card { /* Specific class for the outer Card on print page if needed */
+  .print-page-card { 
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
@@ -136,24 +141,26 @@ body {
     background-color: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
-    min-height: auto !important; /* Reset min-height */
+    min-height: auto !important;
   }
 
   .print-page-inner-container {
      padding: 0 !important;
      margin: 0 !important;
-     max-width: 100% !important; /* Ensure it doesn't try to be 'max-w-4xl' */
+     max-width: 100% !important;
   }
-
 
   /* Attempt to control page breaks and sizing better */
   @page {
     size: A4 portrait;
-    margin: 0.75cm; /* Adjust margins to control space for browser headers/footers */
+    margin: 0.75cm; 
   }
 
-  /* Prevent page breaks inside the main PO content if possible */
-  .printable-po-content { /* This class should be on the root div inside PrintablePO.tsx if needed */
+  /* Prevent page breaks inside the main printable content if possible */
+  .printable-po-content, /* Class for PrintablePO's root div */
+  .printable-quote-content, /* Class for PrintableQuote's root div */
+  .printable-requisition-content, /* Class for PrintableRequisition's root div */
+  .printable-grn-content /* Class for PrintableGRN's root div */ {
     page-break-inside: avoid;
   }
 
@@ -161,14 +168,14 @@ body {
   *, *::before, *::after {
     transition: none !important;
     transform: none !important;
-    box-shadow: none !important; /* Aggressively remove shadows */
+    box-shadow: none !important; 
   }
 
   /* Ensure table borders are visible and simple for print */
   table, th, td {
-    border: 1px solid #000000 !important; /* Simple black border for all table elements */
+    border: 1px solid #000000 !important; 
   }
   th, td {
-    padding: 4pt !important; /* Reduce padding for table cells */
+    padding: 4pt !important; 
   }
 }
