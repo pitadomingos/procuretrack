@@ -88,6 +88,7 @@ export interface Approver {
   department?: string | null;
   isActive: boolean;
   approvalLimit?: number | null;
+  approverSignatureUrl?: string;
 }
 
 export interface User {
@@ -176,7 +177,7 @@ export interface PurchaseOrderPayload {
   approverName?: string;
   approverSignatureUrl?: string;
   quoteNo?: string;
-  siteId?: number | null; 
+  siteId?: number | null; // This is the PO Header siteId, now optional from form
 }
 
 
@@ -306,7 +307,7 @@ export interface RequisitionPayload {
   requestedByUserId?: string | null; 
   requestedByName: string; 
   requestorFullName?: string;
-  siteId: number; 
+  siteId: number; // This is the header siteId, now mandatory
   siteName?: string;
   siteCode?: string;
   status: RequisitionStatus;

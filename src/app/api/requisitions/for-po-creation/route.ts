@@ -7,13 +7,15 @@ export async function GET() {
   try {
     // Fetches requisitions that are marked as 'Approved' and thus ready for PO creation
     // Only returns minimal data needed for selection in the PO form.
+    // This query implicitly excludes 'Closed' requisitions because it only asks for 'Approved'.
     const query = `
       SELECT 
         r.id, 
         r.requisitionNumber, 
         r.requisitionDate, 
         r.requestedByName,
-        s.siteCode as siteName,
+        r.siteId, -- Added Requisition Header siteId
+        s.siteCode as siteName, -- siteName is actually siteCode here for display
         (SELECT COUNT(*) FROM RequisitionItem ri WHERE ri.requisitionId = r.id) as itemCount
       FROM Requisition r
       LEFT JOIN Site s ON r.siteId = s.id
@@ -25,9 +27,10 @@ export async function GET() {
     const approvedRequisitions = rows.map(row => ({
         id: row.id,
         requisitionNumber: row.requisitionNumber,
-        requisitionDate: new Date(row.requisitionDate).toISOString().split('T')[0], // Format as YYYY-MM-DD
+        requisitionDate: new Date(row.requisitionDate).toISOString(), // Keep as ISO string for consistency
         requestedByName: row.requestedByName,
-        siteName: row.siteName || 'N/A',
+        siteName: row.siteName || 'N/A', // This is siteCode
+        siteId: Number(row.siteId), // Include the header siteId
         itemCount: Number(row.itemCount || 0),
     }));
 

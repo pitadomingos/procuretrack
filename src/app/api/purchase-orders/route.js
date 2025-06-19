@@ -10,20 +10,20 @@ export async function GET(request) {
   const year = searchParams.get('year');
   const approverId = searchParams.get('approverId');
   const creatorUserId = searchParams.get('creatorUserId'); 
-  const overallSiteId = searchParams.get('siteId'); // For header-level site filtering
+  // const overallSiteId = searchParams.get('siteId'); // Overall PO siteId filter removed
 
   let query = `
     SELECT
         po.id, po.poNumber, po.creationDate, po.status, po.subTotal, po.vatAmount,
         po.grandTotal, po.currency, po.pricesIncludeVat, po.notes, po.requestedByName, 
-        po.creatorUserId, po.approverId, po.supplierId, po.siteId AS overallSiteId, -- Added overallSiteId
+        po.creatorUserId, po.approverId, po.supplierId, po.siteId AS overallSiteId, 
         s.supplierName, app.name AS approverName, u.name AS creatorName,
-        overall_site.siteCode AS overallSiteName -- Added overall site name/code
+        overall_site.siteCode AS overallSiteName 
     FROM PurchaseOrder po
     LEFT JOIN Supplier s ON po.supplierId = s.supplierCode
     LEFT JOIN Approver app ON po.approverId = app.id
     LEFT JOIN User u ON po.creatorUserId = u.id
-    LEFT JOIN Site overall_site ON po.siteId = overall_site.id -- Join for overall site
+    LEFT JOIN Site overall_site ON po.siteId = overall_site.id 
     WHERE 1=1
   `;
   const queryParams = [];
@@ -44,10 +44,11 @@ export async function GET(request) {
     query += ' AND po.creatorUserId = ?';
     queryParams.push(creatorUserId);
   }
-  if (overallSiteId && overallSiteId !== 'all') { // Filter by overall PO siteId
-    query += ' AND po.siteId = ?';
-    queryParams.push(parseInt(overallSiteId, 10));
-  }
+  // Overall PO siteId filter is removed as the field is removed from the form
+  // if (overallSiteId && overallSiteId !== 'all') { 
+  //   query += ' AND po.siteId = ?';
+  //   queryParams.push(parseInt(overallSiteId, 10));
+  // }
 
 
   query += ' ORDER BY po.creationDate DESC';
@@ -71,20 +72,20 @@ export async function POST(request) {
       const poData = await request.json();
       const {
         poNumber, creationDate, creatorUserId, requestedByName, supplierId,    
-        approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, // Added siteId here
-        pricesIncludeVat, notes, items,
+        approverId, /* siteId, */ status, subTotal, vatAmount, grandTotal, currency, // siteId (overall PO siteId) removed
+        pricesIncludeVat, notes, items, selectedRequisitionId, // Added selectedRequisitionId
       } = poData;
 
       connection = await pool.getConnection();
       await connection.beginTransaction();
 
       const finalCreatorUserId = creatorUserId || null;
-      const finalSiteId = siteId ? Number(siteId) : null; // Ensure siteId is number or null
+      // const finalSiteId = siteId ? Number(siteId) : null; // Removed finalSiteId, PO header siteId will be NULL
 
       const [poResult] = await connection.execute(
         `INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // Added siteId to query
-        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, finalSiteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes] // Added finalSiteId to params
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
+        [poNumber, new Date(creationDate), finalCreatorUserId, requestedByName, supplierId, approverId, null, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes] // siteId set to null
       );
 
       const newPoId = poResult.insertId;
@@ -93,9 +94,22 @@ export async function POST(request) {
         for (const item of items) {
           await connection.execute(
             `INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, // Item-level siteId remains here
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, 
             [newPoId, item.partNumber, item.description, item.categoryId, item.siteId || null, item.uom, Number(item.quantity), Number(item.unitPrice), item.quantityReceived || 0, item.itemStatus || 'Pending']
           );
+        }
+      }
+
+      if (selectedRequisitionId) {
+        console.log(`[API_INFO] PO created from Requisition ID: ${selectedRequisitionId}. Attempting to update Requisition status.`);
+        const [updateReqResult] = await connection.execute(
+          'UPDATE Requisition SET status = ? WHERE id = ? AND status = ?',
+          ['Closed', selectedRequisitionId, 'Approved'] // Mark as 'Closed', ensure it was 'Approved'
+        );
+        if (updateReqResult.affectedRows > 0) {
+          console.log(`[API_INFO] Requisition ID ${selectedRequisitionId} status updated to 'Closed'.`);
+        } else {
+          console.warn(`[API_WARN] Failed to update Requisition ID ${selectedRequisitionId} status to 'Closed', or it was not in 'Approved' state.`);
         }
       }
 
@@ -115,7 +129,6 @@ export async function POST(request) {
     }
   } else if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/purchase-orders POST: Received multipart/form-data request for CSV upload.');
-    // CSV Upload logic remains largely the same, might need to handle overall siteId if present in CSV
     try {
       const formData = await request.formData();
       const file = formData.get('file');
