@@ -13,7 +13,7 @@ const JACHRIS_COMPANY_DETAILS = {
 };
 
 export function PrintableRequisition({ requisitionData, logoDataUri }: PrintableRequisitionProps) {
-  const { items, approverSignatureUrl } = requisitionData;
+  const { items, approverSignatureUrl, status, approverName } = requisitionData;
 
   const requisitionDateFormatted = requisitionData.requisitionDate 
     ? new Date(requisitionData.requisitionDate).toLocaleDateString('en-GB') 
@@ -26,6 +26,41 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
   const headerSiteName = requisitionData.siteCode || requisitionData.siteName || (requisitionData.siteId ? `Site ID: ${requisitionData.siteId}`: 'N/A');
 
   const printableItems = (items || []) as RequisitionItem[];
+
+  const getApprovalDisplay = () => {
+    if (status === 'Approved') {
+      return {
+        text: approverName || 'Approved (Name Missing)',
+        showDate: true,
+        showSignature: !!approverSignatureUrl,
+      };
+    } else if (status === 'Pending Approval') {
+      return {
+        text: `(Pending Approval - ${approverName || 'N/A'})`,
+        showDate: false,
+        showSignature: false,
+      };
+    } else if (status === 'Draft') {
+      return {
+        text: '(Not Yet Submitted for Approval)',
+        showDate: false,
+        showSignature: false,
+      };
+    } else if (status === 'Rejected') {
+      return {
+        text: '(Rejected)',
+        showDate: false,
+        showSignature: false,
+      };
+    }
+    return { // Default for other statuses or if status is undefined
+        text: `(${status || 'Status Unknown'})`,
+        showDate: false,
+        showSignature: false,
+    };
+  };
+
+  const approvalDisplay = getApprovalDisplay();
 
   return (
     <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
@@ -95,15 +130,15 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
       <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-1 gap-4"> 
         <div>
           <p className="mb-1"><strong className="text-gray-600">Approved By:</strong></p>
-          <p className="font-semibold">{requisitionData.approverName || (requisitionData.status === 'Pending Approval' ? '(Pending Approval)' : (requisitionData.status === 'Approved' ? 'Approved (Name Missing)' : 'N/A'))}</p>
-          {requisitionData.status === 'Approved' && requisitionData.approvalDate && (
+          <p className="font-semibold">{approvalDisplay.text}</p>
+          {approvalDisplay.showDate && (
             <p className="text-xs">Date: {approvalDateFormatted}</p>
           )}
-           {requisitionData.status === 'Approved' && approverSignatureUrl && (
+           {approvalDisplay.showSignature && (
             <div className="mt-2 h-16 w-32"> {/* Adjust size as needed */}
               <img 
                 src={approverSignatureUrl} 
-                alt={`${requisitionData.approverName || 'Approver'}'s signature`} 
+                alt={`${approverName || 'Approver'}'s signature`} 
                 className="max-h-full max-w-full object-contain border border-dashed border-gray-300 p-1"
                 data-ai-hint="signature image" 
               />
@@ -117,3 +152,4 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     </div>
   );
 }
+
