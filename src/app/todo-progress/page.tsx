@@ -18,7 +18,7 @@ import {
   BarChart3,
   FileText,
   BookUser,
-  FileCode,
+  FileCode2,
   ClipboardCheck,
   Printer, 
   UserCheck, 
@@ -27,48 +27,79 @@ import {
   ClipboardList,
   Building,
   UploadCloud,
-  Table2
+  Table2,
+  Truck,
+  Package,
+  Briefcase,
+  TagIcon as TagLucideIcon,
+  MessageCircleQuestion,
+  ArrowRightLeft,
+  Layers
 } from "lucide-react";
 
 export default function TodoProgressPage() {
   const completedTasks = [
     { icon: Settings2, text: "Initial Next.js 15 (App Router) & TypeScript setup." },
     { icon: Palette, text: "UI Framework: ShadCN UI components & Tailwind CSS integration." },
-    { icon: LayoutList, text: "Core App Layout: Collapsible sidebar, header, theme provider." },
+    { icon: LayoutList, text: "Core App Layout: Collapsible sidebar, header, theme provider, star rating in header." },
     { icon: Palette, text: "Dark Mode & Light Mode theme toggle functionality." },
-    { icon: LayoutDashboard, text: "Dashboard Page: Stat cards, placeholder charts for PO status and allocations." },
+    { icon: LayoutDashboard, text: "Dashboard Page: Dynamic stat cards, charts for Monthly PO Status, Site PO Value, Users by Role, Tags by Status. Data fetched via API." },
     { icon: FileSignature, text: "Create Document Page: Tabbed interface for PO, GRN, Quote, Requisition, Fuel." },
-    { icon: FileSignature, text: "Purchase Order (PO) Form: Detailed form for creating POs with item arrays, calculations, supplier selection, and support for editing existing POs." },
-    { icon: Edit3, text: "PO Editing Functionality: Load existing PO data into form, update header & items via API, manage PO number display (read-only in edit mode)." },
-    { icon: Printer, text: "PO PDF Generation: Server-side creation and download of POs as PDF documents using Puppeteer, including print styling." },
-    { icon: UserCheck, text: "'My Approvals' Page: List POs pending for a specific (mock) approver with navigation to print/approve page." },
-    { icon: ServerCog, text: "API for Pending Approvals: Endpoint to fetch purchase orders awaiting approval for a given approver email." },
-    { icon: DatabaseZap, text: "Database Schema Management: Ensured correct handling of `PurchaseOrder` table's `approverId` and removed obsolete `approvedByUserId` columns/logic, updated related foreign keys." },
-    { icon: Users, text: "Goods Received Note (GRN) Interface: PO search and item receiving simulation." },
-    { icon: Settings, text: "Management Section Hub: Links to individual entity management pages." },
-    { icon: Users, text: "Placeholder Management Pages: For Approvers, Users, Allocations, Categories with mock data tables." },
-    { icon: Building, text: "Site Management: Full CRUD operations for managing company sites (Add, View, Edit, Delete) with backend API and UI integration." },
-    { icon: FileSignature, text: "Client Quotation Form & List View: UI for creating quotes, list view with mock data, print preview." },
-    { icon: ClipboardList, text: "Purchase Requisition Form & List View: UI for creating requisitions, list view with mock data, print preview, part number field." },
-    { icon: Fuel, text: "Fuel Record Form & List View: UI for recording fuel, list view with mock data, distance travelled calculation, site code display." },
-    { icon: ListChecks, text: "Activity Log Page: Displaying mock activity data." },
-    { icon: BarChart3, text: "Analytics Page: Charts for Spend by Vendor, PO Count by Category, and placeholders for Quote/Fuel." },
-    { icon: FileText, text: "Reports Page: Placeholder for future reporting features." },
-    { icon: BookUser, text: "User Manual Page: Structure for application user guide." },
-    { icon: FileCode, text: "System Documentation Page: Structure including architecture overview & key files list." },
+    { 
+      icon: FileSignature, 
+      text: "Purchase Order (PO) Module: Detailed PO Form (creation & editing, including loading items from approved Requisitions), PO API for CRUD & next PO number, Print Preview & PDF Generation." 
+    },
+    {
+      icon: FileSignature,
+      text: "Client Quotation Module: Quote Form (creation & editing), Quote API for CRUD & next quote number, Print Preview."
+    },
+    {
+      icon: ClipboardList,
+      text: "Purchase Requisition Module: Requisition Form (creation & editing), Requisition API for CRUD & next requisition number, Print Preview."
+    },
+    { 
+      icon: UserCheck, 
+      text: "Approvals Workflow: Consolidated 'My Approvals' Page for POs, Quotes, & Requisitions. API endpoints for fetching pending items and processing approvals/rejections. Review PO Modal for item feedback." 
+    },
+    { icon: Truck, text: "Goods Received Note (GRN) Interface: PO search and item receiving UI simulation (full backend update pending)." },
+    { icon: Fuel, text: "Fuel Record Module: Fuel Record Form & List view with distance calculation, mock data for now." },
+    { 
+      icon: Settings, 
+      text: "Management Section & CRUD APIs: Hub page. Full CRUD operations for Sites, Suppliers, Approvers, Users, Categories, Tags, Clients with backend API integration." 
+    },
+    {
+      icon: UploadCloud,
+      text: "CSV Data Upload: Implemented for Clients, Tags, and Suppliers, including downloadable templates."
+    },
+    { 
+      icon: DatabaseZap, 
+      text: "Database Schema: Initial setup and various alteration scripts executed (e.g., RequisitionItem.siteId added, estimatedUnitPrice dropped, PO approverId logic updated)." 
+    },
+    { icon: ListChecks, text: "Activity Log Page: Displaying mock activity data, full logging pending." },
+    { icon: BarChart3, text: "Analytics Page: Charts for Spend by Vendor, PO by Category, Users by Role, Tags by Status. Detailed 'Coming Soon' suggestions added for GRN, Quote, Requisition, Fuel tabs." },
+    { icon: FileText, text: "Reports Page: Placeholder structure for future reporting features." },
+    { icon: BookUser, text: "User Manual: Detailed content for core features like Document Creation, Approvals, Management." },
+    { icon: FileCode2, text: "System Documentation: Comprehensive overview of architecture, technologies, key files, and future roadmap." },
+    { icon: MessageCircleQuestion, text: "Feedback Survey Page: UI for user feedback collection (backend submission pending)." },
+    { icon: ClipboardCheck, text: "This To-Do/Progress page for tracking development." },
   ];
 
   const upcomingTasks = [
-    { icon: DatabaseZap, text: "Full Backend Integration: Connect forms and tables to the MySQL database via Express API for all CRUD operations (Suppliers, Categories, Tags, Clients, etc.)." },
-    { icon: UploadCloud, text: "CSV Data Upload Functionality: Implement CSV uploads for Fuel Records, Quotes (headers), and potentially other entities like Suppliers, POs. Create CSV templates." },
-    { icon: Table2, text: "Database Table Creation Scripts: Finalize and test scripts for all new entities (Clients, Quotes, Requisitions, Tags, Fuel Records)." },
-    { icon: FileSignature, text: "Complete GRN Functionality: Actual item receipt processing, stock updates, back-order handling." },
-    { icon: Fuel, text: "Complete 'Record Fuel' Logic: Backend saving of fuel records and robust distance calculation if API needs more complex logic." },
-    { icon: FileText, text: "Develop Report Generation: Create dynamic reports based on system data (PO status, spend, vendor performance)." },
-    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement custom login, user roles, and permissions." },
+    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement robust login, user roles (Admin, Creator, Approver, etc.), and permission-based access control for all features and data." },
+    { icon: Truck, text: "Complete GRN Functionality: Actual item receipt processing in the database (update POItem statuses & quantityReceived), GRN document generation/history." },
+    { icon: DatabaseZap, text: "Complete Backend for Fuel Records: Ensure robust saving and retrieval of fuel records from the database, beyond mock data." },
+    { icon: FileText, text: "Develop Reporting Module: Create dynamic reports (PO status, spend, vendor performance, GRN summaries, Fuel usage etc.) with filtering and export options (Excel, PDF)." },
+    { icon: Zap, text: "Real-time Notifications: In-app or email notifications for approvals, status changes, comments." },
     { icon: BrainCircuit, text: "Integrate Genkit for AI Features: Explore AI-assisted form filling, data analysis, or report summaries." },
-    { icon: Zap, text: "Real-time Notifications (e.g., Email for PO approvals, new assignments)." },
-    { icon: Users, text: "User Profile & Settings Page: Allow users to manage their preferences." },
+    { icon: Settings2, text: "User Profile & Settings Page: Allow users to manage their profile, preferences, and notification settings." },
+    { icon: Layers, text: "Inventory Management Module (Potential): If required, add functionality to track inventory levels, manage stock movements, and link with procurement." },
+    { icon: ArrowRightLeft, text: "Advanced GRN Features: Handling of partial receipts, back-orders, and returns more explicitly." },
+    { icon: UploadCloud, text: "CSV Data Upload Expansion: Implement for POs, Requisitions, and Fuel Records." },
+    { icon: ListChecks, text: "Enhanced Activity Logging: More detailed and searchable activity logs integrated with backend actions." },
+    { icon: MessageCircleQuestion, text: "Survey Pop-up Logic: Implement triggers for displaying the feedback survey based on user activity or specific events." },
+    { icon: BarChart3, text: "Advanced Analytics Dashboards: Implement the suggested 'Coming Soon' analytics for GRN, Quotes, Requisitions, and Fuel tabs." },
+    { icon: ClipboardCheck, text: "Automated Testing: Implement unit, integration, and end-to-end tests." },
+    { icon: Zap, text: "Performance Optimization: Continuous monitoring and optimization of database queries, API response times, and frontend rendering." },
   ];
 
   return (
@@ -126,3 +157,4 @@ export default function TodoProgressPage() {
     </div>
   );
 }
+
