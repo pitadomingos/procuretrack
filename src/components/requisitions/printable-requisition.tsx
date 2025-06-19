@@ -53,8 +53,6 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
         </div>
       </div>
       
-      {/* Header Justification removed */}
-
       {/* Items Table */}
       <div className="mb-6 min-h-[250px]">
         <table className="w-full border-collapse border border-gray-400 text-xs">
@@ -63,9 +61,8 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
               <th className="border border-gray-400 p-2 text-left">PART NUMBER</th>
               <th className="border border-gray-400 p-2 text-left w-2/5">ITEM / SERVICE DESCRIPTION</th>
               <th className="border border-gray-400 p-2 text-left">CATEGORY</th>
-              {/* Item Site column removed */}
               <th className="border border-gray-400 p-2 text-center">QTY</th>
-              <th className="border border-gray-400 p-2 text-left">JUSTIFICATION</th> {/* Renamed from NOTES */}
+              <th className="border border-gray-400 p-2 text-left">JUSTIFICATION</th>
             </tr>
           </thead>
           <tbody>
@@ -76,9 +73,8 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
                   <td className="border border-gray-400 p-2 align-top">{item.partNumber || ''}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.description}</td>
                   <td className="border border-gray-400 p-2 align-top">{categoryName}</td>
-                  {/* Item Site cell removed */}
                   <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
-                  <td className="border border-gray-400 p-2 align-top">{item.justification || ''}</td> {/* Display item justification */}
+                  <td className="border border-gray-400 p-2 align-top">{item.justification || ''}</td>
                 </tr>
               );
             })}
@@ -87,7 +83,6 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
                     <td className="border border-gray-400 p-2 h-7">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
-                    {/* Empty cell for removed Item Site */}
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                 </tr>
