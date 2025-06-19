@@ -4,11 +4,9 @@ import { pool } from '../../../../backend/db.js';
 import type { RequisitionPayload, RequisitionItem } from '@/types';
 import { randomUUID } from 'crypto';
 
-// Helper function to safely convert date values to ISO string or null
 const safeToISOString = (dateValue: any): string | null => {
   if (!dateValue) return null;
   const dateObj = new Date(dateValue);
-  // Check if the date is valid. getTime() on an Invalid Date object returns NaN.
   if (isNaN(dateObj.getTime())) {
     console.warn(`[API WARN] Invalid date value encountered: ${dateValue}. Returning null.`);
     return null;
@@ -20,12 +18,16 @@ const safeToISOString = (dateValue: any): string | null => {
 export async function POST(request: Request) {
   let connection;
   try {
-    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[], status?: RequisitionPayload['status'], approverId?: string | null };
+    const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'justification'> & { items: RequisitionItem[], status?: RequisitionPayload['status'], approverId?: string | null, siteId: number }; // siteId (header) is now expected to be number
     
     const generatedId = requisitionData.id || randomUUID();
 
-    if (!requisitionData.requisitionNumber || !requisitionData.requisitionDate || !requisitionData.requestedByName || !requisitionData.siteId) {
-        return NextResponse.json({ error: 'Missing required fields for requisition header.' }, { status: 400 });
+    // Validate header siteId
+    if (!requisitionData.siteId) {
+        return NextResponse.json({ error: 'Site/Department is required for the requisition header.' }, { status: 400 });
+    }
+    if (!requisitionData.requisitionNumber || !requisitionData.requisitionDate || !requisitionData.requestedByName) {
+        return NextResponse.json({ error: 'Missing required fields for requisition header (Req No, Date, Requested By).' }, { status: 400 });
     }
     if (!requisitionData.items || requisitionData.items.length === 0) {
         return NextResponse.json({ error: 'Requisition must have at least one item.' }, { status: 400 });
@@ -36,34 +38,31 @@ export async function POST(request: Request) {
 
     const statusToSave = requisitionData.approverId ? 'Pending Approval' : 'Draft';
 
+    // Header justification field removed from INSERT
     await connection.execute(
-      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, justification, approverId, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO Requisition (id, requisitionNumber, requisitionDate, requestedByUserId, requestedByName, siteId, status, approverId, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`, // justification removed
       [
         generatedId,
         requisitionData.requisitionNumber,
         new Date(requisitionData.requisitionDate).toISOString().slice(0, 19).replace('T', ' '),
         requisitionData.requestedByUserId || null,
         requisitionData.requestedByName,
-        Number(requisitionData.siteId),
+        Number(requisitionData.siteId), // Header siteId
         statusToSave, 
-        requisitionData.justification,
         requisitionData.approverId || null, 
       ]
     );
 
     for (const item of requisitionData.items) {
-      if (!item.description || !item.quantity) {
+      if (!item.description || !item.quantity) { // Item-level justification is now in item.justification (mapped to DB notes column)
           await connection.rollback();
           return NextResponse.json({ error: `Item description and quantity are required. Item problematic: ${JSON.stringify(item)}` }, { status: 400 });
       }
-      if (item.siteId === undefined || item.siteId === null) { // Added check for item.siteId
-          await connection.rollback();
-          return NextResponse.json({ error: `Site ID is required for item: "${item.description || 'Unnamed Item'}".` }, { status: 400 });
-      }
+      // Item siteId removed from INSERT
       await connection.execute(
-        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, siteId, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`, // siteId removed, notes now stores item justification
         [
           item.id || randomUUID(),
           generatedId, 
@@ -71,8 +70,7 @@ export async function POST(request: Request) {
           item.description, 
           item.categoryId ? Number(item.categoryId) : null, 
           Number(item.quantity), 
-          item.notes,
-          Number(item.siteId) // Ensure siteId is a number
+          item.justification, // This was item.notes (renamed to justification in type, maps to 'notes' DB column)
         ]
       );
     }
@@ -103,7 +101,6 @@ export async function POST(request: Request) {
           else if (error.message.includes('fk_requisition_user')) field = 'Requested By User ID';
           else if (error.message.includes('fk_requisition_approver')) field = 'Approver ID';
           else if (error.message.includes('fk_reqitem_category')) field = 'Item Category ID';
-          else if (error.message.includes('fk_reqitem_site')) field = 'Item Site ID';
           errorMessage = `Invalid reference for ${field}. Please ensure the selected value exists.`;
           statusCode = 400;
           break;
@@ -111,19 +108,14 @@ export async function POST(request: Request) {
              errorMessage = `A required field was not provided or was invalid. Field: ${error.message.match(/Column '(\w+)'/)?.[1] || 'unknown'}`;
              statusCode = 400;
              break;
-        case 'ER_BAD_FIELD_ERROR': // MySQL code 1054 for Unknown column
+        case 'ER_BAD_FIELD_ERROR': 
              const columnMatch = error.message.match(/Unknown column '(\w+)'/);
              const unknownColumn = columnMatch ? columnMatch[1].toLowerCase() : 'an unknown column';
              errorMessage = `Database error: Unknown column '${unknownColumn}' in field list.`;
-             if (unknownColumn === 'siteid') {
-                 errorDetails = `The database table 'RequisitionItem' is likely missing the 'siteId' column. Please ensure the migration script 'scripts/alter_requisition_items_table_add_site_id.js' has been run successfully. Original DB error: ${error.message}`;
-             } else {
-                 errorDetails = `The database table (possibly RequisitionItem) is missing the column '${unknownColumn}' or it's misspelled in the query. Please ensure database migrations have been run correctly. Original DB error: ${error.message}`;
-             }
+             errorDetails = `The database table (possibly Requisition or RequisitionItem) is missing the column '${unknownColumn}' or it's misspelled in the query. Please ensure database migrations have been run correctly. Original DB error: ${error.message}`;
              statusCode = 500; 
              break;
         default:
-          // Keep generic error message but provide details if available
           break;
       }
     }
@@ -137,7 +129,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const month = searchParams.get('month');
   const year = searchParams.get('year');
-  const siteId = searchParams.get('siteId');
+  const siteId = searchParams.get('siteId'); // This will filter by Requisition.siteId (header site)
   const requestedByUserId = searchParams.get('requestedByUserId');
   const status = searchParams.get('status');
 
@@ -145,11 +137,12 @@ export async function GET(request: Request) {
     SELECT 
       r.id, r.requisitionNumber, r.requisitionDate, r.requestedByName, r.status, 
       r.approverId, r.approvalDate,
-      s.name as siteName, s.siteCode,
+      s.name as siteName, s.siteCode, -- This is for the header site
       u.name as requestorFullName,
       app.name as approverName
+      -- Removed r.justification as it's no longer a header field from form
     FROM Requisition r
-    LEFT JOIN Site s ON r.siteId = s.id
+    LEFT JOIN Site s ON r.siteId = s.id -- Join for header site
     LEFT JOIN User u ON r.requestedByUserId = u.id
     LEFT JOIN Approver app ON r.approverId = app.id
     WHERE 1=1
@@ -164,7 +157,7 @@ export async function GET(request: Request) {
     query += ' AND YEAR(r.requisitionDate) = ?';
     queryParams.push(parseInt(year, 10));
   }
-  if (siteId && siteId !== 'all') {
+  if (siteId && siteId !== 'all') { // Filters by header siteId
     query += ' AND r.siteId = ?';
     queryParams.push(parseInt(siteId, 10));
   }
@@ -183,7 +176,7 @@ export async function GET(request: Request) {
     const [rows]: any[] = await pool.execute(query, queryParams);
     const requisitions = rows.map(row => ({
         ...row,
-        siteName: row.siteCode || row.siteName,
+        siteName: row.siteCode || row.siteName, // Header site display
         requestedByName: row.requestorFullName || row.requestedByName,
         approverName: row.approverName,
         approvalDate: safeToISOString(row.approvalDate),
@@ -198,12 +191,14 @@ export async function GET(request: Request) {
     
     console.error(`[API_ERROR_DETAILS] /api/requisitions GET: Code: ${errorCode}, SQL State: ${sqlState}, Message: "${errorMessage}"`);
     
-    return NextResponse.json({
+    return NextResponse.json(
+      {
         error: 'Failed to fetch requisitions due to a server-side database error.',
         details: `Database operation failed with message: "${errorMessage}". Error Code: ${errorCode}. SQL State: ${sqlState}. Please check server logs for the full query and parameters if the issue persists.`,
         code: errorCode,
         sqlState: sqlState 
-    }, { status: 500 });
+      }, 
+      { status: 500 }
+    );
   }
 }
-

@@ -12,7 +12,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -24,26 +23,24 @@ import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { randomUUID } from 'crypto';
 
-// Items in form still don't need price, but siteId for item level is added
-const defaultItem: Omit<RequisitionItem, 'estimatedUnitPrice' | 'requisitionId' | 'categoryName'> & {siteId?: number | null} = { 
+const defaultItem: Omit<RequisitionItem, 'requisitionId' | 'categoryName'> = { 
   id: '', 
   partNumber: '', 
   description: '', 
   categoryId: null, 
   quantity: 1, 
-  notes: '',
-  siteId: null, // Item-level site defaults to null
+  justification: '', // Renamed from notes, siteId removed
 };
 
 interface RequisitionFormValues {
   requestedByUserId: string | null;
   requestedByNameDisplay: string;
-  // siteId: string | null; // REMOVED Header-level siteId from form values
+  siteId: string | null; // Header site ID
   requisitionDate: string;
   requisitionNumberDisplay: string;
-  justification: string;
-  items: (Omit<RequisitionItem, 'estimatedUnitPrice' | 'requisitionId' | 'categoryName'> & {siteId?: number | null})[];
-  approverId: string | null; // For selecting an approver
+  // justification field removed from header
+  items: Omit<RequisitionItem, 'requisitionId' | 'categoryName'>[];
+  approverId: string | null; 
 }
 
 const MOCK_LOGGED_IN_USER_ID = 'user_005'; 
@@ -65,11 +62,11 @@ export function RequisitionForm() {
     defaultValues: {
       requestedByUserId: MOCK_LOGGED_IN_USER_ID,
       requestedByNameDisplay: MOCK_LOGGED_IN_USER_NAME,
-      // siteId: null, // REMOVED: Header siteId default
+      siteId: null, // Header siteId default
       requisitionDate: format(new Date(), 'yyyy-MM-dd'),
       requisitionNumberDisplay: 'Loading REQ...',
-      justification: '',
-      items: [{...defaultItem, id: crypto.randomUUID(), siteId: null}],
+      // justification field removed
+      items: [{...defaultItem, id: crypto.randomUUID()}],
       approverId: null,
     },
     mode: 'onBlur',
@@ -150,27 +147,21 @@ export function RequisitionForm() {
       toast({ title: "Validation Error", description: "Please select a requestor.", variant: "destructive" });
       return;
     }
-    // Header siteId is no longer in formData directly, so validation for it here is removed.
-    // The Requisition.siteId in the DB is nullable.
-    
-    for (const item of formData.items) { 
-        if (!item.siteId) {
-            toast({ title: "Validation Error", description: `Please select a site for item: "${item.description || 'Unnamed Item'}".`, variant: "destructive" });
-            return;
-        }
+    if (!formData.siteId) { // Check for header siteId
+        toast({ title: "Validation Error", description: "Please select a Site/Department for the requisition.", variant: "destructive" });
+        return;
     }
-
+    
     setIsSubmitting(true);
 
-    const payload: Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'approverName' | 'approvalDate' | 'siteName' | 'siteCode' | 'requestorFullName'> & { items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {siteId?: number | null})[], status: RequisitionPayload['status'], approverId?: string | null, siteId: number | null } = {
+    const payload: Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'approverName' | 'approvalDate' | 'siteName' | 'siteCode' | 'requestorFullName' | 'justification'> & { items: RequisitionItem[], status: RequisitionPayload['status'], approverId?: string | null, siteId: number } = {
       id: crypto.randomUUID(),
       requisitionNumber: formData.requisitionNumberDisplay,
       requisitionDate: new Date(formData.requisitionDate).toISOString(),
       requestedByUserId: formData.requestedByUserId,
       requestedByName: formData.requestedByNameDisplay,
-      siteId: null, // Header siteId is now null as it's removed from the form. DB schema allows NULL.
+      siteId: Number(formData.siteId), // Header siteId is now mandatory
       status: formData.approverId && formData.approverId !== NO_APPROVER_VALUE ? 'Pending Approval' : 'Draft',
-      justification: formData.justification,
       approverId: (formData.approverId && formData.approverId !== NO_APPROVER_VALUE) ? formData.approverId : null,
       items: formData.items.map(item => ({
         id: item.id || crypto.randomUUID(),
@@ -178,8 +169,7 @@ export function RequisitionForm() {
         description: item.description,
         categoryId: item.categoryId ? Number(item.categoryId) : null,
         quantity: Number(item.quantity),
-        notes: item.notes,
-        siteId: item.siteId ? Number(item.siteId) : null,
+        justification: item.justification, // This was item.notes
       })),
     };
 
@@ -234,14 +224,13 @@ export function RequisitionForm() {
       <CardContent className="pt-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmitAndPreview)} className="space-y-8">
-
-            <div className="grid md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="requisitionNumberDisplay" render={({ field }) => ( <FormItem> <FormLabel>Requisition Number</FormLabel> <FormControl><Input {...field} readOnly /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="requisitionDate" rules={{ required: 'Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Requisition Date *</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+            <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+              <FormField control={form.control} name="requisitionNumberDisplay" render={({ field }) => ( <FormItem className="lg:col-span-1"> <FormLabel>Requisition No.</FormLabel> <FormControl><Input {...field} readOnly /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="requisitionDate" rules={{ required: 'Date is required' }} render={({ field }) => ( <FormItem className="lg:col-span-1"> <FormLabel>Date *</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
               <FormField 
                 control={form.control} name="requestedByUserId" rules={{ required: 'Requested By is required' }}
                 render={({ field }) => ( 
-                <FormItem> 
+                <FormItem className="lg:col-span-1"> 
                   <FormLabel>Requested By *</FormLabel> 
                   <Select onValueChange={(value) => { field.onChange(value); handleRequestorChange(value); }} value={field.value || ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select Requestor" /></SelectTrigger></FormControl>
@@ -250,22 +239,30 @@ export function RequisitionForm() {
                   <FormMessage /> 
                 </FormItem> 
               )} />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-                {/* REMOVED Header Site/Department Field */}
-                 <FormField
+              <FormField 
+                control={form.control} name="siteId" rules={{ required: 'Site/Department is required' }}
+                render={({ field }) => ( 
+                <FormItem className="lg:col-span-1"> 
+                  <FormLabel>Site/Department *</FormLabel> 
+                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Select Site" /></SelectTrigger></FormControl>
+                      <SelectContent>{sites.map(s => (<SelectItem key={s.id} value={s.id.toString()}>{s.siteCode || s.name}</SelectItem>))}</SelectContent>
+                  </Select>
+                  <FormMessage /> 
+                </FormItem> 
+              )} />
+              <FormField
                   control={form.control} name="approverId"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Assign Approver (Optional)</FormLabel>
+                    <FormItem className="lg:col-span-1">
+                      <FormLabel>Assign Approver</FormLabel>
                       <Select
                         onValueChange={(selectedValue) => {
                           field.onChange(selectedValue === NO_APPROVER_VALUE ? null : selectedValue);
                         }}
                         value={field.value || NO_APPROVER_VALUE}
                       >
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select an approver" /></SelectTrigger></FormControl>
+                        <FormControl><SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger></FormControl>
                         <SelectContent>
                           <SelectItem value={NO_APPROVER_VALUE}>None (Save as Draft)</SelectItem>
                           {approvers.map(appr => (<SelectItem key={appr.id} value={appr.id}>{appr.name}</SelectItem>))}
@@ -275,19 +272,9 @@ export function RequisitionForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control} name="justification" rules={{ required: 'Justification is required' }}
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2"> {/* Adjusted to col-span-2 to fill row if header site removed */}
-                      <FormLabel>Justification *</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Briefly explain why these items are needed..." className="resize-none h-24" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
             </div>
+            
+            {/* Header Justification field removed */}
 
             <Separator />
             <h3 className="text-lg font-medium font-headline">Requested Items</h3>
@@ -302,7 +289,7 @@ export function RequisitionForm() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.description`} rules={{ required: 'Description is required' }} render={({ field }) => (
-                      <FormItem className="lg:col-span-3">
+                      <FormItem className="lg:col-span-4"> {/* Increased span */}
                         <FormLabel>Description *</FormLabel>
                         <FormControl><Input placeholder="Item or service description" {...field} /></FormControl>
                         <FormMessage />
@@ -318,16 +305,7 @@ export function RequisitionForm() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                     <FormField control={form.control} name={`items.${index}.siteId`} rules={{ required: 'Item Site is required' }} render={({ field }) => ( 
-                      <FormItem className="lg:col-span-2">
-                        <FormLabel>Item Site *</FormLabel>
-                        <Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ''}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Select Site for Item" /></SelectTrigger></FormControl>
-                          <SelectContent>{sites.map(site => (<SelectItem key={site.id} value={site.id.toString()}>{site.siteCode || site.name}</SelectItem>))}</SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+                    {/* Item Site field removed */}
                     <FormField control={form.control} name={`items.${index}.quantity`} rules={{ required: 'Quantity is required', min: { value: 1, message: 'Must be at least 1' } }} render={({ field }) => (
                       <FormItem className="lg:col-span-1">
                         <FormLabel>Quantity *</FormLabel>
@@ -335,10 +313,10 @@ export function RequisitionForm() {
                         <FormMessage />
                       </FormItem>
                     )} />
-                     <FormField control={form.control} name={`items.${index}.notes`} render={({ field }) => (
-                      <FormItem className="lg:col-span-2">
-                        <FormLabel>Item Notes</FormLabel>
-                        <FormControl><Input placeholder="Optional notes" {...field} value={field.value ?? ''} /></FormControl>
+                     <FormField control={form.control} name={`items.${index}.justification`} render={({ field }) => ( // Renamed from notes
+                      <FormItem className="lg:col-span-3"> {/* Adjusted span */}
+                        <FormLabel>Justification (Item Specific)</FormLabel>
+                        <FormControl><Input placeholder="Reason for this item" {...field} value={field.value ?? ''} /></FormControl>
                       </FormItem>
                     )} />
                   </div>
@@ -346,7 +324,7 @@ export function RequisitionForm() {
                 </Card>
               );
             })}
-            <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID(), siteId: null })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
+            <Button type="button" variant="outline" onClick={() => append({...defaultItem, id: crypto.randomUUID() })} className="mt-0"><PlusCircle className="mr-2 h-4 w-4" /> Add Item</Button>
 
             <Separator className="my-6"/>
 
@@ -363,7 +341,7 @@ export function RequisitionForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          This requisition will be saved. If an approver is selected, it will be submitted for approval. Otherwise, it will be saved as a Draft. Each item must have a site selected.
+          This requisition will be saved. If an approver is selected, it will be submitted for approval. Otherwise, it will be saved as a Draft. Site/Department is required for the overall requisition.
         </p>
       </CardFooter>
     </Card>

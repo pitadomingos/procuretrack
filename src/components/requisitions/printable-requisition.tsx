@@ -23,9 +23,9 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
     : 'N/A';
   const currentLogoSrc = logoDataUri || JACHRIS_COMPANY_DETAILS.logoUrl;
 
-  const siteName = requisitionData.siteName || (requisitionData.siteId ? `Site ID: ${requisitionData.siteId}`: 'N/A');
+  const headerSiteName = requisitionData.siteCode || requisitionData.siteName || (requisitionData.siteId ? `Site ID: ${requisitionData.siteId}`: 'N/A');
 
-  const printableItems = (items || []) as (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string, siteId?: number | null})[];
+  const printableItems = (items || []) as RequisitionItem[];
 
   return (
     <div className="bg-white p-6 font-sans text-sm" style={{ fontFamily: "'Arial', sans-serif", color: '#333' }}>
@@ -48,19 +48,12 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
           <p><strong className="text-gray-600">Requested By:</strong> {requisitionData.requestedByName || 'N/A'}</p>
         </div>
         <div className="text-right">
-          <p><strong className="text-gray-600">Site/Department:</strong> {siteName}</p>
+          <p><strong className="text-gray-600">Site/Department:</strong> {headerSiteName}</p>
           <p><strong className="text-gray-600">Status:</strong> <span className="font-semibold">{requisitionData.status}</span></p>
         </div>
       </div>
       
-      {requisitionData.justification && (
-        <div className="mb-6 text-xs">
-            <h3 className="font-bold text-gray-600 mb-1">JUSTIFICATION:</h3>
-            <p className="border border-gray-300 p-2 min-h-[60px] bg-gray-50 whitespace-pre-wrap break-words">
-              {requisitionData.justification}
-            </p>
-        </div>
-      )}
+      {/* Header Justification removed */}
 
       {/* Items Table */}
       <div className="mb-6 min-h-[250px]">
@@ -70,26 +63,22 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
               <th className="border border-gray-400 p-2 text-left">PART NUMBER</th>
               <th className="border border-gray-400 p-2 text-left w-2/5">ITEM / SERVICE DESCRIPTION</th>
               <th className="border border-gray-400 p-2 text-left">CATEGORY</th>
-              <th className="border border-gray-400 p-2 text-left">ITEM SITE</th>
+              {/* Item Site column removed */}
               <th className="border border-gray-400 p-2 text-center">QTY</th>
-              <th className="border border-gray-400 p-2 text-left">NOTES</th>
+              <th className="border border-gray-400 p-2 text-left">JUSTIFICATION</th> {/* Renamed from NOTES */}
             </tr>
           </thead>
           <tbody>
             {printableItems.map((item, index) => {
               const categoryName = item.categoryName || (item.categoryId ? `Cat. ID: ${item.categoryId}` : 'N/A');
-              // Find site name/code for item
-              const itemSite = requisitionData.siteId === item.siteId // Check if item site is same as header
-                ? siteName // Use header site name if same
-                : (item.siteId ? `Site ID: ${item.siteId}` : 'N/A'); // Fallback or show different item site
               return (
                 <tr key={item.id || index}>
                   <td className="border border-gray-400 p-2 align-top">{item.partNumber || ''}</td>
                   <td className="border border-gray-400 p-2 align-top">{item.description}</td>
                   <td className="border border-gray-400 p-2 align-top">{categoryName}</td>
-                  <td className="border border-gray-400 p-2 align-top">{itemSite}</td>
+                  {/* Item Site cell removed */}
                   <td className="border border-gray-400 p-2 text-center align-top">{item.quantity}</td>
-                  <td className="border border-gray-400 p-2 align-top">{item.notes || ''}</td>
+                  <td className="border border-gray-400 p-2 align-top">{item.justification || ''}</td> {/* Display item justification */}
                 </tr>
               );
             })}
@@ -98,7 +87,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
                     <td className="border border-gray-400 p-2 h-7">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
-                    <td className="border border-gray-400 p-2">&nbsp;</td>
+                    {/* Empty cell for removed Item Site */}
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                     <td className="border border-gray-400 p-2">&nbsp;</td>
                 </tr>

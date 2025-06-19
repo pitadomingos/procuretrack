@@ -174,7 +174,6 @@ export interface PurchaseOrderPayload {
   supplierName?: string;
   creatorName?: string;
   approverName?: string;
-  // approverSignatureUrl?: string; // Removed as per request
   quoteNo?: string;
   siteId?: number | null; 
 }
@@ -253,7 +252,7 @@ export interface QuoteItem {
   customerRef?: string;
   description: string;
   quantity: number;
-  unitPrice: number; // Retaining for QuoteItem as it's client-facing
+  unitPrice: number; 
   quoteId?: string; 
 }
 
@@ -296,9 +295,7 @@ export interface RequisitionItem {
   categoryId: number | null;
   categoryName?: string;
   quantity: number;
-  estimatedUnitPrice?: number | null; // Marking as optional
-  notes?: string | null;
-  siteId?: number | null; // Added from PO form to ensure consistency
+  justification?: string | null; // Renamed from notes
 }
 
 export interface RequisitionPayload {
@@ -308,16 +305,16 @@ export interface RequisitionPayload {
   requestedByUserId?: string | null; 
   requestedByName: string; 
   requestorFullName?: string;
-  siteId: number | null; 
+  siteId: number; // Header site ID is now mandatory for the payload
   siteName?: string;
   siteCode?: string;
   status: RequisitionStatus;
-  justification?: string | null;
-  items: (Omit<RequisitionItem, 'estimatedUnitPrice'> & {categoryName?: string, siteId?: number | null})[];
-  totalEstimatedValue?: number; // Marking as optional
-  approverId?: string | null; // Added for approval workflow
-  approverName?: string; // Added for display
-  approvalDate?: string | null; // Added for approval workflow
+  // justification field removed from header
+  items: RequisitionItem[]; // Items will use the updated RequisitionItem structure
+  totalEstimatedValue?: number; 
+  approverId?: string | null; 
+  approverName?: string; 
+  approvalDate?: string | null; 
   createdAt?: string; 
   updatedAt?: string; 
 }
