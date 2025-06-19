@@ -17,21 +17,29 @@ export default function ActivityLogPage() {
     setIsLoading(true);
     setError(null);
     const queryParams = new URLSearchParams();
-    // For now, the API only supports 'limit'. If filters are passed, they are logged.
-    // A more advanced API would handle date ranges, user filters, etc.
     if (filters?.limit) {
       queryParams.append('limit', filters.limit);
     } else {
-      queryParams.append('limit', '200'); // Default limit for full page view, adjust as needed
+      queryParams.append('limit', '200'); 
     }
-    // console.log("Fetching activities with params:", queryParams.toString());
 
     try {
       const response = await fetch(`/api/activity-log?${queryParams.toString()}`);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response.' }));
-        const errorMessage = errorData.error || errorData.details || errorData.message || 'Failed to fetch activity log.';
-        throw new Error(errorMessage);
+        let specificErrorMessage = `API request failed with status ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.details) {
+            specificErrorMessage = `${errorData.details} (Status: ${response.status})`;
+          } else if (errorData.error) {
+            specificErrorMessage = `${errorData.error} (Status: ${response.status})`;
+          } else if (errorData.message) {
+            specificErrorMessage = `${errorData.message} (Status: ${response.status})`;
+          }
+        } catch (jsonError) {
+          specificErrorMessage = `${response.statusText || 'Failed to fetch activity log.'} (Status: ${response.status})`;
+        }
+        throw new Error(specificErrorMessage);
       }
       const data: ActivityLogEntry[] = await response.json();
       setActivities(data);
@@ -53,10 +61,7 @@ export default function ActivityLogPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Activity Log:', filters);
-    // Currently, the API primarily supports 'limit'.
-    // For a real implementation, you'd pass filters to fetchActivities.
-    // For now, we'll just re-fetch with default full page limit.
-    fetchActivities({ limit: '200' }); // Or pass actual filters if API supported them
+    fetchActivities({ limit: '200' }); 
   };
 
   return (
@@ -69,9 +74,8 @@ export default function ActivityLogPage() {
         maxHeight="calc(100vh - 280px)"
         isLoading={isLoading}
         error={error}
-        onRetry={() => fetchActivities({ limit: '200' })} // Retry with default full page limit
+        onRetry={() => fetchActivities({ limit: '200' })}
       />
     </div>
   );
 }
-

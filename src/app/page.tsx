@@ -36,7 +36,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Goods Received',
@@ -45,7 +45,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Approved POs (Open)', value: 'N/A' },
       { label: 'POs with GRN Activity', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Purchase Requisitions',
@@ -53,7 +53,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
     subStats: [
       { label: 'Total Requisitions', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Fuel Management',
@@ -62,7 +62,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Total Vehicles/Tags', value: 'N/A' },
       { label: 'Total Fuel Records', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
   {
     title: 'Client Quotations',
@@ -73,7 +73,7 @@ const initialDashboardCardsConfig: GroupedStatCardItem[] = [
       { label: 'Pending Approval', value: 'N/A' },
       { label: 'Rejected Quotes', value: 'N/A' },
     ],
-    viewMoreLink: '/create-document', 
+    viewMoreLink: '/create-document',
   },
 ];
 
@@ -170,9 +170,20 @@ export default function DashboardPage() {
     try {
       const response = await fetch('/api/activity-log?limit=20'); // Fetch latest 20 activities
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response from activity log API.' }));
-        const errorMessage = errorData.error || errorData.details || errorData.message || 'Failed to fetch activity log.';
-        throw new Error(errorMessage);
+        let specificErrorMessage = `API request failed with status ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.details) {
+            specificErrorMessage = `${errorData.details} (Status: ${response.status})`;
+          } else if (errorData.error) {
+            specificErrorMessage = `${errorData.error} (Status: ${response.status})`;
+          } else if (errorData.message) {
+            specificErrorMessage = `${errorData.message} (Status: ${response.status})`;
+          }
+        } catch (jsonError) {
+          specificErrorMessage = `${response.statusText || 'Failed to fetch activity log.'} (Status: ${response.status})`;
+        }
+        throw new Error(specificErrorMessage);
       }
       const data: ActivityLogEntry[] = await response.json();
       setActivityLog(data);
@@ -277,4 +288,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
