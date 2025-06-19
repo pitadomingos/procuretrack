@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import {
   BookUser, FilePlus2, CheckCircle, Settings, AlertCircle, ArrowRight, UploadCloud, LayoutDashboard,
   BarChart3, ListChecks as ListChecksIcon, Printer, HelpCircle, Fuel, Truck, FileSignature,
-  ClipboardList, Tag as TagLucideIcon, Package as PackageIcon, Users, Building, CaseSensitive, Edit2, Eye, Trash2, Edit, Palette, Info, FileCode2, Workflow, ShoppingCart
+  ClipboardList, Tag, Package, Users, Building, CaseSensitive, Edit2, Eye, Trash2, Info,
+  FileCode2, Workflow, ShoppingCart, Palette
 } from "lucide-react";
 
 export default function UserManualPage() {
@@ -29,12 +30,18 @@ export default function UserManualPage() {
             <p>
               Welcome to ProcureTrack! This application is designed to streamline and manage your organization's procurement processes, from initial requisitions to purchase orders, goods receiving, client quotations, and fuel record management. This manual will guide you through its features and functionalities.
             </p>
+            <div className="mt-3 p-3 border-l-4 border-primary bg-primary/10 rounded-r-md">
+              <h4 className="font-medium text-primary mb-1">How to use this manual:</h4>
+              <p className="text-xs">
+                Use the table of contents (if available on the platform) or scroll through the sections. Click on the links in the Table of Contents <ArrowRight className="inline h-4 w-4" /> to jump to specific sections. Look for icons next to section titles for a quick visual cue about the content.
+              </p>
+            </div>
           </section>
 
           <section id="getting-started">
             <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><Palette className="mr-2 h-6 w-6 text-primary" />2. Getting Started</h2>
             <p>
-              Currently, ProcureTrack uses a mock authentication system (e.g., the "My Approvals" page is hardcoded for 'pita.domingos@jachris.com'). Full user authentication, login, and role-based access control are planned future enhancements.
+              Currently, ProcureTrack uses a mock authentication system for demonstration (e.g., the "My Approvals" page is hardcoded for 'pita.domingos@jachris.com'). Full user authentication, login, and role-based access control are planned future enhancements.
             </p>
             <p className="mt-2">
               <strong>Theme Customization:</strong> You can switch between Light, Dark, and System default themes using the sun/moon icon in the top header bar.
@@ -65,7 +72,7 @@ export default function UserManualPage() {
             <div className="ml-4 space-y-6">
               <div>
                 <h3 className="text-lg font-medium text-foreground flex items-center"><ShoppingCart className="mr-2 h-5 w-5 text-primary" />4.1 Purchase Orders (PO)</h3>
-                <p>Formalize orders with suppliers. Accessible via "Create Document" &rarr; "Purchase Orders" tab.</p>
+                <p>Formalize orders with suppliers. Accessible via "Create Document" <ArrowRight className="inline h-4 w-4" /> "Purchase Orders" tab.</p>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Create New PO:</strong>
                     <ul className="list-['-_'] list-inside ml-6">
@@ -86,7 +93,7 @@ export default function UserManualPage() {
                   <li><strong>List View Actions:</strong>
                     <ul className="list-['--'] list-inside ml-6">
                        <li><strong>View/Print (<Eye className="inline h-4 w-4" />):</strong> Opens a print-friendly preview page with options to print or download PDF.</li>
-                       <li><strong>Edit (<Edit className="inline h-4 w-4" />):</strong> Available for 'Draft', 'Pending Approval', 'Rejected' POs. Takes you back to the PO form.</li>
+                       <li><strong>Edit (<Edit2 className="inline h-4 w-4" />):</strong> Available for 'Draft', 'Pending Approval', 'Rejected' POs. Takes you back to the PO form.</li>
                        <li><strong>Delete (<Trash2 className="inline h-4 w-4 text-destructive" />):</strong> Available for 'Draft' and 'Rejected' POs. A confirmation dialog will appear.</li>
                     </ul>
                   </li>
@@ -95,7 +102,7 @@ export default function UserManualPage() {
 
               <div>
                 <h3 className="text-lg font-medium text-foreground flex items-center"><Truck className="mr-2 h-5 w-5 text-primary" />4.2 Goods Received Notes (GRN)</h3>
-                <p>Record the receipt of goods against an 'Approved' Purchase Order. Accessible via "Create Document" &rarr; "GRNs" tab.</p>
+                <p>Record the receipt of goods against an 'Approved' Purchase Order. Accessible via "Create Document" <ArrowRight className="inline h-4 w-4" /> "GRNs" tab.</p>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Select PO:</strong> Choose an 'Approved' PO from the dropdown. Only POs with items not yet fully received will appear.</li>
                   <li><strong>GRN Details:</strong> Enter GRN Date and optional Supplier Delivery Note number.</li>
@@ -115,7 +122,7 @@ export default function UserManualPage() {
 
               <div>
                 <h3 className="text-lg font-medium text-foreground flex items-center"><FileSignature className="mr-2 h-5 w-5 text-primary" />4.3 Client Quotations</h3>
-                <p>Provide price quotes to clients. Accessible via "Create Document" &rarr; "Client Quotes" tab.</p>
+                <p>Provide price quotes to clients. Accessible via "Create Document" <ArrowRight className="inline h-4 w-4" /> "Client Quotes" tab.</p>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Create New Quote:</strong> Select a client, enter quote details (date, currency), assign an approver (optional), add line items with descriptions, quantities, and unit prices.</li>
                   <li><strong>Load Existing Quote for Editing:</strong> Type an existing Quote number and click "Load". Editable if in 'Draft' or 'Pending Approval' status.</li>
@@ -127,10 +134,10 @@ export default function UserManualPage() {
 
               <div>
                 <h3 className="text-lg font-medium text-foreground flex items-center"><ClipboardList className="mr-2 h-5 w-5 text-primary" />4.4 Purchase Requisitions</h3>
-                <p>Internal requests for goods or services. Accessible via "Create Document" &rarr; "Requisitions" tab.</p>
+                <p>Internal requests for goods or services. Accessible via "Create Document" <ArrowRight className="inline h-4 w-4" /> "Requisitions" tab.</p>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Create New Requisition:</strong> Select requestor, site/department for the requisition header, date, assign an approver (optional). Add line items with part numbers, descriptions, categories, quantities, and item-specific justification.</li>
-                   <li><strong>Load Existing Requisition for Editing:</strong> Available via "List of Requisitions" &rarr; Edit icon (<Edit className="inline h-4 w-4" />). Editable if in 'Draft', 'Pending Approval', or 'Rejected' status.</li>
+                   <li><strong>Load Existing Requisition for Editing:</strong> Available via "List of Requisitions" <ArrowRight className="inline h-4 w-4" /> Edit icon (<Edit2 className="inline h-4 w-4" />). Editable if in 'Draft', 'Pending Approval', or 'Rejected' status.</li>
                   <li><strong>Submission & Status:</strong> Assigning an approver and saving typically sets the status to 'Pending Approval'. If no approver is assigned, the Requisition is saved as 'Draft'. Editing a 'Rejected' Requisition and re-assigning an approver will move it to 'Pending Approval'.</li>
                   <li><strong>List View Actions:</strong> Similar to POs (View/Print, Edit for 'Draft'/'Pending Approval'/'Rejected', Delete for 'Draft'/'Rejected'). A confirmation dialog will appear for deletion.</li>
                 </ul>
@@ -138,7 +145,7 @@ export default function UserManualPage() {
 
               <div>
                 <h3 className="text-lg font-medium text-foreground flex items-center"><Fuel className="mr-2 h-5 w-5 text-primary" />4.5 Fuel Records</h3>
-                <p>Log fuel consumption for vehicles/equipment. Accessible via "Create Document" &rarr; "Fuel Records" tab. (Backend saving currently simulated)</p>
+                <p>Log fuel consumption for vehicles/equipment. Accessible via "Create Document" <ArrowRight className="inline h-4 w-4" /> "Fuel Records" tab. (Backend saving currently simulated)</p>
                 <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                   <li><strong>Record Entry:</strong> Select date, tag (vehicle/equipment), site, enter driver name, odometer reading, fuel quantity, unit cost, and other optional details like Requisition No. or Invoice No.</li>
                   <li><strong>Total Cost:</strong> Calculated automatically.</li>
@@ -169,11 +176,11 @@ export default function UserManualPage() {
             </p>
             <ul className="list-disc list-inside ml-4 mt-1 space-y-2">
               <li><strong>Sites (<Building className="inline h-4 w-4" />):</strong> Manage company sites, locations, or departments (name, location, site code). Used in PO items, Requisition headers, and Tag assignments.</li>
-              <li><strong>Suppliers (<PackageIcon className="inline h-4 w-4" />):</strong> Manage vendor details (code, name, contact info, etc.). <strong className="text-primary">CSV Upload available.</strong> Download template for format.</li>
+              <li><strong>Suppliers (<Package className="inline h-4 w-4" />):</strong> Manage vendor details (code, name, contact info, etc.). <strong className="text-primary">CSV Upload available.</strong> Download template for format.</li>
               <li><strong>Approvers (<Users className="inline h-4 w-4" />):</strong> Define users who can approve documents (POs, Quotes, Requisitions) and optionally set their approval limits.</li>
               <li><strong>Users (<Users className="inline h-4 w-4" />):</strong> Manage system user accounts, roles (Admin, Creator, Approver, etc.), and active status. Site access is displayed but managed separately (future feature).</li>
-              <li><strong>Categories (<TagLucideIcon className="inline h-4 w-4" />):</strong> Define item/service categories used in POs and Requisitions.</li>
-              <li><strong>Tags (Vehicles/Equipment, <TagLucideIcon className="inline h-4 w-4" />):</strong> Manage tagged assets like vehicles or machinery, including their status and assigned site. <strong className="text-primary">CSV Upload available.</strong> Download template.</li>
+              <li><strong>Categories (<Tag className="inline h-4 w-4" />):</strong> Define item/service categories used in POs and Requisitions.</li>
+              <li><strong>Tags (Vehicles/Equipment, <Tag className="inline h-4 w-4" />):</strong> Manage tagged assets like vehicles or machinery, including their status and assigned site. <strong className="text-primary">CSV Upload available.</strong> Download template.</li>
               <li><strong>Clients (<Briefcase className="inline h-4 w-4" />):</strong> Manage client information for quotations. <strong className="text-primary">CSV Upload available.</strong> Download template.</li>
               <li><strong>Allocations (<CaseSensitive className="inline h-4 w-4" />):</strong> (Legacy Data) Read-only display of legacy cost allocations/departments. For current operational locations, use "Manage Sites".</li>
             </ul>
@@ -228,20 +235,37 @@ export default function UserManualPage() {
             </p>
           </section>
 
+          <section id="system-documentation-link">
+            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><FileCode2 className="mr-2 h-6 w-6 text-primary" />11. System Documentation</h2>
+            <p>
+              For technical details about the application's architecture, technologies used, key files, and development guidelines, please refer to the <a href="/system-documentation" className="text-primary hover:underline">System Documentation page</a>.
+            </p>
+          </section>
+
+          <section id="workflow-overview">
+            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><Workflow className="mr-2 h-6 w-6 text-primary" />12. Workflow Overview</h2>
+            <p className="mb-2">Here's a simplified overview of common document workflows:</p>
+            <ul className="list-disc list-inside ml-4 space-y-1">
+              <li><strong>Requisition <ArrowRight className="inline h-4 w-4" /> PO:</strong> User creates Requisition <ArrowRight className="inline h-4 w-4" /> Assigns Approver (status: Pending Approval) <ArrowRight className="inline h-4 w-4" /> Approver approves (status: Approved) <ArrowRight className="inline h-4 w-4" /> User creates PO from approved Requisition (Requisition status: Closed).</li>
+              <li><strong>Direct PO:</strong> User creates PO <ArrowRight className="inline h-4 w-4" /> Assigns Approver (status: Pending Approval) <ArrowRight className="inline h-4 w-4" /> Approver approves (status: Approved) <ArrowRight className="inline h-4 w-4" /> Goods received via GRN (PO status: Partially Received or Completed).</li>
+              <li><strong>Client Quote:</strong> User creates Quote <ArrowRight className="inline h-4 w-4" /> Assigns Approver (status: Pending Approval, optional) <ArrowRight className="inline h-4 w-4" /> Approver approves (status: Approved) <ArrowRight className="inline h-4 w-4" /> User can then send to client (manually, status update to 'Sent to Client' is manual for now).</li>
+            </ul>
+          </section>
+
           <section id="faq">
-            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" />11. Frequently Asked Questions (FAQ)</h2>
+            <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center"><HelpCircle className="mr-2 h-6 w-6 text-primary" />13. Frequently Asked Questions (FAQ)</h2>
             <div className="space-y-4">
               <div>
                 <h4 className="font-medium text-foreground">Q: How do I create a new Purchase Order (PO)?</h4>
-                <p>A: Navigate to "Create Document" &rarr; "Purchase Orders" tab. Fill in the required supplier, PO details, and item information. Assign an approver to submit it for approval, or leave blank to save as a Draft.</p>
+                <p>A: Navigate to "Create Document" <ArrowRight className="inline h-4 w-4" /> "Purchase Orders" tab. Fill in the required supplier, PO details, and item information. Assign an approver to submit it for approval, or leave blank to save as a Draft.</p>
               </div>
                <div>
                 <h4 className="font-medium text-foreground">Q: Can I create a PO from an approved Requisition?</h4>
-                <p>A: Yes. On the PO Form ("Create Document" &rarr; "Purchase Orders"), if there are approved requisitions, a dropdown will appear. Select one and click "Load Items". The PO items will populate. You'll still need to select a supplier, approver, and verify pricing. Item sites on the PO will be derived from the Requisition's header site.</p>
+                <p>A: Yes. On the PO Form ("Create Document" <ArrowRight className="inline h-4 w-4" /> "Purchase Orders"), if there are approved requisitions, a dropdown will appear. Select one and click "Load Items". The PO items will populate. You'll still need to select a supplier, approver, and verify pricing. Item sites on the PO will be derived from the Requisition's header site.</p>
               </div>
               <div>
                 <h4 className="font-medium text-foreground">Q: How can I edit an existing PO, Quote, or Requisition?</h4>
-                <p>A: Go to the list view for that document type (e.g., "Create Document" &rarr; "Purchase Orders" &rarr; "List of POs"). If the document is in 'Draft', 'Pending Approval', or 'Rejected' status, an "Edit" icon (<Edit className="inline h-4 w-4" />) will be available. Clicking it will take you to the respective form pre-filled with the document's data. Alternatively, for POs and Quotes, you can type the document number into the form's "PO Number" or "Quote Number" field and click "Load" (if it's not already loaded for edit from the URL).</p>
+                <p>A: Go to the list view for that document type (e.g., "Create Document" <ArrowRight className="inline h-4 w-4" /> "Purchase Orders" <ArrowRight className="inline h-4 w-4" /> "List of POs"). If the document is in 'Draft', 'Pending Approval', or 'Rejected' status, an "Edit" icon (<Edit2 className="inline h-4 w-4" />) will be available. Clicking it will take you to the respective form pre-filled with the document's data. Alternatively, for POs and Quotes, you can type the document number into the form's "PO Number" or "Quote Number" field and click "Load" (if it's not already loaded for edit from the URL).</p>
               </div>
               <div>
                 <h4 className="font-medium text-foreground">Q: When can I delete a PO, Quote, or Requisition?</h4>
@@ -298,3 +322,5 @@ export default function UserManualPage() {
     </div>
   );
 }
+
+    
