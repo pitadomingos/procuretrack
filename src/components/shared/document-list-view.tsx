@@ -132,7 +132,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     quote: '/api/quotes',
     requisition: '/api/requisitions',
     fuel: '/api/fuel-records',
-    grn: '/api/grn' // Placeholder, GRN list view might differ
+    grn: '/api/grn' 
   };
 
   const fetchDocuments = useCallback(async (filters?: any) => {
@@ -155,7 +155,6 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     if (filters?.creatorUserId && filters.creatorUserId !== 'all') queryParams.append('creatorUserId', filters.creatorUserId);
     if (filters?.tagId && filters.tagId !== 'all') queryParams.append('tagId', filters.tagId);
     if (filters?.driver && filters.driver.trim() !== '') queryParams.append('driver', filters.driver);
-    // For Requisitions specifically, you might want a status filter
     if (documentType === 'requisition' && filters?.status && filters.status !== 'all') queryParams.append('status', filters.status);
 
 
@@ -166,7 +165,6 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
       const response = await fetch(`${apiUrlBase}?${queryParams.toString()}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        // Use errorData.details if available, then errorData.error, then a generic message
         const errorMessage = errorData.details || errorData.error || `Failed to fetch ${documentType.toUpperCase()}s.`;
         throw new Error(errorMessage);
       }
@@ -188,11 +186,10 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const handleFilterApply = (filters: any) => {
     const apiFilters = {
         ...filters,
-        creatorUserId: filters.requestor, // Map UI filter name to API param name
+        creatorUserId: filters.requestor, 
         approverId: filters.approver,
         siteId: filters.site,
         tagId: filters.tag,
-        // Pass status specifically for requisitions if present
         status: documentType === 'requisition' ? filters.status : undefined,
     };
     delete apiFilters.requestor;
@@ -263,7 +260,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
         throw new Error(errorData.error || `Failed to delete ${documentType}.`);
       }
       toast({ title: "Success", description: `${documentType.toUpperCase()} deleted successfully.` });
-      fetchDocuments(); // Refresh list
+      fetchDocuments(); 
     } catch (error: any) {
       toast({ title: `Error Deleting ${documentType.toUpperCase()}`, description: error.message, variant: "destructive" });
     } finally {
@@ -276,29 +273,39 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   const renderRowActions = (doc: DocumentData) => {
     const docId = doc.id;
     let printPath = '';
-    let editPath = ''; // For future use
+    let editPath = '';
     let canDelete = false;
+    let currentStatus: string | undefined = undefined;
 
     if (documentType === 'po' && docId) {
+      currentStatus = (doc as PurchaseOrderPayload).status;
       printPath = `/purchase-orders/${docId}/print`;
-      if ((doc as PurchaseOrderPayload).status === 'Draft' || (doc as PurchaseOrderPayload).status === 'Pending Approval') {
-          // editPath = `/create-document?editPoId=${docId}`; // Example edit path for PO
-          canDelete = (doc as PurchaseOrderPayload).status === 'Draft'; // Or Pending Approval if allowed
+      if (currentStatus === 'Draft' || currentStatus === 'Pending Approval' || currentStatus === 'Rejected') {
+          editPath = `/create-document?editPoId=${docId}`;
       }
-    } else if (documentType === 'quote' && docId) {
-      printPath = `/quotes/${docId}/print`;
-      if ((doc as QuotePayload).status === 'Draft' || (doc as QuotePayload).status === 'Pending Approval') {
-        // editPath = `/create-document?editQuoteId=${docId}`;
-        canDelete = (doc as QuotePayload).status === 'Draft';
-      }
-    } else if (documentType === 'requisition' && docId) {
-      printPath = `/requisitions/${docId}/print`;
-      if ((doc as RequisitionPayload).status === 'Draft') {
-          // editPath = `/create-document?editRequisitionId=${docId}`; // Needs RequisitionForm to handle edit
+       if (currentStatus === 'Draft' || currentStatus === 'Rejected') { // Or other logic for deletable POs
           canDelete = true;
       }
+    } else if (documentType === 'quote' && docId) {
+      currentStatus = (doc as QuotePayload).status;
+      printPath = `/quotes/${docId}/print`;
+      if (currentStatus === 'Draft' || currentStatus === 'Pending Approval') {
+        editPath = `/create-document?editQuoteId=${docId}`;
+      }
+      if (currentStatus === 'Draft' || currentStatus === 'Rejected') {
+        canDelete = true;
+      }
+    } else if (documentType === 'requisition' && docId) {
+      currentStatus = (doc as RequisitionPayload).status;
+      printPath = `/requisitions/${docId}/print`;
+      if (currentStatus === 'Draft' || currentStatus === 'Pending Approval' || currentStatus === 'Rejected') {
+        editPath = `/create-document?editRequisitionId=${docId}`;
+      }
+      if (currentStatus === 'Draft' || currentStatus === 'Rejected') {
+         canDelete = true;
+      }
     }
-    // Fuel records don't have a print page or standard edit form yet.
+    // No edit/delete for fuel records via this general list view for now
 
     return (
       <div className="space-x-1">
@@ -307,13 +314,11 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
             <Button variant="outline" size="sm" title={`View ${documentType.toUpperCase()} Details`}><Eye className="h-4 w-4" /></Button>
           </Link>
         )}
-        {/* Placeholder for Edit button
         {editPath && (
           <Link href={editPath} passHref legacyBehavior={false}>
             <Button variant="outline" size="sm" title={`Edit ${documentType.toUpperCase()}`}><Edit2 className="h-4 w-4" /></Button>
           </Link>
         )}
-        */}
         {canDelete && (
             <Button variant="destructive" size="sm" title={`Delete ${documentType.toUpperCase()}`} onClick={() => openDeleteDialog(doc)} disabled={isDeleting}>
                 <Trash2 className="h-4 w-4" />
@@ -332,7 +337,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     showSiteFilter: true,
     showTagFilter: false,
     showDriverFilter: false,
-    showStatusFilter: false, // New for requisitions
+    showStatusFilter: false,
   };
   let showUploadCsv = false;
   let csvTemplateLink = '';
@@ -345,17 +350,16 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
   } else if (documentType === 'quote') {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';
-    filterConfig = { ...filterConfig, showSiteFilter: false, showRequestorFilter: false }; // Quotes might have creator, not standard requestor user
+    filterConfig = { ...filterConfig, showSiteFilter: false, showRequestorFilter: false }; 
     showUploadCsv = true; csvTemplateLink = '/templates/quotes_template.csv';
   } else if (documentType === 'requisition') {
     columnsToUse = requisitionColumns as ColumnDef<any>[];
     listTitle = 'Purchase Requisitions';
-    filterConfig = { ...filterConfig, showStatusFilter: true }; // Enable status filter for requisitions
+    filterConfig = { ...filterConfig, showStatusFilter: true }; 
   } else if (documentType === 'fuel') {
     columnsToUse = fuelRecordColumns as ColumnDef<any>[];
     listTitle = 'Fuel Records';
     filterConfig = { ...filterConfig, showRequestorFilter: false, showTagFilter: true, showDriverFilter: true };
-    // showUploadCsv = true; csvTemplateLink = '/templates/fuel_records_template.csv'; // Can be enabled later
   } else {
      columnsToUse = [{ accessorKey: 'name', header: 'Name (Placeholder)' }];
      listTitle = `${documentType.toUpperCase()}s`;
@@ -376,7 +380,6 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
           showSiteFilter={filterConfig.showSiteFilter}
           showTagFilter={filterConfig.showTagFilter}
           showDriverFilter={filterConfig.showDriverFilter}
-          // showStatusFilter={filterConfig.showStatusFilter} // Prop needs to be added to FilterBar if we want it
         />
         <div className="mt-4 flex justify-end gap-2">
           {showUploadCsv && (
@@ -424,10 +427,10 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete this {documentType.toUpperCase()}? This action cannot be undone.
+                Are you sure you want to delete this {documentType.toUpperCase()} (ID: {documentToDelete.id})? This action cannot be undone.
                 {(documentType === 'po' || documentType === 'quote' || documentType === 'requisition') && 
-                 (documentToDelete as any).status !== 'Draft' && 
-                 <span className="font-bold text-destructive block mt-2">Warning: This document is not in 'Draft' status. Deleting it may have unintended consequences.</span>
+                 (documentToDelete as any).status !== 'Draft' && (documentToDelete as any).status !== 'Rejected' &&
+                 <span className="font-bold text-destructive block mt-2">Warning: This document is not in 'Draft' or 'Rejected' status. Deleting it may have unintended consequences.</span>
                 }
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -444,5 +447,3 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     </Card>
   );
 }
-    
-

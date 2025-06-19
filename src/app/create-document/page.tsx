@@ -17,17 +17,19 @@ function CreateDocumentContent() {
   const searchParams = useSearchParams();
   const poIdToEditFromUrl = searchParams.get('editPoId');
   const quoteIdToEditFromUrl = searchParams.get('editQuoteId');
+  const requisitionIdToEditFromUrl = searchParams.get('editRequisitionId'); // New
 
   const determineDefaultMainTab = () => {
     if (poIdToEditFromUrl) return "create-po";
     if (quoteIdToEditFromUrl) return "create-quote";
+    if (requisitionIdToEditFromUrl) return "create-requisition"; // New
     return "create-po";
   };
 
   const defaultMainTab = determineDefaultMainTab();
   const defaultPOTab = poIdToEditFromUrl ? "create-po-form" : "create-po-form";
   const defaultQuoteTab = quoteIdToEditFromUrl ? "create-quote-form" : "create-quote-form";
-  const defaultRequisitionTab = "create-requisition-form";
+  const defaultRequisitionTab = requisitionIdToEditFromUrl ? "create-requisition-form" : "create-requisition-form"; // Updated
   const defaultFuelTab = "create-fuel-form";
 
 
@@ -82,11 +84,13 @@ function CreateDocumentContent() {
       <TabsContent value="create-requisition">
         <Tabs defaultValue={defaultRequisitionTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 gap-2 mb-4">
-            <TabsTrigger value="create-requisition-form">Create New Requisition</TabsTrigger>
+            <TabsTrigger value="create-requisition-form">
+              {requisitionIdToEditFromUrl ? 'Edit Requisition' : 'Create New Requisition'}
+            </TabsTrigger>
             <TabsTrigger value="list-requisitions">List of Requisitions</TabsTrigger>
           </TabsList>
           <TabsContent value="create-requisition-form">
-             <RequisitionForm />
+             <RequisitionForm requisitionIdToEditProp={requisitionIdToEditFromUrl} />
           </TabsContent>
           <TabsContent value="list-requisitions">
             <DocumentListView documentType="requisition" />
@@ -119,5 +123,3 @@ export default function CreateDocumentPage() {
     </Suspense>
   );
 }
-
-    
