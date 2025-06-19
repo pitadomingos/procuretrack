@@ -168,7 +168,7 @@ export default function DashboardPage() {
     setIsLoadingActivity(true);
     setActivityError(null);
     try {
-      const response = await fetch('/api/activity-log?limit=5'); 
+      const response = await fetch('/api/activity-log?limit=20'); // Fetch latest 20 activities
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Failed to parse error response from activity log API.' }));
         const errorMessage = errorData.error || errorData.details || errorData.message || 'Failed to fetch activity log.';
@@ -277,3 +277,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
