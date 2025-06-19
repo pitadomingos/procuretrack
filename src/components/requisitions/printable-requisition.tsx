@@ -92,13 +92,7 @@ export function PrintableRequisition({ requisitionData, logoDataUri }: Printable
       </div>
 
       {/* Signatures / Approval Section */}
-      <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-2 gap-4">
-        <div>
-          <p className="mb-1"><strong className="text-gray-600">Requested By:</strong></p>
-          <p className="font-semibold">{requisitionData.requestedByName || 'N/A'}</p>
-          <div className="mt-8 border-b border-black w-4/5"></div>
-          <p className="text-xs">Signature & Date</p>
-        </div>
+      <div className="text-xs pt-4 border-t-2 border-gray-700 mt-6 grid grid-cols-1 gap-4"> 
         <div>
           <p className="mb-1"><strong className="text-gray-600">Approved By:</strong></p>
           <p className="font-semibold">{requisitionData.approverName || (requisitionData.status === 'Pending Approval' ? '(Pending Approval)' : (requisitionData.status === 'Approved' ? 'Approved (Name Missing)' : 'N/A'))}</p>
