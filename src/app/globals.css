@@ -47,7 +47,7 @@ body {
   }
 
   .dark {
-    --background: 230 10% 10%; 
+    --background: 230 10% 10%;
     --foreground: 230 30% 90%;
     --card: 230 10% 15%;
     --card-foreground: 230 30% 90%;
@@ -93,89 +93,90 @@ body {
 }
 
 @media print {
-  body, html {
+  /* Ensure the entire viewport and document are white */
+  html, body, #__next { /* Adding #__next which is often Next.js's root div */
     background-color: #ffffff !important;
     color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100%;
-    height: auto;
+    width: 100% !important; /* Ensure full width usage */
+    min-height: 100% !important; /* Ensure full height usage */
+    height: auto; /* Allow content to flow */
     font-size: 10pt;
   }
 
   /* Hide elements not meant for printing by default */
-  header, 
-  nav, 
-  aside, 
-  footer, 
-  div[data-sidebar="sidebar"], /* Explicitly hide the main sidebar component */
+  header,
+  nav,
+  aside,
+  footer,
+  div[data-sidebar="sidebar"],
   .print-hidden {
     display: none !important;
     visibility: hidden !important;
   }
-  
-  /* Ensure the printable area takes full width and has no weird shadows/borders */
-  .printable-po-content-wrapper { /* Applied to the div wrapping PrintablePO/Quote/Requisition/GRN */
-    box-shadow: none !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important; 
-    width: 100% !important;
-    max-width: 100% !important;
-    background-color: #ffffff !important;
-  }
 
-  /* Reset any card styling that might cause issues for the main PO card */
-  .print-page-card { 
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background-color: #ffffff !important;
-  }
-  
-  /* The main container for the print page itself */
+  /* Reset specific page wrapper for print preview pages */
   .print-page-container {
     background-color: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
-    min-height: auto !important;
+    min-height: auto !important; /* Reset min-height for print */
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 
   .print-page-inner-container {
      padding: 0 !important;
      margin: 0 !important;
      max-width: 100% !important;
+     background-color: #ffffff !important; /* Ensure this is also white */
+  }
+
+  .printable-po-content-wrapper,
+  .printable-quote-content,
+  .printable-requisition-content,
+  .printable-grn-content {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background-color: #ffffff !important;
+    page-break-inside: avoid;
+  }
+
+  /* Reset any card styling that might cause issues for the main PO card */
+  .print-page-card { /* This class is on the Card on the print preview page, but should be hidden by .print-hidden */
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background-color: #ffffff !important;
   }
 
   /* Attempt to control page breaks and sizing better */
   @page {
     size: A4 portrait;
-    margin: 0.75cm; 
-  }
-
-  /* Prevent page breaks inside the main printable content if possible */
-  .printable-po-content, /* Class for PrintablePO's root div */
-  .printable-quote-content, /* Class for PrintableQuote's root div */
-  .printable-requisition-content, /* Class for PrintableRequisition's root div */
-  .printable-grn-content /* Class for PrintableGRN's root div */ {
-    page-break-inside: avoid;
+    margin: 0.75cm;
   }
 
   /* Remove transitions and transforms that might interfere with print */
   *, *::before, *::after {
     transition: none !important;
     transform: none !important;
-    box-shadow: none !important; 
+    box-shadow: none !important; /* Remove all box shadows for print */
   }
 
   /* Ensure table borders are visible and simple for print */
   table, th, td {
-    border: 1px solid #000000 !important; 
+    border: 1px solid #000000 !important;
   }
   th, td {
-    padding: 4pt !important; 
+    padding: 4pt !important;
   }
 }
