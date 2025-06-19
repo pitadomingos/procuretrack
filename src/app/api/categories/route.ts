@@ -4,12 +4,14 @@ import { NextResponse } from 'next/server';
 import type { Category } from '@/types';
 
 export async function GET() {
+  console.log('[API_INFO] /api/categories GET: Received request.');
   try {
     const [rows] = await pool.execute('SELECT id, category FROM Category ORDER BY category ASC');
+    console.log(`[API_INFO] /api/categories GET: Successfully fetched ${Array.isArray(rows) ? rows.length : 0} categories.`);
     return NextResponse.json(rows);
   } catch (error: any) {
     console.error('[API_ERROR] /api/categories GET: Error fetching categories:', error);
-    return NextResponse.json({ error: 'Failed to fetch categories', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch categories', details: error.message, code: error.code || 'UNKNOWN_DB_ERROR' }, { status: 500 });
   }
 }
 
@@ -54,6 +56,6 @@ export async function POST(request: Request) {
       console.warn('[API_WARN] /api/categories POST: Duplicate entry for category.');
       return NextResponse.json({ error: 'Category with this name already exists.' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Failed to create category due to a server error.', details: error.message, code: error.code }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create category due to a server error.', details: error.message, code: error.code || 'UNKNOWN_SERVER_ERROR' }, { status: 500 });
   }
 }

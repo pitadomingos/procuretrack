@@ -26,7 +26,7 @@ export async function GET(
     return NextResponse.json(rows[0]);
   } catch (error: any) {
     console.error(`[API_ERROR] /api/categories/${id} GET: Error fetching category:`, error);
-    return NextResponse.json({ error: 'Failed to fetch category', details: error.message, code: error.code }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch category', details: error.message, code: error.code || 'UNKNOWN_DB_ERROR' }, { status: 500 });
   }
 }
 
@@ -79,7 +79,7 @@ export async function PUT(
       console.warn(`[API_WARN] /api/categories/${id} PUT: Duplicate entry for category name.`);
       return NextResponse.json({ error: 'Category with this name already exists.' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Failed to update category', details: error.message, code: error.code }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update category', details: error.message, code: error.code || 'UNKNOWN_SERVER_ERROR' }, { status: 500 });
   }
 }
 
@@ -112,6 +112,6 @@ export async function DELETE(
         console.warn(`[API_WARN] /api/categories/${id} DELETE: Attempted to delete a referenced category.`);
         return NextResponse.json({ error: 'Cannot delete category. It is currently referenced by other records (e.g., PO Items, Requisition Items). Please remove those references first.' }, { status: 409 });
     }
-    return NextResponse.json({ error: 'Failed to delete category', details: error.message, code: error.code }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to delete category', details: error.message, code: error.code || 'UNKNOWN_DB_ERROR' }, { status: 500 });
   }
 }

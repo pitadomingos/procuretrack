@@ -70,6 +70,8 @@ export function CategoryForm({ open, onOpenChange, categoryToEdit, onSuccess }: 
       const url = categoryToEdit ? `/api/categories/${categoryToEdit.id}` : '/api/categories';
       const method = categoryToEdit ? 'PUT' : 'POST';
 
+      console.log(`[CategoryForm] Submitting to URL: ${url} with method: ${method}`);
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -82,14 +84,16 @@ export function CategoryForm({ open, onOpenChange, categoryToEdit, onSuccess }: 
           const errorData = await response.json();
           serverMessage = errorData.error || errorData.details || errorData.message || serverMessage;
         } catch (e) {
+          // If JSON parsing fails, use statusText or a generic message
           serverMessage = response.statusText || `Server error: ${response.status}`;
         }
+        console.error(`[CategoryForm] API Error: ${serverMessage}`, response);
         throw new Error(serverMessage);
       }
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Error saving category:', error);
+      console.error('[CategoryForm] Error saving category:', error);
       form.setError("root", { type: "manual", message: error.message || "Could not save category." });
     } finally {
       setIsSubmitting(false);
