@@ -21,7 +21,7 @@ async function createRequisitionItemsTable() {
       );
     `;
     await db.pool.execute(createTableQuery);
-    console.log('RequisitionItem table created or already exists successfully (schema updated: estimatedUnitPrice removed, siteId present).');
+    console.log('RequisitionItem table created or already exists successfully (schema includes siteId).');
   } catch (error) {
     console.error('Error creating RequisitionItem table:', error);
   } finally {
@@ -30,4 +30,5 @@ async function createRequisitionItemsTable() {
 }
 
 createRequisitionItemsTable();
+
 

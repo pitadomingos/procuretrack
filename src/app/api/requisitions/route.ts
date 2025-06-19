@@ -57,6 +57,10 @@ export async function POST(request: Request) {
           await connection.rollback();
           return NextResponse.json({ error: `Item description and quantity are required. Item problematic: ${JSON.stringify(item)}` }, { status: 400 });
       }
+      if (item.siteId === undefined || item.siteId === null) { // Added check for item.siteId
+          await connection.rollback();
+          return NextResponse.json({ error: `Site ID is required for item: "${item.description || 'Unnamed Item'}".` }, { status: 400 });
+      }
       await connection.execute(
         `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, siteId, createdAt, updatedAt)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
           item.categoryId ? Number(item.categoryId) : null, 
           Number(item.quantity), 
           item.notes,
-          item.siteId ? Number(item.siteId) : null 
+          Number(item.siteId) // Ensure siteId is a number
         ]
       );
     }
@@ -109,9 +113,13 @@ export async function POST(request: Request) {
              break;
         case 'ER_BAD_FIELD_ERROR': // MySQL code 1054 for Unknown column
              const columnMatch = error.message.match(/Unknown column '(\w+)'/);
-             const unknownColumn = columnMatch ? columnMatch[1] : 'an unknown column';
+             const unknownColumn = columnMatch ? columnMatch[1].toLowerCase() : 'an unknown column';
              errorMessage = `Database error: Unknown column '${unknownColumn}' in field list.`;
-             errorDetails = `The database table (likely RequisitionItem if '${unknownColumn}' is 'siteId') is missing the '${unknownColumn}' column or it's misspelled in the query. Please ensure database migrations have been run correctly. Original DB error: ${error.message}`;
+             if (unknownColumn === 'siteid') {
+                 errorDetails = `The database table 'RequisitionItem' is likely missing the 'siteId' column. Please ensure the migration script 'scripts/alter_requisition_items_table_add_site_id.js' has been run successfully. Original DB error: ${error.message}`;
+             } else {
+                 errorDetails = `The database table (possibly RequisitionItem) is missing the column '${unknownColumn}' or it's misspelled in the query. Please ensure database migrations have been run correctly. Original DB error: ${error.message}`;
+             }
              statusCode = 500; 
              break;
         default:
