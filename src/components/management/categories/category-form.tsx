@@ -80,11 +80,8 @@ export function CategoryForm({ open, onOpenChange, categoryToEdit, onSuccess }: 
         let serverMessage = `Failed to ${categoryToEdit ? 'update' : 'create'} category. Status: ${response.status}`;
         try {
           const errorData = await response.json();
-          if (errorData.error) serverMessage = errorData.error;
-          else if (errorData.details) serverMessage = errorData.details;
-          else if (errorData.message) serverMessage = errorData.message;
+          serverMessage = errorData.error || errorData.details || errorData.message || serverMessage;
         } catch (e) {
-          // If parsing JSON fails (e.g. server sent HTML error page or plain text)
           serverMessage = response.statusText || `Server error: ${response.status}`;
         }
         throw new Error(serverMessage);
