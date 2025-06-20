@@ -21,90 +21,255 @@ import {
   FileCode2,
   ClipboardCheck,
   Printer, 
-  UserCheck, 
+  UserCheck as UserCheckIcon, // Aliased to avoid conflict
   ServerCog, 
   Edit3, 
-  ClipboardList,
+  ClipboardList as ClipboardListIcon, // Aliased
   Building,
   UploadCloud,
   Table2,
   Truck,
-  Package,
+  Package as PackageIcon, // Aliased
   Briefcase,
-  TagIcon as TagLucideIcon,
+  Tag as TagIcon, // Aliased
   MessageCircleQuestion,
   ArrowRightLeft,
-  Layers
+  Layers,
+  Wrench,
+  Network,
+  Smartphone,
+  Globe,
+  DollarSign,
+  ShieldAlert,
+  History
 } from "lucide-react";
 
 export default function TodoProgressPage() {
   const completedTasks = [
-    { icon: Settings2, text: "Initial Next.js 15 (App Router) & TypeScript setup." },
-    { icon: Palette, text: "UI Framework: ShadCN UI components & Tailwind CSS integration." },
-    { icon: LayoutList, text: "Core App Layout: Collapsible sidebar, header, theme provider, star rating in header." },
-    { icon: Palette, text: "Dark Mode & Light Mode theme toggle functionality." },
-    { icon: LayoutDashboard, text: "Dashboard Page: Dynamic stat cards, charts for Monthly PO Status, Site PO Value, Users by Role, Tags by Status. Data fetched via API." },
-    { icon: FileSignature, text: "Create Document Page: Tabbed interface for PO, GRN, Quote, Requisition, Fuel." },
     { 
-      icon: FileSignature, 
-      text: "Purchase Order (PO) Module: Detailed PO Form (creation & editing, including loading items from approved Requisitions), PO API for CRUD & next PO number, Print Preview & PDF Generation." 
+      category: "Core Setup & Styling",
+      tasks: [
+        { icon: Settings2, text: "Initialized Next.js 15 (App Router) project with TypeScript." },
+        { icon: Palette, text: "Integrated ShadCN UI components and Tailwind CSS for styling." },
+        { icon: Palette, text: "Established a custom theme using HSL CSS variables in `globals.css` for consistent light/dark modes." },
+        { icon: Palette, text: "Implemented Light/Dark mode theme toggle functionality in the header." },
+      ]
     },
     {
-      icon: FileSignature,
-      text: "Client Quotation Module: Quote Form (creation & editing), Quote API for CRUD & next quote number, Print Preview."
+      category: "Application Layout & Navigation",
+      tasks: [
+        { icon: LayoutList, text: "Developed core application layout: Collapsible Sidebar, Header, and main content area." },
+        { icon: LayoutList, text: "Implemented dynamic page titles and breadcrumb navigation in the Header." },
+        { icon: UserCheckIcon, text: "Added user avatar display and mock user dropdown in the Header." },
+        { icon: Palette, text: "Included a star rating system on most pages for user feedback (mocked interaction)." },
+      ]
     },
     {
-      icon: ClipboardList,
-      text: "Purchase Requisition Module: Requisition Form (creation & editing), Requisition API for CRUD & next requisition number, Print Preview."
-    },
-    { 
-      icon: UserCheck, 
-      text: "Approvals Workflow: Consolidated 'My Approvals' Page for POs, Quotes, & Requisitions. API endpoints for fetching pending items and processing approvals/rejections. Review PO Modal for item feedback." 
-    },
-    { icon: Truck, text: "Goods Received Note (GRN) Interface: PO search and item receiving UI simulation (full backend update pending)." },
-    { icon: Fuel, text: "Fuel Record Module: Fuel Record Form & List view with distance calculation, mock data for now." },
-    { 
-      icon: Settings, 
-      text: "Management Section & CRUD APIs: Hub page. Full CRUD operations for Sites, Suppliers, Approvers, Users, Categories, Tags, Clients with backend API integration." 
+      category: "Dashboard Module",
+      tasks: [
+        { icon: LayoutDashboard, text: "Created Dashboard page (`src/app/page.tsx`) as the main overview." },
+        { icon: LayoutDashboard, text: "Implemented dynamic grouped stat cards for key metrics (Users, POs, GRN Activity, Requisitions, Fuel, Quotes) fetching data via `/api/dashboard-stats`." },
+        { icon: Settings2, text: "Integrated FilterBar for Month/Year filtering on dashboard charts." },
+        { icon: BarChart3, text: "Developed interactive charts: Monthly PO Status, Site PO Value Status, Requisitions by Status, Quotes by Status, all fetching live data from respective `/api/charts/*` endpoints." },
+        { icon: ListChecks, text: "Added a Recent Activity Log table, fetching limited entries from `/api/activity-log`." },
+      ]
     },
     {
-      icon: UploadCloud,
-      text: "CSV Data Upload: Implemented for Clients, Tags, and Suppliers, including downloadable templates."
+      category: "Document Creation & Management (`/create-document`)",
+      tasks: [
+        { icon: LayoutList, text: "Built a tabbed interface for POs, GRNs, Quotes, Requisitions, and Fuel Records." },
+        { icon: FileSignature, text: "Purchase Orders (PO): Comprehensive `POForm` for creation & editing; loading items from approved Requisitions (header site ID from Req applied to PO items); unique PO Number generation; CRUD APIs; `PrintablePO` component & Playwright PDF generation; PO List View with actions." },
+        { icon: FileSignature, text: "Client Quotations: `QuoteForm` for creation & editing; unique Quote Number generation; CRUD APIs; `PrintableQuote` component; Quote List View with actions; CSV Upload for quotes." },
+        { icon: ClipboardListIcon, text: "Purchase Requisitions: `RequisitionForm` for creation & editing; unique Requisition Number generation; CRUD APIs; `PrintableRequisition` component; Requisition List View with actions." },
+        { icon: Truck, text: "Goods Received Notes (GRN): `GRNInterface` UI for PO selection and item quantity input; Backend API (`/api/grn`) for processing GRN submissions (updates POItem quantities and PO status); `PrintableGRN` component." },
+        { icon: Fuel, text: "Fuel Records: `FuelRecordForm` UI; Fuel Record List View with distance calculation (currently mock data backed, API exists)." },
+      ]
     },
-    { 
-      icon: DatabaseZap, 
-      text: "Database Schema: Initial setup and various alteration scripts executed (e.g., RequisitionItem.siteId added, estimatedUnitPrice dropped, PO approverId logic updated)." 
+    {
+      category: "Approvals Workflow",
+      tasks: [
+        { icon: UserCheckIcon, text: "Consolidated 'My Approvals' page (`/approvals`) for POs, Quotes, and Requisitions." },
+        { icon: ServerCog, text: "Backend APIs to fetch pending items for a (mock) logged-in approver." },
+        { icon: Settings2, text: "Implemented approve/reject functionality with API calls for each document type." },
+        { icon: Edit3, text: "Developed `RejectDocumentModal` for standardized rejection handling." },
+        { icon: Edit3, text: "Created `ReviewPOModal` for item-specific feedback on POs (simulated email notification)." },
+      ]
     },
-    { icon: ListChecks, text: "Activity Log Page: Displaying mock activity data, full logging pending." },
-    { icon: BarChart3, text: "Analytics Page: Charts for Spend by Vendor, PO by Category, Users by Role, Tags by Status. Detailed 'Coming Soon' suggestions added for GRN, Quote, Requisition, Fuel tabs." },
-    { icon: FileText, text: "Reports Page: Placeholder structure for future reporting features." },
-    { icon: BookUser, text: "User Manual: Detailed content for core features like Document Creation, Approvals, Management." },
-    { icon: FileCode2, text: "System Documentation: Comprehensive overview of architecture, technologies, key files, and future roadmap." },
-    { icon: MessageCircleQuestion, text: "Feedback Survey Page: UI for user feedback collection (backend submission pending)." },
-    { icon: ClipboardCheck, text: "This To-Do/Progress page for tracking development." },
+    {
+      category: "Data Management (Admin Section)",
+      tasks: [
+        { icon: Settings, text: "Management hub page (`/management`) with dynamic entity counts and navigation cards." },
+        { icon: PackageIcon, text: "Suppliers: Full CRUD functionality with `SupplierForm` and API integration." },
+        { icon: Users, text: "Approvers: Full CRUD functionality with `ApproverForm` and API integration." },
+        { icon: Users, text: "Users: Full CRUD functionality with `UserForm` and API integration (site access display only)." },
+        { icon: Building, text: "Sites: Full CRUD functionality with `SiteForm` and API integration." },
+        { icon: Briefcase, text: "Allocations: Legacy read-only page with mock data." },
+        { icon: TagIcon, text: "Categories: Full CRUD functionality with `CategoryForm` and API integration." },
+        { icon: Fuel, text: "Tags (Vehicles/Equipment): Full CRUD functionality with `TagForm` and API integration." },
+        { icon: Briefcase, text: "Clients: Full CRUD functionality with `ClientForm` and API integration." },
+        { icon: UploadCloud, text: "CSV Data Upload: Implemented for Clients, Tags, and Suppliers, including downloadable templates." },
+      ]
+    },
+    {
+      category: "Supporting Pages & Features",
+      tasks: [
+        { icon: ListChecks, text: "`ActivityLogPage` (`/activity-log`): Detailed view with filtering, fetching from `/api/activity-log`." },
+        { icon: BarChart3, text: "`AnalyticsPage` (`/analytics`): Initial charts and placeholders for future detailed analytics." },
+        { icon: FileText, text: "`ReportsPage` (`/reports`): Basic placeholder structure." },
+        { icon: MessageCircleQuestion, text: "`SurveyPage` (`/survey`): UI for user feedback collection (submission mocked)." },
+        { icon: BookUser, text: "`UserManualPage` (`/user-manual`): Comprehensive user guide generated and refined." },
+        { icon: FileCode2, text: "`SystemDocumentationPage` (`/system-documentation`): Technical overview of the application." },
+        { icon: ClipboardCheck, text: "`TodoProgressPage` (this page): Tracking development milestones." },
+      ]
+    },
+    {
+      category: "Backend & Database",
+      tasks: [
+        { icon: DatabaseZap, text: "Established MySQL database schema with creation and alteration scripts in `/scripts`." },
+        { icon: ServerCog, text: "Developed Node.js backend using Next.js API Routes." },
+        { icon: DatabaseZap, text: "Configured database connection pool in `backend/db.js`." },
+        { icon: ServerCog, text: "Built comprehensive API endpoints for CRUD operations, chart data, document number generation, and specific actions (approve/reject)." },
+        { icon: Printer, text: "Implemented server-side PDF generation for Purchase Orders using Playwright." },
+      ]
+    },
+    {
+      category: "User Experience & Error Handling",
+      tasks: [
+        { icon: Zap, text: "Integrated toast notifications for user feedback on operations." },
+        { icon: ShieldAlert, text: "Implemented loading states and error messages for data-fetching components." },
+      ]
+    }
   ];
 
   const upcomingTasks = [
-    { icon: ShieldCheck, text: "User Authentication & Authorization: Implement robust login, user roles (Admin, Creator, Approver, etc.), and permission-based access control for all features and data." },
-    { icon: Truck, text: "Complete GRN Functionality: Actual item receipt processing in the database (update POItem statuses & quantityReceived), GRN document generation/history." },
-    { icon: DatabaseZap, text: "Complete Backend for Fuel Records: Ensure robust saving and retrieval of fuel records from the database, beyond mock data." },
-    { icon: FileText, text: "Develop Reporting Module: Create dynamic reports (PO status, spend, vendor performance, GRN summaries, Fuel usage etc.) with filtering and export options (Excel, PDF)." },
-    { icon: Zap, text: "Real-time Notifications: In-app or email notifications for approvals, status changes, comments." },
-    { icon: BrainCircuit, text: "Integrate Genkit for AI Features: Explore AI-assisted form filling, data analysis, or report summaries." },
-    { icon: Settings2, text: "User Profile & Settings Page: Allow users to manage their profile, preferences, and notification settings." },
-    { icon: Layers, text: "Inventory Management Module (Potential): If required, add functionality to track inventory levels, manage stock movements, and link with procurement." },
-    { icon: ArrowRightLeft, text: "Advanced GRN Features: Handling of partial receipts, back-orders, and returns more explicitly." },
-    { icon: UploadCloud, text: "CSV Data Upload Expansion: Implement for POs, Requisitions, and Fuel Records." },
-    { icon: ListChecks, text: "Enhanced Activity Logging: More detailed and searchable activity logs integrated with backend actions." },
-    { icon: MessageCircleQuestion, text: "Survey Pop-up Logic: Implement triggers for displaying the feedback survey based on user activity or specific events." },
-    { icon: BarChart3, text: "Advanced Analytics Dashboards: Implement the suggested 'Coming Soon' analytics for GRN, Quotes, Requisitions, and Fuel tabs." },
-    { icon: ClipboardCheck, text: "Automated Testing: Implement unit, integration, and end-to-end tests." },
-    { icon: Zap, text: "Performance Optimization: Continuous monitoring and optimization of database queries, API response times, and frontend rendering." },
+    { 
+      category: "User Authentication & Authorization",
+      tasks: [
+        { icon: ShieldCheck, text: "Implement robust user login system (e.g., Firebase Authentication, NextAuth.js)." },
+        { icon: Users, text: "Develop Role-Based Access Control (RBAC) for all features and data (Admin, Creator, Approver, Manager, Viewer)." },
+        { icon: Settings2, text: "Create User Profile page for password changes, preferences, and notification settings." },
+      ]
+    },
+    {
+      category: "Notifications & Communication",
+      tasks: [
+        { icon: Zap, text: "Develop real-time in-app notifications for critical events." },
+        { icon: Zap, text: "Implement email notifications for approval requests, rejections, comments, and GRN processing." },
+      ]
+    },
+    {
+      category: "Data Management & Import/Export",
+      tasks: [
+        { icon: UploadCloud, text: "Expand CSV/Excel import/export capabilities to all major entities (POs, Requisitions, Fuel Records) with robust validation, error reporting, and preview features." },
+        { icon: Table2, text: "Implement batch update and delete functionalities in all management tables." },
+      ]
+    },
+    {
+      category: "GRN Module Enhancements",
+      tasks: [
+        { icon: History, text: "Develop GRN document history, search, and detailed view functionalities." },
+        { icon: ArrowRightLeft, text: "Implement systematic handling of discrepancies (short/over-shipments) and returns to supplier." },
+        { icon: Layers, text: "Integrate GRN processing with a potential inventory module for stock updates." },
+      ]
+    },
+    {
+      category: "Fuel Management Enhancements",
+      tasks: [
+        { icon: DatabaseZap, text: "Complete full backend CRUD operations for Fuel Records, moving beyond mock data." },
+        { icon: BarChart3, text: "Implement fuel efficiency calculations (e.g., L/100km, L/hr) based on odometer/hour meter readings." },
+        { icon: ShieldAlert, text: "Develop alerts for abnormal fuel consumption patterns." },
+      ]
+    },
+    {
+      category: "Reporting & Analytics",
+      tasks: [
+        { icon: BarChart3, text: "Fully implement the 'Coming Soon' analytics tabs (GRN, Quote, Requisition, Fuel detailed views)." },
+        { icon: Settings2, text: "Create a customizable report builder for users to generate ad-hoc reports." },
+        { icon: FileText, text: "Enable scheduled report generation and email delivery." },
+      ]
+    },
+    {
+      category: "AI Integration (Genkit)",
+      tasks: [
+        { icon: BrainCircuit, text: "Explore AI-assisted data entry (e.g., extracting data from uploaded invoices/quotes to pre-fill forms)." },
+        { icon: BrainCircuit, text: "Implement smart search or natural language querying for data retrieval." },
+        { icon: BrainCircuit, text: "Develop predictive analytics (e.g., forecasting spend, identifying potential delays)." },
+        { icon: BrainCircuit, text: "Add automated summary generation for complex documents or reports." },
+      ]
+    },
+    {
+      category: "Inventory Management Module (Optional Extension)",
+      tasks: [
+        { icon: Layers, text: "Design and implement features to track stock levels and manage stock movements." },
+        { icon: Zap, text: "Link inventory with procurement for automated reordering based on thresholds." },
+        { icon: DollarSign, text: "Add stock valuation methods and reporting." },
+      ]
+    },
+    {
+      category: "Budgeting & Cost Control",
+      tasks: [
+        { icon: DollarSign, text: "Allow definition of budgets per site, department, or project." },
+        { icon: BarChart3, text: "Implement real-time tracking of actual spend against defined budgets." },
+        { icon: ShieldAlert, text: "Configure alerts for budget overruns or near-thresholds." },
+      ]
+    },
+    {
+      category: "Workflow & Process Customization",
+      tasks: [
+        { icon: Wrench, text: "Enable administrators to define custom approval workflows (e.g., multi-step, conditional routing)." },
+      ]
+    },
+    {
+      category: "Accessibility & User Experience",
+      tasks: [
+        { icon: Smartphone, text: "Thoroughly optimize all views and interactions for mobile devices." },
+        { icon: Smartphone, text: "Explore Progressive Web App (PWA) capabilities for offline access and enhanced mobile experience." },
+        { icon: Globe, text: "Implement internationalization (i18n) to support multiple languages (e.g., Portuguese, English)." },
+      ]
+    },
+    {
+      category: "Integrations",
+      tasks: [
+        { icon: Network, text: "Develop API integrations to sync procurement data with common accounting software (e.g., QuickBooks, Xero)." },
+        { icon: Users, text: "Consider a dedicated supplier portal for PO viewing, invoice submission, and information updates." },
+      ]
+    },
+    {
+      category: "Performance & Scalability",
+      tasks: [
+        { icon: DatabaseZap, text: "Conduct regular database query optimization and indexing reviews." },
+        { icon: ServerCog, text: "Monitor and improve API response times under load." },
+        { icon: LayoutDashboard, text: "Enhance frontend rendering performance, especially for large data lists (e.g., virtualization)." },
+        { icon: Settings2, text: "Perform load testing and define scaling strategies for database and application servers." },
+      ]
+    },
+    {
+      category: "Security & Auditing",
+      tasks: [
+        { icon: ShieldCheck, text: "Conduct regular security audits and penetration testing." },
+        { icon: ShieldCheck, text: "Implement Content Security Policy (CSP) and other web security best practices." },
+        { icon: History, text: "Enhance activity logging for more granular tracking of all data changes and system events." },
+        { icon: ListChecks, text: "Develop a dedicated audit trail search and reporting interface." },
+      ]
+    },
+    {
+      category: "Survey & Feedback Module",
+      tasks: [
+        { icon: DatabaseZap, text: "Implement backend storage and analysis tools for survey responses." },
+        { icon: MessageCircleQuestion, text: "Enable conditional survey pop-ups based on user activity or specific application events." },
+      ]
+    },
+    {
+      category: "Testing & Quality Assurance",
+      tasks: [
+        { icon: ClipboardCheck, text: "Establish comprehensive automated testing: unit tests, integration tests, and end-to-end tests." },
+      ]
+    }
   ];
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+      <Card className="shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all duration-300 ease-in-out">
         <CardHeader>
           <div className="flex items-center space-x-3">
             <ClipboardCheck className="h-8 w-8 text-primary" />
@@ -117,39 +282,45 @@ export default function TodoProgressPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-8">
-          <section>
-            <h2 className="text-xl font-semibold mb-3 flex items-center">
-              <CheckCircle className="h-6 w-6 mr-2 text-green-500" />
-              Completed Milestones
-            </h2>
-            <ul className="list-none space-y-2 pl-0">
-              {completedTasks.map((task, index) => (
-                <li key={`completed-${index}`} className="flex items-start p-2 rounded-md hover:bg-muted/50 transition-colors">
-                  <task.icon className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
-                  <span className="text-muted-foreground">{task.text}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {completedTasks.map((categoryItem, catIndex) => (
+            <section key={`completed-cat-${catIndex}`}>
+              <h2 className="text-xl font-semibold mb-3 flex items-center">
+                <CheckCircle className="h-6 w-6 mr-2 text-green-500" />
+                {categoryItem.category}
+              </h2>
+              <ul className="list-none space-y-2 pl-0">
+                {categoryItem.tasks.map((task, taskIndex) => (
+                  <li key={`completed-task-${catIndex}-${taskIndex}`} className="flex items-start p-2 rounded-md hover:bg-muted/50 transition-colors">
+                    <task.icon className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
+                    <span className="text-muted-foreground text-sm">{task.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
 
-          <section>
-            <h2 className="text-xl font-semibold mb-3 flex items-center">
-              <ListChecks className="h-6 w-6 mr-2 text-accent" />
-              Next Steps & Future Enhancements
-            </h2>
-            <ul className="list-none space-y-2 pl-0">
-              {upcomingTasks.map((task, index) => (
-                <li key={`upcoming-${index}`} className="flex items-start p-2 rounded-md hover:bg-muted/50 transition-colors">
-                  <task.icon className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
-                   <span className="text-muted-foreground">{task.text}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <Separator className="my-8" />
 
+          {upcomingTasks.map((categoryItem, catIndex) => (
+             <section key={`upcoming-cat-${catIndex}`}>
+              <h2 className="text-xl font-semibold mb-3 flex items-center">
+                <ListChecks className="h-6 w-6 mr-2 text-accent" />
+                Future Enhancements: {categoryItem.category}
+              </h2>
+              <ul className="list-none space-y-2 pl-0">
+                {categoryItem.tasks.map((task, taskIndex) => (
+                  <li key={`upcoming-task-${catIndex}-${taskIndex}`} className="flex items-start p-2 rounded-md hover:bg-muted/50 transition-colors">
+                    <task.icon className="h-5 w-5 mr-3 mt-1 text-primary flex-shrink-0" />
+                    <span className="text-muted-foreground text-sm">{task.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          
           <section>
-            <p className="text-sm text-muted-foreground italic">
-              <strong>Note on Time Estimates:</strong> While this list helps track feature development, providing precise time estimates for software development tasks is complex and depends on various factors. This page focuses on outlining completed and planned features.
+            <p className="text-sm text-muted-foreground italic mt-8">
+              <strong>Note on Time Estimates:</strong> This list tracks feature development. Precise time estimates for software tasks are complex and depend on various factors. This page focuses on outlining completed and planned features.
             </p>
           </section>
         </CardContent>
@@ -157,4 +328,3 @@ export default function TodoProgressPage() {
     </div>
   );
 }
-
