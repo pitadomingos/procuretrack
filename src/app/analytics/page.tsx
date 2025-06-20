@@ -8,7 +8,7 @@ import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart'; /
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass } from 'lucide-react';
+import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string }>({
