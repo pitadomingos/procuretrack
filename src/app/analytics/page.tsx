@@ -4,7 +4,7 @@
 import { FilterBar } from '@/components/shared/filter-bar';
 import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart';
 import { MaverickSpendChart } from '@/components/analytics/maverick-spend-chart';
-import { POValueDistributionChart } from '@/components/analytics/po-value-distribution-chart'; // New Import
+import { POValueDistributionChart } from '@/components/analytics/po-value-distribution-chart'; 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -191,7 +191,6 @@ export default function AnalyticsPage() {
             <POCycleTimeChart key={`po-cycle-${refreshKey}`} filters={currentFilters} />
             <MaverickSpendChart key={`maverick-spend-${refreshKey}`} filters={currentFilters} /> 
             <POValueDistributionChart key={`po-value-dist-${refreshKey}`} filters={currentFilters} />
-
 
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -526,4 +525,3 @@ export default function AnalyticsPage() {
     </div>
   );
 }
-
