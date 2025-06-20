@@ -200,14 +200,14 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Trends of POs in different statuses (Draft, Pending, Approved, Completed) over months/quarters. (Chart: Stacked Area/Multi-line)
+                  The "Monthly PO Status" chart on the main Dashboard page shows trends for 'Approved' and 'Pending Approval' POs. For more detailed status trends (e.g., including Draft, Completed, Rejected), use the AI analysis tool.
                 </CardDescription>
                  <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Implemented as Monthly PO Status Chart!</h3>
-                  <p className="text-xs text-muted-foreground mb-2">This is covered by the "Monthly PO Status" chart on the main dashboard, showing 'Approved' and 'Pending Approval' trends.</p>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Detailed Analysis via AI</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Use the AI prompt to explore trends across all PO statuses or correlate with other factors.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Show the trend of POs in 'Pending Approval' vs 'Approved' status over the last 6 months. Is there an increasing backlog of pending approvals? Correlate with any changes in the number of active approvers if possible.`}</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Show the monthly trend of all PO statuses (Draft, Pending Approval, Approved, Rejected, Completed) for the last 6 months. Is there an increasing backlog of pending approvals?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -526,3 +526,4 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
