@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import type { ChartDataPoint } from '@/types';
-import { Loader2, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { Loader2, AlertTriangle, AlertOctagon, Brain } from 'lucide-react'; // Added Brain icon
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
