@@ -3,25 +3,27 @@
 
 import { FilterBar } from '@/components/shared/filter-bar';
 import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart';
+import { MaverickSpendChart } from '@/components/analytics/maverick-spend-chart'; // New Import
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
     ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, 
     Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, 
-    BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle,
+    BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle as AlertTriangleIcon, // Renamed to avoid conflict
     MessageSquare, Sparkles, Send, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import type { POAnalysisOutput } from '@/ai/flows/po-analysis-flow'; // Import the type
+import type { POAnalysisOutput } from '@/ai/flows/po-analysis-flow';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AnalyticsPage() {
-  const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string }>({
+  const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string; siteId?: string; }>({ // Added siteId to currentFilters for FilterBar
     month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
     year: new Date().getFullYear().toString(),
+    siteId: 'all', // Default siteId
   });
   const [refreshKey, setRefreshKey] = useState(0); 
 
@@ -34,7 +36,7 @@ export default function AnalyticsPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
-    setCurrentFilters({ month: filters.month, year: filters.year });
+    setCurrentFilters({ month: filters.month, year: filters.year, siteId: filters.siteId }); // Include siteId
     setRefreshKey(prevKey => prevKey + 1); 
   };
 
@@ -54,7 +56,9 @@ export default function AnalyticsPage() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({error: "An unknown error occurred with the AI analysis."}));
-        throw new Error(errorData.error || `AI analysis failed: ${response.statusText}`);
+        // Try to get more specific error message
+        const specificError = errorData.details || errorData.error || `AI analysis failed: ${response.statusText}`;
+        throw new Error(specificError);
       }
       const data: POAnalysisOutput = await response.json();
       setAiResponse(data);
@@ -140,7 +144,7 @@ export default function AnalyticsPage() {
                   </div>
                 ) : aiError ? (
                   <div className="flex-grow flex flex-col justify-center items-center text-destructive p-4 border border-destructive/50 rounded-md">
-                    <AlertTriangle className="h-10 w-10 mb-3" />
+                    <AlertTriangleIcon className="h-10 w-10 mb-3" />
                     <p className="font-semibold">Error:</p>
                     <p className="text-sm text-center">{aiError}</p>
                   </div>
@@ -185,25 +189,7 @@ export default function AnalyticsPage() {
             </Card>
             
             <POCycleTimeChart key={`po-cycle-${refreshKey}`} filters={currentFilters} />
-
-            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-headline text-xl">Maverick Spend Identification</CardTitle>
-                <AlertOctagon className="h-6 w-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4">
-                  Identify POs not linked to requisitions or with 'emergency' justifications. (Chart: Bar chart of count/value)
-                </CardDescription>
-                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
-                  <Card className="mt-1 text-left text-xs bg-background/50">
-                    <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show all POs from last quarter with 'emergency' in their notes, or not linked to a requisition. What's their total value and which suppliers are most common? Highlight any over $500.</code></CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+            <MaverickSpendChart key={`maverick-spend-${refreshKey}`} filters={currentFilters} /> 
             
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -536,7 +522,7 @@ export default function AnalyticsPage() {
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="font-headline text-xl">Anomalous Fuel Consumption</CardTitle>
-                <AlertTriangle className="h-6 w-6 text-muted-foreground" />
+                <AlertTriangleIcon className="h-6 w-6 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
@@ -557,3 +543,4 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
