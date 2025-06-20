@@ -10,8 +10,13 @@ import {
     ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, 
     Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, 
     BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle,
-    MessageSquare, Sparkles // New icons for AI section
+    MessageSquare, Sparkles, Send, Loader2
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import type { POAnalysisOutput } from '@/ai/flows/po-analysis-flow'; // Import the type
+import { useToast } from '@/hooks/use-toast';
 
 export default function AnalyticsPage() {
   const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string }>({
@@ -20,10 +25,45 @@ export default function AnalyticsPage() {
   });
   const [refreshKey, setRefreshKey] = useState(0); 
 
+  const [aiPrompt, setAiPrompt] = useState<string>('');
+  const [aiResponse, setAiResponse] = useState<POAnalysisOutput | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState<boolean>(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
     setCurrentFilters({ month: filters.month, year: filters.year });
     setRefreshKey(prevKey => prevKey + 1); 
+  };
+
+  const handleAiSubmit = async () => {
+    if (!aiPrompt.trim()) {
+      toast({title: "Prompt Required", description: "Please enter a question or request for the AI.", variant: "default"});
+      return;
+    }
+    setIsAiLoading(true);
+    setAiResponse(null);
+    setAiError(null);
+    try {
+      const response = await fetch('/api/ai/analyze-po', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({error: "An unknown error occurred with the AI analysis."}));
+        throw new Error(errorData.error || `AI analysis failed: ${response.statusText}`);
+      }
+      const data: POAnalysisOutput = await response.json();
+      setAiResponse(data);
+    } catch (error: any) {
+      setAiError(error.message || 'Failed to get response from AI.');
+      toast({title: "AI Analysis Error", description: error.message, variant: "destructive"});
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   return (
@@ -56,52 +96,94 @@ export default function AnalyticsPage() {
 
         <TabsContent value="po-analytics">
           <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
-            {/* New AI Interaction Section */}
-            <div className="lg:col-span-1 xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="font-headline text-xl">AI-Powered PO Analysis</CardTitle>
-                  <MessageSquare className="h-6 w-6 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="mb-4">
-                    Ask the AI for specific insights into your Purchase Order data. The AI can generate summaries, identify trends, and even create charts based on your questions.
-                  </CardDescription>
-                  <div className="p-3 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-muted/10">
-                    <h4 className="text-sm font-semibold text-foreground mb-1">Example Prompt:</h4>
-                    <code className="block whitespace-pre-wrap text-xs bg-background/50 p-2 rounded">
-                      {`Show me a breakdown of PO values by supplier for Q1 ${new Date().getFullYear()}, and highlight suppliers with total PO value over $10,000. Also, chart the trend of POs created per month for the last 6 months.`}
-                    </code>
-                  </div>
-                  <div className="mt-4 p-3 text-center border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
-                     <h3 className="text-md font-semibold text-primary mb-1">AI Prompt Input Coming Soon!</h3>
-                     <p className="text-xs text-muted-foreground">An input field will appear here to type your questions to the AI.</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">AI-Powered PO Analysis</CardTitle>
+                <MessageSquare className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-2">
+                  Ask the AI for specific insights into your Purchase Order data. The AI can generate summaries, identify trends, and even create charts based on your questions.
+                </CardDescription>
+                <div className="p-3 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-muted/10 mb-4">
+                  <h4 className="text-sm font-semibold text-foreground mb-1">Example Prompt:</h4>
+                  <code className="block whitespace-pre-wrap text-xs bg-background/50 p-2 rounded">
+                    {`What was the total value of approved POs last month? Show me a breakdown by supplier.`}
+                  </code>
+                </div>
+                <div className="space-y-2">
+                  <Textarea
+                    placeholder="Enter your question, e.g., 'Top 5 suppliers by PO value this year?' or 'How many POs are pending approval?'"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    className="min-h-[100px]"
+                    disabled={isAiLoading}
+                  />
+                  <Button onClick={handleAiSubmit} disabled={isAiLoading || !aiPrompt.trim()} className="w-full">
+                    {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                    {isAiLoading ? 'Analyzing...' : 'Ask AI'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="font-headline text-xl">AI Response</CardTitle>
-                  <Sparkles className="h-6 w-6 text-muted-foreground" />
-                </CardHeader>
-                <CardContent className="flex-grow flex flex-col">
-                  <CardDescription className="mb-4">
-                    The AI's response, including text summaries and generated charts, will appear here.
-                  </CardDescription>
-                  <div className="flex-grow p-4 text-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 flex flex-col justify-center items-center">
-                    <Brain className="h-10 w-10 text-accent mb-3" />
-                    <h3 className="text-md font-semibold text-accent mb-1">AI-Generated Charts & Insights Coming Soon!</h3>
-                    <p className="text-xs text-muted-foreground mb-3">This area will dynamically display charts and text generated by the AI.</p>
-                    <div className="w-full max-w-xs h-32 border border-muted-foreground/50 rounded bg-background/30 flex items-center justify-center text-muted-foreground text-sm">
-                        (Chart Placeholder)
-                    </div>
+            <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">AI Response</CardTitle>
+                <Sparkles className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="flex-grow flex flex-col">
+                {isAiLoading ? (
+                  <div className="flex-grow flex flex-col justify-center items-center text-muted-foreground">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+                    <p>AI is thinking...</p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                ) : aiError ? (
+                  <div className="flex-grow flex flex-col justify-center items-center text-destructive p-4 border border-destructive/50 rounded-md">
+                    <AlertTriangle className="h-10 w-10 mb-3" />
+                    <p className="font-semibold">Error:</p>
+                    <p className="text-sm text-center">{aiError}</p>
+                  </div>
+                ) : aiResponse ? (
+                  <div className="space-y-4">
+                    <div className="p-3 border rounded-md bg-background/50">
+                      <h4 className="font-semibold mb-1 text-primary">Summary:</h4>
+                      <p className="text-sm whitespace-pre-wrap">{aiResponse.responseText}</p>
+                    </div>
+                    {aiResponse.chartData && aiResponse.chartData.length > 0 && (
+                      <div className="p-3 border rounded-md bg-background/50">
+                        <h4 className="font-semibold mb-2 text-primary">{aiResponse.chartTitle || 'Chart'}</h4>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={aiResponse.chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="name" stroke="hsl(var(--foreground))" fontSize={10} interval={0} angle={-30} textAnchor="end" height={50}/>
+                            <YAxis stroke="hsl(var(--foreground))" fontSize={10} />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: 'var(--radius)'}}
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
+                              itemStyle={{ color: 'hsl(var(--chart-1))' }}
+                            />
+                            <Bar dataKey="value" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                    {aiResponse.debugInfo && (
+                        <div className="mt-2 p-2 border border-dashed border-muted-foreground/30 rounded-md text-xs text-muted-foreground">
+                            <p className="font-semibold">Debug Info:</p>
+                            <pre className="whitespace-pre-wrap text-xs">{aiResponse.debugInfo}</pre>
+                        </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex-grow flex flex-col justify-center items-center text-muted-foreground">
+                    <Brain className="h-10 w-10 mb-3" />
+                    <p>AI's response will appear here.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
             
-            {/* Existing POCycleTimeChart and other cards */}
             <POCycleTimeChart key={`po-cycle-${refreshKey}`} filters={currentFilters} />
 
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
