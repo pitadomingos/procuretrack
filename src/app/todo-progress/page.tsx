@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator"; // Added this import
 import { 
   CheckCircle, 
   ListChecks, 
@@ -21,17 +22,17 @@ import {
   FileCode2,
   ClipboardCheck,
   Printer, 
-  UserCheck as UserCheckIcon, // Aliased to avoid conflict
+  UserCheck as UserCheckIcon,
   ServerCog, 
   Edit3, 
-  ClipboardList as ClipboardListIcon, // Aliased
+  ClipboardList as ClipboardListIcon,
   Building,
   UploadCloud,
   Table2,
   Truck,
-  Package as PackageIcon, // Aliased
+  Package as PackageIcon,
   Briefcase,
-  Tag as TagIcon, // Aliased
+  Tag as TagIcon,
   MessageCircleQuestion,
   ArrowRightLeft,
   Layers,
@@ -137,6 +138,7 @@ export default function TodoProgressPage() {
       tasks: [
         { icon: Zap, text: "Integrated toast notifications for user feedback on operations." },
         { icon: ShieldAlert, text: "Implemented loading states and error messages for data-fetching components." },
+        { icon: Palette, text: "Refined print styles for better document presentation, including sticky footer." },
       ]
     }
   ];
@@ -153,116 +155,122 @@ export default function TodoProgressPage() {
     {
       category: "Notifications & Communication",
       tasks: [
-        { icon: Zap, text: "Develop real-time in-app notifications for critical events." },
-        { icon: Zap, text: "Implement email notifications for approval requests, rejections, comments, and GRN processing." },
+        { icon: Zap, text: "Develop real-time in-app notifications for critical events (e.g., new approval requests, document status changes)." },
+        { icon: Zap, text: "Implement email notifications for approval requests, rejections, comments, and GRN processing completion." },
       ]
     },
     {
       category: "Data Management & Import/Export",
       tasks: [
-        { icon: UploadCloud, text: "Expand CSV/Excel import/export capabilities to all major entities (POs, Requisitions, Fuel Records) with robust validation, error reporting, and preview features." },
-        { icon: Table2, text: "Implement batch update and delete functionalities in all management tables." },
+        { icon: UploadCloud, text: "Expand CSV/Excel import capabilities to all major entities (POs, Requisitions, Fuel Records) with robust validation, error reporting, and preview features." },
+        { icon: UploadCloud, text: "Implement Excel/CSV export functionality for all data tables (POs, Quotes, Requisitions, Fuel Records, Management lists)." },
+        { icon: Table2, text: "Implement batch update and delete functionalities in all management tables for efficiency." },
       ]
     },
     {
       category: "GRN Module Enhancements",
       tasks: [
-        { icon: History, text: "Develop GRN document history, search, and detailed view functionalities." },
-        { icon: ArrowRightLeft, text: "Implement systematic handling of discrepancies (short/over-shipments) and returns to supplier." },
-        { icon: Layers, text: "Integrate GRN processing with a potential inventory module for stock updates." },
+        { icon: Truck, text: "Complete full backend integration for GRN processing: Update POItem quantities, PO status, and log activity in ActivityLog table." },
+        { icon: History, text: "Develop GRN document history, search, and detailed view functionalities (Printable GRN already exists)." },
+        { icon: ArrowRightLeft, text: "Implement systematic handling of discrepancies (short/over-shipments) and returns to supplier processes." },
+        { icon: Layers, text: "Integrate GRN processing with a potential inventory module for stock updates (if inventory module is added)." },
       ]
     },
     {
       category: "Fuel Management Enhancements",
       tasks: [
-        { icon: DatabaseZap, text: "Complete full backend CRUD operations for Fuel Records, moving beyond mock data." },
-        { icon: BarChart3, text: "Implement fuel efficiency calculations (e.g., L/100km, L/hr) based on odometer/hour meter readings." },
-        { icon: ShieldAlert, text: "Develop alerts for abnormal fuel consumption patterns." },
+        { icon: DatabaseZap, text: "Complete full backend CRUD operations for Fuel Records, moving beyond mock data to MySQL persistence." },
+        { icon: BarChart3, text: "Implement fuel efficiency calculations (e.g., Liters/100km, Liters/hr) based on odometer/hour meter readings using actual data." },
+        { icon: ShieldAlert, text: "Develop alerts for abnormal fuel consumption patterns or discrepancies between odometer and fuel." },
       ]
     },
     {
       category: "Reporting & Analytics",
       tasks: [
-        { icon: BarChart3, text: "Fully implement the 'Coming Soon' analytics tabs (GRN, Quote, Requisition, Fuel detailed views)." },
-        { icon: Settings2, text: "Create a customizable report builder for users to generate ad-hoc reports." },
-        { icon: FileText, text: "Enable scheduled report generation and email delivery." },
+        { icon: BarChart3, text: "Fully implement the 'Coming Soon' analytics tabs (GRN detailed analytics, Client Quote conversion funnels, Requisition lifecycle efficiency, detailed Fuel Usage trends)." },
+        { icon: Settings2, text: "Create a customizable report builder for users to generate ad-hoc reports with selectable columns, filters, and grouping." },
+        { icon: FileText, text: "Enable scheduled report generation and email delivery for key reports." },
+        { icon: Printer, text: "Add PDF export functionality for all generated reports and charts." },
       ]
     },
     {
       category: "AI Integration (Genkit)",
       tasks: [
         { icon: BrainCircuit, text: "Explore AI-assisted data entry (e.g., extracting data from uploaded invoices/quotes to pre-fill forms)." },
-        { icon: BrainCircuit, text: "Implement smart search or natural language querying for data retrieval." },
-        { icon: BrainCircuit, text: "Develop predictive analytics (e.g., forecasting spend, identifying potential delays)." },
-        { icon: BrainCircuit, text: "Add automated summary generation for complex documents or reports." },
+        { icon: BrainCircuit, text: "Implement smart search or natural language querying for data retrieval (e.g., \"Show me all POs for Site X approved last month\")." },
+        { icon: BrainCircuit, text: "Develop predictive analytics (e.g., forecasting spend, identifying potential delays in PO fulfillment)." },
+        { icon: BrainCircuit, text: "Add automated summary generation for complex documents or reports (e.g., summarizing a long PO or a set of requisitions)." },
       ]
     },
     {
       category: "Inventory Management Module (Optional Extension)",
       tasks: [
-        { icon: Layers, text: "Design and implement features to track stock levels and manage stock movements." },
-        { icon: Zap, text: "Link inventory with procurement for automated reordering based on thresholds." },
-        { icon: DollarSign, text: "Add stock valuation methods and reporting." },
+        { icon: Layers, text: "Design and implement features to track stock levels for key items and manage stock movements (receipts, issues, transfers)." },
+        { icon: Zap, text: "Link inventory with procurement for automated reordering based on pre-defined minimum stock thresholds." },
+        { icon: DollarSign, text: "Add stock valuation methods (e.g., FIFO, Weighted Average) and reporting." },
       ]
     },
     {
       category: "Budgeting & Cost Control",
       tasks: [
-        { icon: DollarSign, text: "Allow definition of budgets per site, department, or project." },
-        { icon: BarChart3, text: "Implement real-time tracking of actual spend against defined budgets." },
-        { icon: ShieldAlert, text: "Configure alerts for budget overruns or near-thresholds." },
+        { icon: DollarSign, text: "Allow definition of budgets per site, department, or project for specific categories." },
+        { icon: BarChart3, text: "Implement real-time tracking of actual spend (from approved POs) against defined budgets." },
+        { icon: ShieldAlert, text: "Configure alerts and notifications for budget overruns or when nearing budget thresholds." },
       ]
     },
     {
       category: "Workflow & Process Customization",
       tasks: [
-        { icon: Wrench, text: "Enable administrators to define custom approval workflows (e.g., multi-step, conditional routing)." },
+        { icon: Wrench, text: "Enable administrators to define custom approval workflows (e.g., multi-step approvals, conditional routing based on PO value or category)." },
+        { icon: Settings2, text: "Allow customization of document numbering schemes (PO, Quote, Requisition) through admin settings." },
       ]
     },
     {
       category: "Accessibility & User Experience",
       tasks: [
-        { icon: Smartphone, text: "Thoroughly optimize all views and interactions for mobile devices." },
-        { icon: Smartphone, text: "Explore Progressive Web App (PWA) capabilities for offline access and enhanced mobile experience." },
+        { icon: Smartphone, text: "Thoroughly optimize all views and interactions for mobile devices and tablets." },
+        { icon: Smartphone, text: "Explore Progressive Web App (PWA) capabilities for offline access to key data and enhanced mobile experience." },
         { icon: Globe, text: "Implement internationalization (i18n) to support multiple languages (e.g., Portuguese, English)." },
+        { icon: Edit3, text: "Enhance inline editing capabilities in data tables where appropriate for faster data updates." },
       ]
     },
     {
       category: "Integrations",
       tasks: [
-        { icon: Network, text: "Develop API integrations to sync procurement data with common accounting software (e.g., QuickBooks, Xero)." },
-        { icon: Users, text: "Consider a dedicated supplier portal for PO viewing, invoice submission, and information updates." },
+        { icon: Network, text: "Develop API integrations to sync procurement data (approved POs, supplier invoices) with common accounting software (e.g., QuickBooks, Xero, Sage)." },
+        { icon: Users, text: "Consider a dedicated supplier portal for PO viewing, invoice submission, and updating their company information." },
       ]
     },
     {
       category: "Performance & Scalability",
       tasks: [
-        { icon: DatabaseZap, text: "Conduct regular database query optimization and indexing reviews." },
-        { icon: ServerCog, text: "Monitor and improve API response times under load." },
-        { icon: LayoutDashboard, text: "Enhance frontend rendering performance, especially for large data lists (e.g., virtualization)." },
-        { icon: Settings2, text: "Perform load testing and define scaling strategies for database and application servers." },
+        { icon: DatabaseZap, text: "Conduct regular database query optimization and indexing reviews, especially for tables with high read/write frequency." },
+        { icon: ServerCog, text: "Monitor and improve API response times under load, implementing caching strategies where beneficial." },
+        { icon: LayoutDashboard, text: "Enhance frontend rendering performance, especially for large data lists, by exploring techniques like virtualization or pagination." },
+        { icon: Settings2, text: "Perform load testing and define scaling strategies for the database and application servers based on expected user growth." },
       ]
     },
     {
       category: "Security & Auditing",
       tasks: [
-        { icon: ShieldCheck, text: "Conduct regular security audits and penetration testing." },
-        { icon: ShieldCheck, text: "Implement Content Security Policy (CSP) and other web security best practices." },
-        { icon: History, text: "Enhance activity logging for more granular tracking of all data changes and system events." },
-        { icon: ListChecks, text: "Develop a dedicated audit trail search and reporting interface." },
+        { icon: ShieldCheck, text: "Conduct regular security audits and consider penetration testing." },
+        { icon: ShieldCheck, text: "Implement Content Security Policy (CSP) and other web security best practices (e.g., HSTS, XSS protection)." },
+        { icon: History, text: "Enhance activity logging for more granular tracking of all data changes (old vs. new values) and critical system events." },
+        { icon: ListChecks, text: "Develop a dedicated audit trail search and reporting interface for administrators." },
       ]
     },
     {
       category: "Survey & Feedback Module",
       tasks: [
-        { icon: DatabaseZap, text: "Implement backend storage and analysis tools for survey responses." },
-        { icon: MessageCircleQuestion, text: "Enable conditional survey pop-ups based on user activity or specific application events." },
+        { icon: DatabaseZap, text: "Implement backend storage and analysis tools for survey responses to derive actionable insights." },
+        { icon: MessageCircleQuestion, text: "Enable conditional survey pop-ups based on user activity (e.g., after completing a certain number of POs) or specific application events." },
       ]
     },
     {
       category: "Testing & Quality Assurance",
       tasks: [
-        { icon: ClipboardCheck, text: "Establish comprehensive automated testing: unit tests, integration tests, and end-to-end tests." },
+        { icon: ClipboardCheck, text: "Establish comprehensive automated testing: unit tests for critical functions, integration tests for API endpoints, and end-to-end tests for key user workflows." },
+        { icon: ListChecks, text: "Set up a CI/CD pipeline for automated testing and deployment." },
       ]
     }
   ];
@@ -276,7 +284,7 @@ export default function TodoProgressPage() {
             <div>
               <CardTitle className="font-headline text-2xl">Application To-Do List & Progress</CardTitle>
               <CardDescription>
-                Tracking our journey in building the ProcureTrack application.
+                Tracking our journey in building the ProcureTrack application. This includes completed milestones, current work, and future enhancements.
               </CardDescription>
             </div>
           </div>
@@ -320,7 +328,7 @@ export default function TodoProgressPage() {
           
           <section>
             <p className="text-sm text-muted-foreground italic mt-8">
-              <strong>Note on Time Estimates:</strong> This list tracks feature development. Precise time estimates for software tasks are complex and depend on various factors. This page focuses on outlining completed and planned features.
+              <strong>Note on Development:</strong> This list tracks planned features and improvements. Implementation priority and timelines are subject to change based on evolving requirements and resource availability.
             </p>
           </section>
         </CardContent>
