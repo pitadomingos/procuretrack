@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { pool } from '../../../../backend/db.js'; // Adjust path as necessary
+import { pool } from '../../../backend/db.js'; // Corrected path
 
 // Input schema for the getPurchaseOrdersTool
 const GetPurchaseOrdersInputSchema = z.object({
@@ -112,3 +112,4 @@ export const getPurchaseOrdersTool = ai.defineTool(
     }
   }
 );
+
