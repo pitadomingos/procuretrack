@@ -68,21 +68,20 @@ const poAnalysisFlow = ai.defineFlow(
     console.log('[poAnalysisFlow] Received input:', input);
     let llmOutput: POAnalysisOutput | undefined;
     let llmHistory: Array<{type: string, request?: ToolRequest, response?: ToolResponse<any, GenkitErrorCode>}> | undefined;
-    let flowError: string | undefined;
+    let flowErrorMsg: string | undefined;
 
     try {
       const { output, history } = await poAnalysisSystemPrompt(input);
       llmOutput = output;
-      llmHistory = history as any; // Cast to more specific type if Genkit provides one for history events
+      llmHistory = history as any; 
 
       if (!llmOutput) {
         console.warn('[poAnalysisFlow] LLM returned no output, but no error was thrown during generation.');
-        flowError = 'AI model returned an empty output.';
+        flowErrorMsg = 'AI model returned an empty output.';
       }
     } catch (e: any) {
       console.error('[poAnalysisFlow] Error during LLM prompt execution or tool call:', e);
-      flowError = `Error processing AI request: ${e.message || String(e)}`;
-      // Attempt to get history even if the main call failed, it might contain tool request/response attempts.
+      flowErrorMsg = `Error processing AI request: ${e.message || String(e)}`;
       if (e.history) {
         llmHistory = e.history;
       }
@@ -110,29 +109,31 @@ const poAnalysisFlow = ai.defineFlow(
         }
       });
     }
+    const historyDebugInfo = debugMessages.join('\n');
     
-    const finalDebugInfo = debugMessages.join('\n');
-
-    if (flowError) {
+    if (flowErrorMsg) {
       return {
-        responseText: `An error occurred: ${flowError}`,
-        debugInfo: finalDebugInfo || flowError, 
+        responseText: `An error occurred: ${flowErrorMsg}`,
+        debugInfo: historyDebugInfo || flowErrorMsg, 
+        chartData: undefined,
+        chartTitle: undefined,
       };
     }
     
     if (!llmOutput) {
-        console.error('[poAnalysisFlow] LLM output is unexpectedly null/undefined after processing, and no flowError was set.');
+        console.error('[poAnalysisFlow] LLM output is unexpectedly null/undefined after processing, and no flowErrorMsg was set.');
         return {
             responseText: 'AI model did not produce a valid output. Please check server logs.',
-            debugInfo: finalDebugInfo || 'No debug information. Output was unexpectedly null.',
+            debugInfo: historyDebugInfo || 'No debug information. Output was unexpectedly null.',
+            chartData: undefined,
+            chartTitle: undefined,
         };
     }
 
     console.log('[poAnalysisFlow] Successfully processed. LLM Output:', llmOutput);
     return {
       ...llmOutput,
-      // Prepend history debug messages to any debug info the LLM might have generated itself.
-      debugInfo: finalDebugInfo ? `${finalDebugInfo}\n${llmOutput.debugInfo || ''}`.trim() : llmOutput.debugInfo,
+      debugInfo: historyDebugInfo ? `${historyDebugInfo}\n${llmOutput.debugInfo || ''}`.trim() : llmOutput.debugInfo,
     };
   }
 );
@@ -141,3 +142,4 @@ const poAnalysisFlow = ai.defineFlow(
 export async function analyzePurchaseOrders(input: POAnalysisInput): Promise<POAnalysisOutput> {
   return poAnalysisFlow(input);
 }
+
