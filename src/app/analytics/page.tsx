@@ -3,14 +3,15 @@
 
 import { FilterBar } from '@/components/shared/filter-bar';
 import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart';
-import { MaverickSpendChart } from '@/components/analytics/maverick-spend-chart'; // New Import
+import { MaverickSpendChart } from '@/components/analytics/maverick-spend-chart';
+import { POValueDistributionChart } from '@/components/analytics/po-value-distribution-chart'; // New Import
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
     ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, 
     Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, 
-    BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle as AlertTriangleIcon, // Renamed to avoid conflict
+    BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle as AlertTriangleIcon,
     MessageSquare, Sparkles, Send, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,10 +21,10 @@ import type { POAnalysisOutput } from '@/ai/flows/po-analysis-flow';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AnalyticsPage() {
-  const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string; siteId?: string; }>({ // Added siteId to currentFilters for FilterBar
+  const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string; siteId?: string; }>({
     month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
     year: new Date().getFullYear().toString(),
-    siteId: 'all', // Default siteId
+    siteId: 'all',
   });
   const [refreshKey, setRefreshKey] = useState(0); 
 
@@ -36,7 +37,7 @@ export default function AnalyticsPage() {
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
-    setCurrentFilters({ month: filters.month, year: filters.year, siteId: filters.siteId }); // Include siteId
+    setCurrentFilters({ month: filters.month, year: filters.year, siteId: filters.siteId });
     setRefreshKey(prevKey => prevKey + 1); 
   };
 
@@ -56,7 +57,6 @@ export default function AnalyticsPage() {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({error: "An unknown error occurred with the AI analysis."}));
-        // Try to get more specific error message
         const specificError = errorData.details || errorData.error || `AI analysis failed: ${response.statusText}`;
         throw new Error(specificError);
       }
@@ -190,25 +190,8 @@ export default function AnalyticsPage() {
             
             <POCycleTimeChart key={`po-cycle-${refreshKey}`} filters={currentFilters} />
             <MaverickSpendChart key={`maverick-spend-${refreshKey}`} filters={currentFilters} /> 
-            
-            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-headline text-xl">PO Value Distribution</CardTitle>
-                <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4">
-                  Distribution of Purchase Order values (e.g., number of POs in ranges $0-100, $101-500). (Chart: Histogram)
-                </CardDescription>
-                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
-                  <Card className="mt-1 text-left text-xs bg-background/50">
-                    <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Generate a histogram of PO grand total values for the current fiscal year, grouped into these buckets: 0-500, 501-2000, 2001-10000, 10001+. What percentage of POs fall into each bucket?</code></CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+            <POValueDistributionChart key={`po-value-dist-${refreshKey}`} filters={currentFilters} />
+
 
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -224,7 +207,7 @@ export default function AnalyticsPage() {
                   <p className="text-xs text-muted-foreground mb-2">This is covered by the "Monthly PO Status" chart on the main dashboard, showing 'Approved' and 'Pending Approval' trends.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show the trend of POs in 'Pending Approval' vs 'Approved' status over the last 6 months. Is there an increasing backlog of pending approvals? Correlate with any changes in the number of active approvers if possible.</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Show the trend of POs in 'Pending Approval' vs 'Approved' status over the last 6 months. Is there an increasing backlog of pending approvals? Correlate with any changes in the number of active approvers if possible.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -247,7 +230,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">For supplier [Supplier Name] over the last quarter, calculate their on-time delivery percentage based on [PO Item Expected Delivery Date] vs [GRN Item Receipt Date]. List top 3 suppliers by on-time delivery rate.</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For supplier [Supplier Name] over the last quarter, calculate their on-time delivery percentage based on [PO Item Expected Delivery Date] vs [GRN Item Receipt Date]. List top 3 suppliers by on-time delivery rate.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -265,7 +248,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze GRNs for item [Item SKU] from last month. What's the discrepancy rate (ordered vs. received quantity)? What are the most common reasons if items were rejected or partially received?</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Analyze GRNs for item [Item SKU] from last month. What's the discrepancy rate (ordered vs. received quantity)? What are the most common reasons if items were rejected or partially received?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -283,7 +266,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">What's the average GRN processing time (physical receipt to system entry) for the receiving team at [Site Name] over the past month? Identify any GRNs that took significantly longer.</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What's the average GRN processing time (physical receipt to system entry) for the receiving team at [Site Name] over the past month? Identify any GRNs that took significantly longer.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -301,7 +284,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Plot the total value of goods successfully received and recorded in the system per week for the last two months. Are there any weeks with exceptionally high or low receipt values?</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Plot the total value of goods successfully received and recorded in the system per week for the last two months. Are there any weeks with exceptionally high or low receipt values?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -324,7 +307,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">What is our overall quote conversion rate (status 'Approved' / total 'Sent' or 'Approved' or 'Rejected') for last month? Break this down by client [Client Name] and by creator [Creator Email].</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What is our overall quote conversion rate (status 'Approved' / total 'Sent' or 'Approved' or 'Rejected') for last month? Break this down by client [Client Name] and by creator [Creator Email].`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -342,7 +325,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show the monthly trend of average quote value for quotes in 'Approved' status over the last 6 months. Is the average deal size increasing or decreasing?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Show the monthly trend of average quote value for quotes in 'Approved' status over the last 6 months. Is the average deal size increasing or decreasing?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -360,7 +343,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">What is the total value of our current sales pipeline (sum of 'Pending Approval' and 'Sent to Client' quotes)? Show breakdown by quote status.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What is the total value of our current sales pipeline (sum of 'Pending Approval' and 'Sent to Client' quotes)? Show breakdown by quote status.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -378,7 +361,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">For all quotes marked 'Rejected' in the last year, what are the top 3 reasons for rejection? (Assuming rejection reason is stored in notes or a dedicated field)</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For all quotes marked 'Rejected' in the last year, what are the top 3 reasons for rejection? (Assuming rejection reason is stored in notes or a dedicated field)`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -401,7 +384,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Calculate the average cycle time for requisitions: 1. Submission to Approval. 2. Approval to PO Creation (if PO exists). Identify requisitions that took more than 7 days for approval.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Calculate the average cycle time for requisitions: 1. Submission to Approval. 2. Approval to PO Creation (if PO exists). Identify requisitions that took more than 7 days for approval.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -419,7 +402,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show the total estimated value of approved requisitions for each site in the last month. Which site has the highest requested spend?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Show the total estimated value of approved requisitions for each site in the last month. Which site has the highest requested spend?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -437,7 +420,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">What percentage of 'Approved' requisitions created last quarter were converted to a PO (status 'Closed')? What percentage were 'Cancelled' after approval?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What percentage of 'Approved' requisitions created last quarter were converted to a PO (status 'Closed')? What percentage were 'Cancelled' after approval?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -455,7 +438,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">List the top 10 most frequently requested item categories from requisitions this year. Are there any items that are frequently requested across multiple sites?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`List the top 10 most frequently requested item categories from requisitions this year. Are there any items that are frequently requested across multiple sites?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -478,7 +461,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">For vehicle [Tag Number], calculate its average fuel efficiency (L/100km) for the last month based on fuel records and odometer readings. Compare this to its average from the previous month.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For vehicle [Tag Number], calculate its average fuel efficiency (L/100km) for the last month based on fuel records and odometer readings. Compare this to its average from the previous month.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -496,7 +479,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">List the top 5 tags with the highest total fuel cost this month. Also, show total fuel cost per site for the same period.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`List the top 5 tags with the highest total fuel cost this month. Also, show total fuel cost per site for the same period.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -514,7 +497,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Plot the average unit cost of diesel purchased across all sites for each month of the last year. Are there any significant price fluctuations?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Plot the average unit cost of diesel purchased across all sites for each month of the last year. Are there any significant price fluctuations?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -532,7 +515,7 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Compare the fuel efficiency of all 'LDV' type tags for the last month. Flag any tags whose efficiency is more than 20% worse than the average for LDVs or significantly worse than their own historical average.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Compare the fuel efficiency of all 'LDV' type tags for the last month. Flag any tags whose efficiency is more than 20% worse than the average for LDVs or significantly worse than their own historical average.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -543,4 +526,3 @@ export default function AnalyticsPage() {
     </div>
   );
 }
-
