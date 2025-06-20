@@ -2,20 +2,23 @@
 'use client';
 
 import { FilterBar } from '@/components/shared/filter-bar';
-import { SpendByVendorChart } from '@/components/analytics/spend-by-vendor-chart';
-import { POCountByCategoryChart } from '@/components/analytics/po-count-by-category-chart';
-import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart'; // New import
+import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle } from 'lucide-react';
+import { 
+    ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, 
+    Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, 
+    BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass, AlertTriangle,
+    MessageSquare, Sparkles // New icons for AI section
+} from 'lucide-react';
 
 export default function AnalyticsPage() {
   const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string }>({
     month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
     year: new Date().getFullYear().toString(),
   });
-  const [refreshKey, setRefreshKey] = useState(0); // To force re-render charts on filter change
+  const [refreshKey, setRefreshKey] = useState(0); 
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
@@ -23,17 +26,13 @@ export default function AnalyticsPage() {
     setRefreshKey(prevKey => prevKey + 1); 
   };
 
-  // Mock data, will be replaced by API calls or removed if charts fetch their own data
-  const [filteredSpendData, setFilteredSpendData] = useState([]); // Placeholder for now
-  const [filteredCategoryData, setFilteredCategoryData] = useState([]); // Placeholder for now
-
   return (
     <div className="space-y-6">
       <FilterBar 
         onFilterApply={handleFilterApply}
-        showApproverFilter={false} // Example: Not showing certain filters by default for analytics page
+        showApproverFilter={false}
         showRequestorFilter={false}
-        showSiteFilter={true} // Example: Show site filter
+        showSiteFilter={true} 
       />
 
       <Tabs defaultValue="po-analytics" className="w-full">
@@ -57,10 +56,52 @@ export default function AnalyticsPage() {
 
         <TabsContent value="po-analytics">
           <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
-            {/* SpendByVendorChart and POCountByCategoryChart will need API integration or removal if mock data is not used */}
-            <SpendByVendorChart key={`spend-vendor-${refreshKey}`} data={filteredSpendData} /> 
-            <POCountByCategoryChart key={`po-cat-${refreshKey}`} data={filteredCategoryData} />
+            {/* New AI Interaction Section */}
+            <div className="lg:col-span-1 xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="font-headline text-xl">AI-Powered PO Analysis</CardTitle>
+                  <MessageSquare className="h-6 w-6 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="mb-4">
+                    Ask the AI for specific insights into your Purchase Order data. The AI can generate summaries, identify trends, and even create charts based on your questions.
+                  </CardDescription>
+                  <div className="p-3 border-2 border-dashed border-muted-foreground/30 rounded-lg bg-muted/10">
+                    <h4 className="text-sm font-semibold text-foreground mb-1">Example Prompt:</h4>
+                    <code className="block whitespace-pre-wrap text-xs bg-background/50 p-2 rounded">
+                      {`Show me a breakdown of PO values by supplier for Q1 ${new Date().getFullYear()}, and highlight suppliers with total PO value over $10,000. Also, chart the trend of POs created per month for the last 6 months.`}
+                    </code>
+                  </div>
+                  <div className="mt-4 p-3 text-center border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
+                     <h3 className="text-md font-semibold text-primary mb-1">AI Prompt Input Coming Soon!</h3>
+                     <p className="text-xs text-muted-foreground">An input field will appear here to type your questions to the AI.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out flex flex-col">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="font-headline text-xl">AI Response</CardTitle>
+                  <Sparkles className="h-6 w-6 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="flex-grow flex flex-col">
+                  <CardDescription className="mb-4">
+                    The AI's response, including text summaries and generated charts, will appear here.
+                  </CardDescription>
+                  <div className="flex-grow p-4 text-center border-2 border-dashed border-accent/30 rounded-lg bg-accent/5 flex flex-col justify-center items-center">
+                    <Brain className="h-10 w-10 text-accent mb-3" />
+                    <h3 className="text-md font-semibold text-accent mb-1">AI-Generated Charts & Insights Coming Soon!</h3>
+                    <p className="text-xs text-muted-foreground mb-3">This area will dynamically display charts and text generated by the AI.</p>
+                    <div className="w-full max-w-xs h-32 border border-muted-foreground/50 rounded bg-background/30 flex items-center justify-center text-muted-foreground text-sm">
+                        (Chart Placeholder)
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
             
+            {/* Existing POCycleTimeChart and other cards */}
             <POCycleTimeChart key={`po-cycle-${refreshKey}`} filters={currentFilters} />
 
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
