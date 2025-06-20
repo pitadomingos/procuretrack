@@ -4,28 +4,37 @@
 import { FilterBar } from '@/components/shared/filter-bar';
 import { SpendByVendorChart } from '@/components/analytics/spend-by-vendor-chart';
 import { POCountByCategoryChart } from '@/components/analytics/po-count-by-category-chart';
-import { spendByVendorData, poCountByCategoryData } from '@/lib/mock-data'; // Mock data, will be replaced by API calls
-import { useState } from 'react';
+import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart'; // New import
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, Brain, LineChart, CircleDollarSign, AlertOctagon } from 'lucide-react';
+import { ShoppingCart, Truck, FileText as QuoteIcon, ClipboardList as RequisitionIcon, Fuel as FuelIcon, Brain, LineChart, CircleDollarSign, AlertOctagon, Users, TrendingUp, BarChartHorizontalBig, PackageCheck, PackageX, Percent, Hourglass } from 'lucide-react';
 
 export default function AnalyticsPage() {
-  // Mock state for potential future dynamic data loading based on filters
-  const [filteredSpendData, setFilteredSpendData] = useState(spendByVendorData);
-  const [filteredCategoryData, setFilteredCategoryData] = useState(poCountByCategoryData);
+  const [currentFilters, setCurrentFilters] = useState<{ month?: string; year?: string }>({
+    month: (new Date().getMonth() + 1).toString().padStart(2, '0'),
+    year: new Date().getFullYear().toString(),
+  });
+  const [refreshKey, setRefreshKey] = useState(0); // To force re-render charts on filter change
 
   const handleFilterApply = (filters: any) => {
     console.log('Applying filters to Analytics:', filters);
-    // In a real app, you would fetch new data based on these filters
-    // For now, mock data remains unchanged.
-    setFilteredSpendData(spendByVendorData);
-    setFilteredCategoryData(poCountByCategoryData);
+    setCurrentFilters({ month: filters.month, year: filters.year });
+    setRefreshKey(prevKey => prevKey + 1); 
   };
+
+  // Mock data, will be replaced by API calls or removed if charts fetch their own data
+  const [filteredSpendData, setFilteredSpendData] = useState([]); // Placeholder for now
+  const [filteredCategoryData, setFilteredCategoryData] = useState([]); // Placeholder for now
 
   return (
     <div className="space-y-6">
-      <FilterBar onFilterApply={handleFilterApply} />
+      <FilterBar 
+        onFilterApply={handleFilterApply}
+        showApproverFilter={false} // Example: Not showing certain filters by default for analytics page
+        showRequestorFilter={false}
+        showSiteFilter={true} // Example: Show site filter
+      />
 
       <Tabs defaultValue="po-analytics" className="w-full">
         <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-6">
@@ -48,28 +57,12 @@ export default function AnalyticsPage() {
 
         <TabsContent value="po-analytics">
           <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
-            <SpendByVendorChart data={filteredSpendData} />
-            <POCountByCategoryChart data={filteredCategoryData} />
-          </section>
-          <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2 mt-6">
-            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-headline text-xl">PO Cycle Time Analysis</CardTitle>
-                <LineChart className="h-6 w-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4">
-                  Analyze time taken from PO creation to approval, and approval to completion. (Chart: Histogram/Box Plot)
-                </CardDescription>
-                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
-                  <Card className="mt-1 text-left text-xs bg-background/50">
-                    <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze POs created in Q2. What is the average cycle time from creation to approval? Identify bottlenecks. Which approvers or PO types have significantly longer/shorter cycle times?</code></CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+            {/* SpendByVendorChart and POCountByCategoryChart will need API integration or removal if mock data is not used */}
+            <SpendByVendorChart key={`spend-vendor-${refreshKey}`} data={filteredSpendData} /> 
+            <POCountByCategoryChart key={`po-cat-${refreshKey}`} data={filteredCategoryData} />
+            
+            <POCycleTimeChart key={`po-cycle-${refreshKey}`} filters={currentFilters} />
+
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="font-headline text-xl">Maverick Spend Identification</CardTitle>
@@ -77,18 +70,19 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Identify off-contract or emergency POs not linked to pre-approved requisitions. (Chart: Bar chart of count/value)
+                  Identify POs not linked to requisitions or with 'emergency' justifications. (Chart: Bar chart of count/value)
                 </CardDescription>
                  <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Identify all POs created last month not linked to an approved requisition. What is their total value and what are the common categories? Flag any POs with 'emergency' justification that exceed $1000.</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show all POs from last quarter with 'emergency' in their notes, or not linked to a requisition. What's their total value and which suppliers are most common? Highlight any over $500.</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
             </Card>
-             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+            
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="font-headline text-xl">PO Value Distribution</CardTitle>
                 <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
@@ -101,22 +95,24 @@ export default function AnalyticsPage() {
                   <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">What is the distribution of PO values for the current year? What percentage of POs are below $500? Are there any unusually high-value POs that deviate from the norm?</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Generate a histogram of PO grand total values for the current fiscal year, grouped into these buckets: 0-500, 501-2000, 2001-10000, 10001+. What percentage of POs fall into each bucket?</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
             </Card>
+
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="font-headline text-xl">PO Status Trends Over Time</CardTitle>
-                <LineChart className="h-6 w-6 text-muted-foreground" />
+                <TrendingUp className="h-6 w-6 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
                   Trends of POs in different statuses (Draft, Pending, Approved, Completed) over months/quarters. (Chart: Stacked Area/Multi-line)
                 </CardDescription>
                  <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Implemented as Monthly PO Status Chart!</h3>
+                  <p className="text-xs text-muted-foreground mb-2">This is covered by the "Monthly PO Status" chart on the main dashboard, showing 'Approved' and 'Pending Approval' trends.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                     <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show the trend of POs in 'Pending Approval' vs 'Approved' status over the last 6 months. Is there an increasing backlog of pending approvals? Correlate with any changes in the number of active approvers if possible.</code></CardContent>
@@ -128,215 +124,311 @@ export default function AnalyticsPage() {
         </TabsContent>
 
         <TabsContent value="grn-analytics">
-          <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">GRN & Receiving Analytics</CardTitle>
-              <Truck className="h-6 w-6 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="mb-4">
-                Gain insights into supplier delivery performance, item receipt accuracy, and receiving cycle times.
-              </CardDescription>
-              <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20 space-y-4">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon! Potential Analyses:</h3>
-                
-                <div>
-                  <h4 className="text-md font-semibold text-left">1. Supplier On-Time Delivery Performance</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Percentage of POs/items delivered on time by each supplier. (Chart: Bar chart)</p>
-                  <Card className="text-left text-xs bg-background/50">
+           <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Supplier On-Time Delivery</CardTitle>
+                <PackageCheck className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Percentage of PO items delivered on or before the promised/expected date by supplier. (Chart: Bar chart per supplier)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze the following GRN data for supplier [Supplier Name]: [GRN Data - PO Due Date, Actual Receipt Date]. Calculate their on-time delivery percentage and identify any trends in early or late deliveries. Suggest reasons for consistent delays if observed.</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">For supplier [Supplier Name] over the last quarter, calculate their on-time delivery percentage based on [PO Item Expected Delivery Date] vs [GRN Item Receipt Date]. List top 3 suppliers by on-time delivery rate.</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">2. Item Receipt Discrepancy Rate</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Percentage of items received with quantity or quality discrepancies. (Chart: Pie/Bar chart for reasons)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Receipt Discrepancy Rate</CardTitle>
+                <PackageX className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Percentage of items received with quantity mismatches (short/over) or quality issues. (Chart: Pie/Bar chart by discrepancy type)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Given this set of GRN entries for item [Item Name/SKU]: [GRN Data - Ordered Qty, Received Qty, Rejected Qty, Reasons for Rejection]. What is the overall discrepancy rate for this item? What are the most common reasons for discrepancies?</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze GRNs for item [Item SKU] from last month. What's the discrepancy rate (ordered vs. received quantity)? What are the most common reasons if items were rejected or partially received?</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">3. Average GRN Processing Time</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Time from physical receipt of goods to system entry/update. (Chart: Line chart trend)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Average GRN Processing Time</CardTitle>
+                <Hourglass className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Time from physical receipt of goods to system entry/update of the GRN. (Chart: Line chart trend by week/month)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">The following data points represent GRN processing times (in hours) for the last month: [List of processing times]. Calculate the average processing time. Identify outliers and suggest potential bottlenecks in the receiving process if the average is high.</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">What's the average GRN processing time (physical receipt to system entry) for the receiving team at [Site Name] over the past month? Identify any GRNs that took significantly longer.</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">4. Value of Goods Received Over Time</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Trend of the total value of goods received (daily, weekly, monthly). (Chart: Line/Bar chart)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Value of Goods Received Over Time</CardTitle>
+                <BarChartHorizontalBig className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Trend of the total value of goods received and accepted (daily, weekly, monthly). (Chart: Line/Bar chart)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Based on this GRN data (Date, Value Received): [Data]. Describe the trend in the value of goods received over the past [Period]. Are there any notable peaks or troughs? What might they indicate?</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">Plot the total value of goods successfully received and recorded in the system per week for the last two months. Are there any weeks with exceptionally high or low receipt values?</code></CardContent>
                   </Card>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </section>
         </TabsContent>
 
         <TabsContent value="quote-analytics">
-          <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">Client Quotation Analysis</CardTitle>
-              <QuoteIcon className="h-6 w-6 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="mb-4">
-                Track quotation performance, conversion funnels, and revenue opportunities from client engagements.
-              </CardDescription>
-              <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20 space-y-4">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon! Potential Analyses:</h3>
-                
-                <div>
-                  <h4 className="text-md font-semibold text-left">1. Quote Conversion Rate</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Percentage of quotes approved/won vs. total quotes issued, by salesperson/client segment. (Chart: Grouped Bar chart)</p>
-                  <Card className="text-left text-xs bg-background/50">
+          <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Quote Conversion Rate</CardTitle>
+                <Percent className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Percentage of quotes approved/won vs. total quotes issued, by salesperson/client segment. (Chart: Grouped Bar chart)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Given the following quote data ([Quote ID, Status, Quoted Value, Salesperson, Client Segment]): [Data]. Calculate the overall quote conversion rate (Approved/Total Sent). Break down by Salesperson and Client Segment. Identify high/low performers.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">What is our overall quote conversion rate (status 'Approved' / total 'Sent' or 'Approved' or 'Rejected') for last month? Break this down by client [Client Name] and by creator [Creator Email].</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">2. Average Quote Value Trend</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Track average quote value over time, filterable by product/service category. (Chart: Line chart)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Average Quote Value Trend</CardTitle>
+                <TrendingUp className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Track average quote value (for 'Approved' or 'Sent' quotes) over time, filterable by product/service category. (Chart: Line chart)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze this list of approved quotes ([Quote Value, Quote Date, Product Category]): [Data]. What is the trend in average quote value over the last 6 months? Which product categories have the highest average quote values?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show the monthly trend of average quote value for quotes in 'Approved' status over the last 6 months. Is the average deal size increasing or decreasing?</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">3. Sales Pipeline Value</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Unweighted and weighted sum of values for 'Pending' or 'Sent' quotes. (Chart: Bar chart)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Sales Pipeline Value</CardTitle>
+                <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Total value of quotes currently in 'Pending Approval' or 'Sent to Client' status. (Chart: Bar chart by status)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Here's a list of current outstanding quotes ([Quote ID, Status, Quoted Value, Est. Close Probability]): [Data]. Calculate total sales pipeline value and weighted pipeline value. Summarize.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">What is the total value of our current sales pipeline (sum of 'Pending Approval' and 'Sent to Client' quotes)? Show breakdown by quote status.</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">4. Win/Loss Analysis</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Common reasons for winning or losing quotes (if data captured). (Chart: Pie/Bar chart for reasons)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Quote Rejection Reasons</CardTitle>
+                <AlertOctagon className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Analysis of common reasons for 'Rejected' quotes (if rejection reasons are captured). (Chart: Pie/Bar chart for reasons)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze these lost quotes ([Quote Value, Client Segment, Reason for Loss (Price, Competition, etc.)]): [Data]. What are the top 3 reasons for losing quotes? Are there patterns specific to client segments or quote values?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">For all quotes marked 'Rejected' in the last year, what are the top 3 reasons for rejection? (Assuming rejection reason is stored in notes or a dedicated field)</code></CardContent>
                   </Card>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </section>
         </TabsContent>
 
         <TabsContent value="requisition-analytics">
-          <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">Purchase Requisition Insights</CardTitle>
-              <RequisitionIcon className="h-6 w-6 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="mb-4">
-                Analyze internal demand, requisition lifecycle efficiency, and departmental spending patterns.
-              </CardDescription>
-              <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20 space-y-4">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon! Potential Analyses:</h3>
-                
-                <div>
-                  <h4 className="text-md font-semibold text-left">1. Requisition Processing Time</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Average time from requisition submission to PO creation or closure. (Chart: Histogram/Box Plot)</p>
-                   <Card className="text-left text-xs bg-background/50">
+          <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Requisition Processing Time</CardTitle>
+                <Hourglass className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Average time from requisition submission to approval, and from approval to PO creation. (Chart: Histogram/Box Plot)
+                </CardDescription>
+                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Given these requisition lifecycle dates ([Submission Date, Approval Date, PO Creation Date/Closure Date]): [Data]. Calculate the average processing time for requisitions from submission to PO creation. Identify stages with the longest delays.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Calculate the average cycle time for requisitions: 1. Submission to Approval. 2. Approval to PO Creation (if PO exists). Identify requisitions that took more than 7 days for approval.</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">2. Spend per Department/Site</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Track requested spend by originating department or site. (Chart: Bar chart/Treemap)</p>
-                   <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Spend by Site/Department (Requisitions)</CardTitle>
+                <Users className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Track estimated spend from approved requisitions by originating site/department. (Chart: Bar chart/Treemap)
+                </CardDescription>
+                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze this set of approved requisitions ([Department/Site, Estimated Item Value]): [Data]. Which department/site has the highest requested spend for the last month? Display the top 5.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Show the total estimated value of approved requisitions for each site in the last month. Which site has the highest requested spend?</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">3. Requisition to PO Conversion Rate</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Percentage of approved requisitions resulting in a Purchase Order. (Chart: Percentage Gauge/Bar)</p>
-                   <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Requisition to PO Conversion Rate</CardTitle>
+                <Percent className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Percentage of approved requisitions that resulted in a Purchase Order. (Chart: Percentage Gauge/Bar)
+                </CardDescription>
+                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">From this data ([Requisition ID, Status (Approved, Closed-PO Created, Closed-Cancelled)]): [Data]. What is the conversion rate of approved requisitions to purchase orders? What are common reasons for approved requisitions not converting to POs (if available)?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">What percentage of 'Approved' requisitions created last quarter were converted to a PO (status 'Closed')? What percentage were 'Cancelled' after approval?</code></CardContent>
                   </Card>
                 </div>
-                
-                <div>
-                  <h4 className="text-md font-semibold text-left">4. Frequently Requested Items/Categories</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Identify items or categories most commonly requisitioned. (Chart: Bar chart)</p>
-                   <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Frequently Requested Items/Categories</CardTitle>
+                <BarChartHorizontalBig className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Identify items or categories most commonly requested via requisitions. (Chart: Bar chart by count or value)
+                </CardDescription>
+                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">This dataset contains requisition items ([Item Description/Category, Quantity Requested]): [Data]. List the top 10 most frequently requisitioned items or categories. Suggest potential bulk purchasing opportunities.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">List the top 10 most frequently requested item categories from requisitions this year. Are there any items that are frequently requested across multiple sites?</code></CardContent>
                   </Card>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </section>
         </TabsContent>
         
         <TabsContent value="fuel-analytics">
-          <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="font-headline text-xl">Fuel Usage & Efficiency</CardTitle>
-              <FuelIcon className="h-6 w-6 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <CardDescription className="mb-4">
-                Monitor fuel consumption, costs, and identify opportunities for operational efficiency and savings.
-              </CardDescription>
-              <div className="p-6 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20 space-y-4">
-                <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon! Potential Analyses:</h3>
-                
-                <div>
-                  <h4 className="text-md font-semibold text-left">1. Fuel Consumption Efficiency</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Liters/100km for vehicles, Liters/hour for equipment. (Chart: Line chart per asset/Bar chart comparison)</p>
-                  <Card className="text-left text-xs bg-background/50">
+          <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Fuel Consumption Efficiency</CardTitle>
+                <TrendingUp className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Liters/100km for vehicles, Liters/hour for equipment (if hour meter data available). (Chart: Line chart per asset/Bar chart comparison)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Given fuel records for vehicle [Vehicle ID] ([Date, Fuel Added (Liters), Odometer Reading (km)]): [Data]. Calculate fuel efficiency (L/100km). Identify significant changes over time.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">For vehicle [Tag Number], calculate its average fuel efficiency (L/100km) for the last month based on fuel records and odometer readings. Compare this to its average from the previous month.</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">2. Total Fuel Cost per Asset/Site</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Track fuel expenditure for each vehicle/equipment or site over time. (Chart: Bar chart)</p>
-                  <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Total Fuel Cost per Tag/Site</CardTitle>
+                <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Track fuel expenditure for each vehicle/equipment or site over time. (Chart: Bar chart or line chart)
+                </CardDescription>
+                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">This data shows fuel costs ([Asset ID/Site ID, Date, Total Fuel Cost]): [Data]. Which asset/site incurred the highest fuel cost last month? Show trend for asset/site [ID] over 6 months.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">List the top 5 tags with the highest total fuel cost this month. Also, show total fuel cost per site for the same period.</code></CardContent>
                   </Card>
                 </div>
-                
-                <div>
-                  <h4 className="text-md font-semibold text-left">3. Fuel Price Trend Analysis</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Track average fuel price paid over time. (Chart: Line chart)</p>
-                   <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Fuel Price Trend Analysis</CardTitle>
+                <LineChart className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Track average fuel price (Unit Cost) paid over time, potentially filterable by site or fuel type. (Chart: Line chart)
+                </CardDescription>
+                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Using these fuel purchase records ([Date, Unit Cost per Liter]): [Data]. Plot the trend of average fuel unit cost over the last year. Identify periods of significant price changes.</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Plot the average unit cost of diesel purchased across all sites for each month of the last year. Are there any significant price fluctuations?</code></CardContent>
                   </Card>
                 </div>
-
-                <div>
-                  <h4 className="text-md font-semibold text-left">4. Fuel Usage by Tag Type/Site</h4>
-                  <p className="text-xs text-muted-foreground text-left pl-4 mb-1">Breakdown of fuel consumption by asset type (LDV, Truck) or operational site. (Chart: Pie chart)</p>
-                   <Card className="text-left text-xs bg-background/50">
+              </CardContent>
+            </Card>
+            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="font-headline text-xl">Anomalous Fuel Consumption</CardTitle>
+                <AlertTriangle className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="mb-4">
+                  Identify tags with sudden significant increases in fuel consumption or unusually high consumption compared to similar tags. (Requires historical data and comparison logic)
+                </CardDescription>
+                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
+                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Analyze fuel consumption data ([Tag Type, Site, Fuel Consumed (Liters), Date]): [Data]. What's the percentage breakdown of fuel usage by tag type last month? Which site consumed the most fuel?</code></CardContent>
+                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">Compare the fuel efficiency of all 'LDV' type tags for the last month. Flag any tags whose efficiency is more than 20% worse than the average for LDVs or significantly worse than their own historical average.</code></CardContent>
                   </Card>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </section>
         </TabsContent>
       </Tabs>
     </div>
