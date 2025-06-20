@@ -3,10 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   BookUser, Info, Palette, LayoutDashboard, FilePlus2, ShoppingCart, FileText, ClipboardList,
-  Truck, Fuel, UserCheck, ListChecks, BarChart3, Settings, Package, Users, Building,
-  Tag as TagLucideIcon, Briefcase, MessageCircleQuestion, ClipboardCheck, FileCode2, ArrowRight,
+  Truck, Fuel, UserCheck, ListChecks as ListChecksIcon, BarChart3, Settings, Package, Users, Building,
+  Tag as TagLucideIcon, Briefcase, MessageCircleQuestion, ClipboardCheck as ClipboardCheckIcon, FileCode2, ArrowRight,
   ShieldCheck, HelpCircle, Printer, UploadCloud, Edit2, Trash2, Save, Eye, AlertTriangle, Search, Mail
-} from "lucide-react"; // Added all icons used
+} from "lucide-react";
 
 export default function UserManualPage() {
   return (
@@ -35,9 +35,38 @@ export default function UserManualPage() {
             <div className="mt-3 p-3 border-l-4 border-primary bg-primary/10 rounded-r-md">
               <h4 className="font-medium text-primary mb-1">How to use this manual:</h4>
               <p className="text-xs">
-                Use the table of contents (if available on the platform) or scroll through the sections. Click on the links in the Table of Contents <ArrowRight className="inline h-3 w-3" /> to jump to specific sections. Look for icons next to section titles for a quick visual cue about the content.
+                Use the table of contents below to jump to specific sections. Look for icons next to section titles for a quick visual cue about the content.
               </p>
             </div>
+          </section>
+
+          <section id="table-of-contents">
+            <h2 className="text-2xl font-semibold mb-4 text-foreground flex items-center">
+              <ListChecksIcon className="mr-2 h-6 w-6 text-primary" />Table of Contents
+            </h2>
+            <ul className="list-disc space-y-2 pl-5 text-primary">
+              <li><a href="#introduction" className="hover:underline">1. Introduction</a></li>
+              <li><a href="#getting-started" className="hover:underline">2. Getting Started</a></li>
+              <li><a href="#dashboard" className="hover:underline">3. Dashboard Overview</a></li>
+              <li><a href="#create-document" className="hover:underline">4. Creating & Managing Documents</a>
+                <ul className="list-circle pl-5 space-y-1 mt-1 text-sm">
+                  <li><a href="#create-document-po" className="hover:underline text-accent">4.1 Purchase Orders (PO)</a></li>
+                  <li><a href="#create-document-quotes" className="hover:underline text-accent">4.2 Client Quotations</a></li>
+                  <li><a href="#create-document-requisitions" className="hover:underline text-accent">4.3 Purchase Requisitions</a></li>
+                  <li><a href="#create-document-grn" className="hover:underline text-accent">4.4 Goods Received Notes (GRN)</a></li>
+                  <li><a href="#create-document-fuel" className="hover:underline text-accent">4.5 Fuel Records</a></li>
+                </ul>
+              </li>
+              <li><a href="#approvals" className="hover:underline">5. My Approvals</a></li>
+              <li><a href="#activity-log" className="hover:underline">6. Activity Log</a></li>
+              <li><a href="#analytics" className="hover:underline">7. Analytics</a></li>
+              <li><a href="#reports" className="hover:underline">8. Reports</a></li>
+              <li><a href="#management" className="hover:underline">9. Management</a></li>
+              <li><a href="#feedback-survey" className="hover:underline">10. Feedback Survey</a></li>
+              <li><a href="#todo-progress" className="hover:underline">11. To-Do / Progress</a></li>
+              <li><a href="#system-documentation" className="hover:underline">12. System Documentation</a></li>
+              <li><a href="#faq" className="hover:underline">13. Frequently Asked Questions (FAQ)</a></li>
+            </ul>
           </section>
 
           <section id="getting-started">
@@ -79,7 +108,7 @@ export default function UserManualPage() {
             </p>
 
             <div className="ml-4 mt-4 space-y-6">
-              <h3 className="text-xl font-medium text-foreground flex items-center">
+              <h3 id="create-document-po" className="text-xl font-medium text-foreground flex items-center">
                 <ShoppingCart className="mr-2 h-5 w-5 text-primary" />4.1 Purchase Orders (PO)
               </h3>
               <p>
@@ -119,7 +148,7 @@ export default function UserManualPage() {
                 <li><strong>Deleting a PO:</strong> POs in 'Draft' or 'Rejected' status can be deleted from the "List of POs" using the <Trash2 className="inline h-3 w-3" /> icon.</li>
               </ul>
 
-              <h3 className="text-xl font-medium text-foreground mt-6 flex items-center">
+              <h3 id="create-document-quotes" className="text-xl font-medium text-foreground mt-6 flex items-center">
                 <FileText className="mr-2 h-5 w-5 text-primary" />4.2 Client Quotations
               </h3>
               <p>
@@ -143,7 +172,7 @@ export default function UserManualPage() {
                 <li><strong>Deleting a Quote:</strong> Quotes in 'Draft' or 'Rejected' status can be deleted from the list view (<Trash2 className="inline h-3 w-3" />).</li>
               </ul>
 
-              <h3 className="text-xl font-medium text-foreground mt-6 flex items-center">
+              <h3 id="create-document-requisitions" className="text-xl font-medium text-foreground mt-6 flex items-center">
                 <ClipboardList className="mr-2 h-5 w-5 text-primary" />4.3 Purchase Requisitions
               </h3>
               <p>
@@ -165,7 +194,7 @@ export default function UserManualPage() {
                  <li><strong>Deleting a Requisition:</strong> Requisitions in 'Draft' or 'Rejected' status can be deleted from the list view (<Trash2 className="inline h-3 w-3" />).</li>
               </ul>
 
-              <h3 className="text-xl font-medium text-foreground mt-6 flex items-center">
+              <h3 id="create-document-grn" className="text-xl font-medium text-foreground mt-6 flex items-center">
                 <Truck className="mr-2 h-5 w-5 text-primary" />4.4 Goods Received Notes (GRN)
               </h3>
               <p>
@@ -181,7 +210,7 @@ export default function UserManualPage() {
                 <li>After confirmation, you can print the GRN or create a new one.</li>
               </ul>
 
-              <h3 className="text-xl font-medium text-foreground mt-6 flex items-center">
+              <h3 id="create-document-fuel" className="text-xl font-medium text-foreground mt-6 flex items-center">
                 <Fuel className="mr-2 h-5 w-5 text-primary" />4.5 Fuel Records
               </h3>
               <p>
@@ -221,7 +250,7 @@ export default function UserManualPage() {
 
           <section id="activity-log">
             <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center">
-              <ListChecks className="mr-2 h-6 w-6 text-primary" />6. Activity Log
+              <ListChecksIcon className="mr-2 h-6 w-6 text-primary" />6. Activity Log
             </h2>
             <p>
               The "Activity Log" page displays a log of system and user activities. You can filter the log by:
@@ -280,7 +309,7 @@ export default function UserManualPage() {
               <li><Briefcase className="inline h-3 w-3 mr-1" /><strong>Clients:</strong> Manage information for clients for whom quotations are generated. CSV upload available.</li>
             </ul>
              <p className="mt-2 text-xs">
-                For entities supporting CSV upload (Suppliers, Tags, Clients), a "Download Template" link is provided on their respective management pages.
+                For entities supporting CSV upload (Suppliers, Tags, Clients, Quotes), a "Download Template" link is provided on their respective management or list pages.
               </p>
           </section>
 
@@ -298,7 +327,7 @@ export default function UserManualPage() {
           
           <section id="todo-progress">
             <h2 className="text-2xl font-semibold mb-3 text-foreground flex items-center">
-              <ClipboardCheck className="mr-2 h-6 w-6 text-primary" />11. To-Do / Progress
+              <ClipboardCheckIcon className="mr-2 h-6 w-6 text-primary" />11. To-Do / Progress
             </h2>
             <p>
               This page provides a list of completed milestones and upcoming features/enhancements for the ProcureTrack application, offering transparency on the development roadmap.
@@ -341,7 +370,7 @@ export default function UserManualPage() {
               </div>
               <div>
                 <h4 className="font-medium text-foreground">Q: How do I manage suppliers, users, sites, etc.?</h4>
-                <p>A: Use the "Management" section. Each sub-page (e.g., Suppliers, Users, Sites) allows you to view, add, edit, and delete records. Some sections, like Clients, Tags, and Suppliers, also support CSV data upload.</p>
+                <p>A: Use the "Management" section. Each sub-page (e.g., Suppliers, Users, Sites) allows you to view, add, edit, and delete records. Some sections, like Clients, Tags, Suppliers, and Quotes, also support CSV data upload.</p>
               </div>
               <div>
                 <h4 className="font-medium text-foreground">Q: How do I change the application's theme (Light/Dark mode)?</h4>
@@ -379,5 +408,3 @@ export default function UserManualPage() {
     </div>
   );
 }
-
-    
