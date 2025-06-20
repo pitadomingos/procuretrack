@@ -64,7 +64,7 @@ const poAnalysisFlow = ai.defineFlow(
     inputSchema: POAnalysisInputSchema,
     outputSchema: POAnalysisOutputSchema,
   },
-  async (input) => {
+  async (input): Promise<POAnalysisOutput> => {
     console.log('[poAnalysisFlow] Received input:', input);
     let llmOutput: POAnalysisOutput | undefined;
     let llmHistory: Array<{type: string, request?: ToolRequest, response?: ToolResponse<any, GenkitErrorCode>}> | undefined;
@@ -72,12 +72,12 @@ const poAnalysisFlow = ai.defineFlow(
 
     try {
       const { output, history } = await poAnalysisSystemPrompt(input);
-      llmOutput = output;
+      llmOutput = output; // This can be undefined if LLM doesn't conform to schema or returns nothing
       llmHistory = history as any; 
 
       if (!llmOutput) {
-        console.warn('[poAnalysisFlow] LLM returned no output, but no error was thrown during generation.');
-        flowErrorMsg = 'AI model returned an empty output.';
+        console.warn('[poAnalysisFlow] LLM returned no output (output is undefined/null), but no error was thrown during generation. This could be due to schema mismatch or empty response from LLM.');
+        // Not setting flowErrorMsg here allows the specific !llmOutput block below to handle this distinct case.
       }
     } catch (e: any) {
       console.error('[poAnalysisFlow] Error during LLM prompt execution or tool call:', e);
@@ -91,7 +91,7 @@ const poAnalysisFlow = ai.defineFlow(
     if (llmHistory) {
       llmHistory.forEach(event => {
         if (event.type === 'toolRequest' && event.request) {
-          debugMessages.push(`Tool Request: ${event.request.name} with input ${JSON.stringify(event.request.input).substring(0,100)}...`);
+           debugMessages.push(`Tool Request: ${event.request.name}. Input provided: ${event.request.input !== undefined}`);
         }
         if (event.type === 'toolResponse' && event.response) {
           const output = event.response.output;
@@ -99,9 +99,11 @@ const poAnalysisFlow = ai.defineFlow(
           if (event.response.error) {
             responseSummary += `returned an error: ${event.response.error.message} (Code: ${event.response.error.code || 'N/A'})`;
           } else if (output && Array.isArray(output)) {
-            responseSummary += `returned data (count: ${output.length}).`;
+            responseSummary += `returned data (count: ${output.length}). First item keys: ${output.length > 0 && output[0] && typeof output[0] === 'object' ? Object.keys(output[0]).join(', ') : 'N/A'}`;
+          } else if (output && typeof output === 'object') {
+             responseSummary += `returned non-array object data. Keys: ${Object.keys(output).join(', ')}`;
           } else if (output) {
-            responseSummary += `returned non-array data: ${JSON.stringify(output).substring(0,100)}...`;
+            responseSummary += `returned data of type: ${typeof output}.`;
           } else {
             responseSummary += 'returned no specific output or error in response object.';
           }
@@ -111,7 +113,7 @@ const poAnalysisFlow = ai.defineFlow(
     }
     const historyDebugInfo = debugMessages.join('\n');
     
-    if (flowErrorMsg) {
+    if (flowErrorMsg) { // Case A: An error was explicitly caught (e.g., tool error, LLM API error)
       return {
         responseText: `An error occurred: ${flowErrorMsg}`,
         debugInfo: historyDebugInfo || flowErrorMsg, 
@@ -120,20 +122,32 @@ const poAnalysisFlow = ai.defineFlow(
       };
     }
     
+    // Case B: No error was caught, but llmOutput is still undefined/null (LLM did not conform to schema or returned empty)
     if (!llmOutput) {
         console.error('[poAnalysisFlow] LLM output is unexpectedly null/undefined after processing, and no flowErrorMsg was set.');
         return {
-            responseText: 'AI model did not produce a valid output. Please check server logs.',
-            debugInfo: historyDebugInfo || 'No debug information. Output was unexpectedly null.',
+            responseText: 'AI model did not produce a valid output. Please check server logs. It might be an issue with the model not following the output schema or a silent error.',
+            debugInfo: historyDebugInfo || 'No debug information. LLM Output was unexpectedly null/undefined.',
             chartData: undefined,
             chartTitle: undefined,
         };
     }
 
-    console.log('[poAnalysisFlow] Successfully processed. LLM Output:', llmOutput);
+    // Case C: Success - llmOutput is defined and no prior error message
+    try {
+      console.log('[poAnalysisFlow] Successfully processed. LLM Output (raw):', JSON.stringify(llmOutput).substring(0, 500) + "...");
+    } catch (stringifyError) {
+      console.warn('[poAnalysisFlow] Could not stringify llmOutput for logging:', stringifyError);
+    }
+    
+    const llmGeneratedDebugInfo = (typeof llmOutput.debugInfo === 'string' ? llmOutput.debugInfo : '');
+    const combinedDebugInfo = historyDebugInfo ? `${historyDebugInfo}\n${llmGeneratedDebugInfo}`.trim() : llmGeneratedDebugInfo;
+
     return {
-      ...llmOutput,
-      debugInfo: historyDebugInfo ? `${historyDebugInfo}\n${llmOutput.debugInfo || ''}`.trim() : llmOutput.debugInfo,
+      responseText: typeof llmOutput.responseText === 'string' ? llmOutput.responseText : "AI processed the request but the textual response was not in the expected format.",
+      chartData: Array.isArray(llmOutput.chartData) ? llmOutput.chartData : undefined,
+      chartTitle: typeof llmOutput.chartTitle === 'string' ? llmOutput.chartTitle : undefined,
+      debugInfo: combinedDebugInfo || undefined, 
     };
   }
 );
@@ -143,3 +157,4 @@ export async function analyzePurchaseOrders(input: POAnalysisInput): Promise<POA
   return poAnalysisFlow(input);
 }
 
+    
