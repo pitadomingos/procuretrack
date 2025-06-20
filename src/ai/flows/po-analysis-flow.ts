@@ -10,6 +10,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getPurchaseOrdersTool } from '../tools/po-data-tools';
+import type { GenkitErrorCode, ToolRequest, ToolResponse } from 'genkit'; // Import types for history
+
 
 // Input schema for the flow
 export const POAnalysisInputSchema = z.object({
@@ -64,31 +66,73 @@ const poAnalysisFlow = ai.defineFlow(
   },
   async (input) => {
     console.log('[poAnalysisFlow] Received input:', input);
-    
-    const { output, history } = await poAnalysisSystemPrompt(input);
+    let llmOutput: POAnalysisOutput | undefined;
+    let llmHistory: Array<{type: string, request?: ToolRequest, response?: ToolResponse<any, GenkitErrorCode>}> | undefined;
+    let flowError: string | undefined;
 
-    if (!output) {
-      console.error('[poAnalysisFlow] No output from LLM.');
-      throw new Error('AI model did not return an output.');
+    try {
+      const { output, history } = await poAnalysisSystemPrompt(input);
+      llmOutput = output;
+      llmHistory = history as any; // Cast to more specific type if Genkit provides one for history events
+
+      if (!llmOutput) {
+        console.warn('[poAnalysisFlow] LLM returned no output, but no error was thrown during generation.');
+        flowError = 'AI model returned an empty output.';
+      }
+    } catch (e: any) {
+      console.error('[poAnalysisFlow] Error during LLM prompt execution or tool call:', e);
+      flowError = `Error processing AI request: ${e.message || String(e)}`;
+      // Attempt to get history even if the main call failed, it might contain tool request/response attempts.
+      if (e.history) {
+        llmHistory = e.history;
+      }
     }
-    console.log('[poAnalysisFlow] LLM Output:', output);
 
-    // Construct debug info from tool calls in history
     let debugMessages: string[] = [];
-    if (history) {
-      history.forEach(event => {
+    if (llmHistory) {
+      llmHistory.forEach(event => {
         if (event.type === 'toolRequest' && event.request) {
           debugMessages.push(`Tool Request: ${event.request.name} with input ${JSON.stringify(event.request.input).substring(0,100)}...`);
         }
         if (event.type === 'toolResponse' && event.response) {
-          debugMessages.push(`Tool Response: ${event.response.name} returned data (count: ${Array.isArray(event.response.output) ? event.response.output.length : 'N/A'}).`);
+          const output = event.response.output;
+          let responseSummary = `Tool Response: ${event.response.name} `;
+          if (event.response.error) {
+            responseSummary += `returned an error: ${event.response.error.message} (Code: ${event.response.error.code || 'N/A'})`;
+          } else if (output && Array.isArray(output)) {
+            responseSummary += `returned data (count: ${output.length}).`;
+          } else if (output) {
+            responseSummary += `returned non-array data: ${JSON.stringify(output).substring(0,100)}...`;
+          } else {
+            responseSummary += 'returned no specific output or error in response object.';
+          }
+          debugMessages.push(responseSummary);
         }
       });
     }
     
+    const finalDebugInfo = debugMessages.join('\n');
+
+    if (flowError) {
+      return {
+        responseText: `An error occurred: ${flowError}`,
+        debugInfo: finalDebugInfo || flowError, 
+      };
+    }
+    
+    if (!llmOutput) {
+        console.error('[poAnalysisFlow] LLM output is unexpectedly null/undefined after processing, and no flowError was set.');
+        return {
+            responseText: 'AI model did not produce a valid output. Please check server logs.',
+            debugInfo: finalDebugInfo || 'No debug information. Output was unexpectedly null.',
+        };
+    }
+
+    console.log('[poAnalysisFlow] Successfully processed. LLM Output:', llmOutput);
     return {
-      ...output,
-      debugInfo: debugMessages.join('\n') || undefined,
+      ...llmOutput,
+      // Prepend history debug messages to any debug info the LLM might have generated itself.
+      debugInfo: finalDebugInfo ? `${finalDebugInfo}\n${llmOutput.debugInfo || ''}`.trim() : llmOutput.debugInfo,
     };
   }
 );
