@@ -1,4 +1,7 @@
-poNumber,creationDate,creatorUserId,requestedByName,supplierId,approverId,siteId,status,subTotal,vatAmount,grandTotal,currency,pricesIncludeVat,notes,items_partNumber,items_description,items_categoryId,items_siteId,items_uom,items_quantity,items_unitPrice
-PO-CSV-001,2024-08-01,user_002,John Requestor,SUP001,approver_001,1,Pending Approval,100,16,116,MZN,FALSE,"Notes for PO1",PART001,"Item 1 for PO1",1,1,EA,10,10
-,,,,,,,,,,,,,,PART002,"Item 2 for PO1",2,1,BOX,5,20
-PO-CSV-002,2024-08-02,user_005,Jane Requester,SUP002,approver_002,2,Pending Approval,200,0,200,USD,TRUE,"Notes for PO2",PART003,"Service for PO2",12,,SVC,1,200
+
+PONumber,PODate,SupplierCode,RequestedByName,ApproverID,Currency,PricesIncludeVAT,OverallNotes,ItemPartNumber,ItemDescription,ItemCategoryID,ItemSiteID,ItemUOM,ItemQuantity,ItemUnitPrice
+PO-CSV-001,2024-08-01,SUP001,John Doe,APPROVER001,MZN,FALSE,"Notes for PO-CSV-001",PART001,Item A Description,1,1,EA,10,100.00
+PO-CSV-001,2024-08-01,SUP001,John Doe,APPROVER001,MZN,FALSE,"Notes for PO-CSV-001",PART002,Item B Description,2,1,BOX,5,25.50
+PO-CSV-002,2024-08-02,SUP002,Jane Smith,APPROVER002,USD,TRUE,"Notes for PO-CSV-002",PART003,Service C Description,3,2,SVC,1,500.00
+
+    

@@ -348,7 +348,7 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     columnsToUse = poColumns as ColumnDef<any>[];
     listTitle = 'Purchase Orders';
     filterConfig = { ...filterConfig, showApproverFilter: true, showRequestorFilter: true, showSiteFilter: true };
-    // PO CSV Upload might be complex, not enabled here
+    showUploadCsv = true; csvTemplateLink = '/templates/purchase_orders_template.csv';
   } else if (documentType === 'quote') {
     columnsToUse = quoteColumns as ColumnDef<any>[];
     listTitle = 'Client Quotations';
@@ -403,7 +403,14 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
           showSiteFilter={filterConfig.showSiteFilter}
           showTagFilter={filterConfig.showTagFilter}
           showDriverFilter={filterConfig.showDriverFilter}
-          // Removed statusFilter prop as it was not defined in FilterBarProps
+          showStatusFilter={filterConfig.showStatusFilter}
+          statusOptions={documentType === 'requisition' ? [
+            { value: 'Draft', label: 'Draft' },
+            { value: 'Pending Approval', label: 'Pending Approval' },
+            { value: 'Approved', label: 'Approved' },
+            { value: 'Rejected', label: 'Rejected' },
+            { value: 'Closed', label: 'Closed' },
+          ] : undefined}
         />
         <div className="mt-4 flex justify-end gap-2">
           {showUploadCsv && (
@@ -473,3 +480,5 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     </Card>
   );
 }
+
+    
