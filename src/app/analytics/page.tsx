@@ -287,10 +287,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Percentage of quotes approved/won vs. total quotes issued, by salesperson/client segment. (Chart: Grouped Bar chart)
+                  Percentage of quotes approved vs. total quotes issued. (Chart: Grouped Bar chart)
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
+                  <p className="text-xs text-muted-foreground mb-2">This analysis requires `Quote` status data and potentially a link between Quotes and final Purchase Orders to determine a "win". The AI would need a new tool to access Quote data.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                       <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What is our overall quote conversion rate (status 'Approved' / total 'Sent' or 'Approved' or 'Rejected') for last month? Break this down by client [Client Name] and by creator [Creator Email].`}</code></CardContent>
@@ -305,10 +306,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Track average quote value (for 'Approved' or 'Sent' quotes) over time, filterable by product/service category. (Chart: Line chart)
+                  Track average quote value (for 'Approved' or 'Sent' quotes) over time. (Chart: Line chart)
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires New Endpoint</h3>
+                   <p className="text-xs text-muted-foreground mb-2">Requires a new API endpoint to aggregate quote `grandTotal` by `quoteDate`. The AI would need a tool to access this data.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                       <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Show the monthly trend of average quote value for quotes in 'Approved' status over the last 6 months. Is the average deal size increasing or decreasing?`}</code></CardContent>
@@ -323,10 +325,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Total value of quotes currently in 'Pending Approval' or 'Sent to Client' status. (Chart: Bar chart by status)
+                  Total value of quotes currently in 'Pending Approval' or 'Sent' status. (Chart: Bar chart by status)
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires New Endpoint</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Requires a new API endpoint to sum `grandTotal` grouped by `status`. The AI would need a new tool to access this data.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                       <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What is the total value of our current sales pipeline (sum of 'Pending Approval' and 'Sent to Client' quotes)? Show breakdown by quote status.`}</code></CardContent>
@@ -341,10 +344,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Analysis of common reasons for 'Rejected' quotes (if rejection reasons are captured). (Chart: Pie/Bar chart for reasons)
+                  Analysis of common reasons for 'Rejected' quotes. (Chart: Pie/Bar chart for reasons)
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
+                  <p className="text-xs text-muted-foreground mb-2">Requires a dedicated `rejectionReason` field in the database or advanced AI text analysis on the quote `notes` field.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                       <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For all quotes marked 'Rejected' in the last year, what are the top 3 reasons for rejection? (Assuming rejection reason is stored in notes or a dedicated field)`}</code></CardContent>
