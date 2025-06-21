@@ -223,10 +223,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Percentage of PO items delivered on or before the promised/expected date by supplier. (Chart: Bar chart per supplier)
+                  Percentage of PO items delivered on or before the promised/expected date by supplier.
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
+                  <p className="text-xs text-muted-foreground mb-2">This analysis requires `Expected Delivery Date` on PO items and `Actual Receipt Date` on GRNs, which are not yet in the database schema.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                     <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For supplier [Supplier Name] over the last quarter, calculate their on-time delivery percentage based on [PO Item Expected Delivery Date] vs [GRN Item Receipt Date]. List top 3 suppliers by on-time delivery rate.`}</code></CardContent>
@@ -241,10 +242,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Percentage of items received with quantity mismatches (short/over) or quality issues. (Chart: Pie/Bar chart by discrepancy type)
+                  Percentage of items received with quantity mismatches (short/over) or quality issues.
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                   <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
+                   <p className="text-xs text-muted-foreground mb-2">Requires structured data for rejection reasons on GRNs (e.g., 'Damaged', 'Wrong Item'), which is not yet in the database schema.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                     <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Analyze GRNs for item [Item SKU] from last month. What's the discrepancy rate (ordered vs. received quantity)? What are the most common reasons if items were rejected or partially received?`}</code></CardContent>
@@ -259,10 +261,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Time from physical receipt of goods to system entry/update of the GRN. (Chart: Line chart trend by week/month)
+                  Time from physical receipt of goods to system entry/update of the GRN.
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                   <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
+                   <p className="text-xs text-muted-foreground mb-2">Requires capturing 'Physical Receipt Date' on GRNs, which is not yet in the database schema. System entry date can be derived from the Activity Log.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                     <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What's the average GRN processing time (physical receipt to system entry) for the receiving team at [Site Name] over the past month? Identify any GRNs that took significantly longer.`}</code></CardContent>
@@ -277,10 +280,11 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Trend of the total value of goods received and accepted (daily, weekly, monthly). (Chart: Line/Bar chart)
+                  Trend of the total value of goods received and accepted (daily, weekly, monthly).
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
+                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Available via AI</h3>
+                  <p className="text-xs text-muted-foreground mb-2">This analysis can be performed by the AI by cross-referencing received quantities with PO item prices. A dedicated chart is coming soon.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                     <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Plot the total value of goods successfully received and recorded in the system per week for the last two months. Are there any weeks with exceptionally high or low receipt values?`}</code></CardContent>
