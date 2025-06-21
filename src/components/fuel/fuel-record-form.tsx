@@ -127,7 +127,7 @@ export function FuelRecordForm() {
       }
 
       const result = await response.json();
-      toast({ title: 'Fuel Record Saved', description: `Fuel record ID ${result.fuelRecordId} has been saved.` });
+      toast({ title: 'Fuel Record Saved (Simulated)', description: `Fuel record ID ${result.fuelRecordId} has been saved.` });
       form.reset();
       setTotalCost(0);
 
@@ -226,7 +226,7 @@ export function FuelRecordForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Ensure all fuel consumption details are accurate. This record will be used for tracking and reporting.
+          Ensure all fuel consumption details are accurate. <strong>Note:</strong> Fuel record data is currently simulated and not persisted to the database.
         </p>
       </CardFooter>
     </Card>

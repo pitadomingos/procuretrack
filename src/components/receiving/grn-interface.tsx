@@ -9,40 +9,29 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckSquare, PackageSearch, Loader2, FileSearch, AlertTriangle, Printer, Download, FilePlus } from 'lucide-react';
-import type { POItemPayload, PurchaseOrderPayload, ApprovedPOForSelect, GRNItemFormData, Site, ConfirmedGRNDetails, ConfirmedGRNItemDetails } from '@/types';
+import { CheckSquare, PackageSearch, Loader2, FileSearch, AlertTriangle, FilePlus } from 'lucide-react';
+import type { POItemPayload, PurchaseOrderPayload, ApprovedPOForSelect, GRNItemFormData, GRNPostPayload } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { PrintableGRN } from '@/components/receiving/printable-grn'; 
 
-const MOCK_RECEIVED_BY_USER = 'GRN User'; 
+const MOCK_RECEIVED_BY_USER_ID = 'user_grn_001'; 
 
 export function GRNInterface() {
   const { toast } = useToast();
 
-  // Form state
   const [grnDate, setGrnDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [selectedPOId, setSelectedPOId] = useState<string>('');
   const [deliveryNote, setDeliveryNote] = useState<string>('');
   const [overallGrnNotes, setOverallGrnNotes] = useState<string>('');
 
-  // Data state
   const [approvedPOsForSelect, setApprovedPOsForSelect] = useState<ApprovedPOForSelect[]>([]);
   const [loadedPOHeader, setLoadedPOHeader] = useState<PurchaseOrderPayload | null>(null);
   const [grnItems, setGrnItems] = useState<GRNItemFormData[]>([]);
   
-  // UI state
   const [isLoadingPOsForSelect, setIsLoadingPOsForSelect] = useState(false);
   const [isLoadingPODetails, setIsLoadingPODetails] = useState(false);
   const [isSubmittingGRN, setIsSubmittingGRN] = useState(false);
   const [errorMessages, setErrorMessages] = useState<{ general?: string; poSelect?: string; }>({});
-  const [logoDataUri, setLogoDataUri] = useState<string | undefined>(undefined);
-
-
-  // State for post-confirmation view
-  const [confirmedGrnData, setConfirmedGrnData] = useState<ConfirmedGRNDetails | null>(null);
-  const [showGrnConfirmedView, setShowGrnConfirmedView] = useState(false);
-
 
   const fetchInitialData = useCallback(async () => {
     setIsLoadingPOsForSelect(true);
@@ -55,17 +44,6 @@ export function GRNInterface() {
         const err = await posRes.json().catch(() => ({}));
         setErrorMessages(prev => ({ ...prev, poSelect: `Failed to load POs: ${err.message || posRes.statusText}` }));
       }
-      
-      try {
-        const logoResponse = await fetch('/jachris-logo.png'); 
-        if (logoResponse.ok) {
-            const logoBlob = await logoResponse.blob();
-            const reader = new FileReader();
-            reader.onloadend = () => { setLogoDataUri(reader.result as string); };
-            reader.readAsDataURL(logoBlob);
-        } else { console.warn('Client-side logo fetch failed for GRN preview.'); }
-      } catch (logoError) { console.warn('Error fetching client-side logo for GRN preview:', logoError); }
-
     } catch (error: any) {
       setErrorMessages(prev => ({ ...prev, general: `Error fetching POs for selection: ${error.message}`}));
       toast({ title: "Error", description: "Could not load initial data for GRN form.", variant: "destructive" });
@@ -77,6 +55,16 @@ export function GRNInterface() {
   useEffect(() => {
     fetchInitialData();
   }, [fetchInitialData]);
+
+  const resetFormForNew = () => {
+    setGrnDate(format(new Date(), 'yyyy-MM-dd'));
+    setSelectedPOId('');
+    setDeliveryNote('');
+    setOverallGrnNotes('');
+    setLoadedPOHeader(null);
+    setGrnItems([]);
+    fetchInitialData();
+  };
 
   const handlePOSelectionChange = async (poId: string) => {
     setSelectedPOId(poId);
@@ -91,6 +79,7 @@ export function GRNInterface() {
 
     setIsLoadingPODetails(true);
     try {
+      // Use the endpoint that fetches full PO details for GRN
       const response = await fetch(`/api/purchase-orders/for-grn/${encodeURIComponent(selectedFullPO.poNumber)}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -142,111 +131,65 @@ export function GRNInterface() {
     );
   };
 
-  const handleConfirmReceipt = () => {
+  const handleConfirmReceipt = async () => {
     if (!grnItems.some(item => item.receiveNowQty > 0)) {
       toast({ title: "No Items to Receive", description: "Please enter quantities for items you are receiving.", variant: "info" });
       return;
     }
-    if (!selectedPOId || !loadedPOHeader) {
+    if (!selectedPOId || !loadedPOHeader || !loadedPOHeader.id) {
         toast({ title: "PO Not Selected", description: "Please select a Purchase Order.", variant: "destructive"});
         return;
     }
 
     setIsSubmittingGRN(true);
     
-    const itemsReceivedForGRN: ConfirmedGRNItemDetails[] = grnItems
-      .filter(item => item.receiveNowQty > 0)
-      .map(item => ({
-        id: item.id,
-        partNumber: item.partNumber,
-        description: item.description,
-        siteDisplay: item.siteDisplay || 'N/A',
-        uom: item.uom,
-        quantityOrdered: item.quantity,
-        quantityPreviouslyReceived: item.quantityReceived,
-        quantityReceivedThisGRN: item.receiveNowQty,
-        quantityOutstandingAfterGRN: item.outstandingQty - item.receiveNowQty,
-        itemSpecificNotes: item.itemSpecificNotes,
-      }));
-
-    const grnDetails: ConfirmedGRNDetails = {
-      grnDate: grnDate,
-      grnNumber: `GRN-${Date.now().toString().slice(-6)}`, 
-      poNumber: loadedPOHeader.poNumber,
+    const payload: GRNPostPayload = {
       poId: loadedPOHeader.id,
-      supplierName: loadedPOHeader.supplierDetails?.supplierName || loadedPOHeader.supplierId,
+      grnDate,
       deliveryNoteNumber: deliveryNote,
-      overallGrnNotes: overallGrnNotes,
-      receivedByUser: MOCK_RECEIVED_BY_USER,
-      items: itemsReceivedForGRN,
+      overallGrnNotes,
+      receivedByUserId: MOCK_RECEIVED_BY_USER_ID,
+      items: grnItems
+        .filter(item => item.receiveNowQty > 0 && item.id !== undefined)
+        .map(item => ({
+          poItemId: item.id!,
+          quantityReceivedNow: item.receiveNowQty,
+          itemSpecificNotes: item.itemSpecificNotes,
+        })),
     };
 
-    console.log("GRN Data to be 'saved':", grnDetails);
+    try {
+      const response = await fetch('/api/grn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.details || `Failed to process GRN. Server returned ${response.status}`);
+      }
 
-    setConfirmedGrnData(grnDetails);
-    setShowGrnConfirmedView(true);
-    setIsSubmittingGRN(false);
-    
-    toast({
-      title: "GRN Confirmed (Simulated)",
-      description: `Received items for PO ${loadedPOHeader?.poNumber}. Backend saving is pending.`,
-      duration: 5000,
-    });
+      const result = await response.json();
+      toast({
+        title: "GRN Processed Successfully!",
+        description: `GRN ${result.grnNumber} processed for PO ${loadedPOHeader.poNumber}. PO Status is now: ${result.newPOStatus}`,
+      });
+
+      resetFormForNew(); // Reset the form for the next GRN
+      
+    } catch (error: any) {
+      toast({ title: "Error Processing GRN", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSubmittingGRN(false);
+    }
   };
-
-  const handleCreateNewGRN = () => {
-    setShowGrnConfirmedView(false);
-    setConfirmedGrnData(null);
-    setGrnDate(format(new Date(), 'yyyy-MM-dd'));
-    setSelectedPOId('');
-    setDeliveryNote('');
-    setOverallGrnNotes('');
-    setLoadedPOHeader(null);
-    setGrnItems([]);
-    fetchInitialData(); 
-  };
-
-  const handlePrintGRN = () => {
-    window.print();
-  };
-
-  const handleDownloadGRNPDF = () => {
-    toast({ title: "Not Implemented", description: "PDF download for GRN is not yet available.", variant: "info"});
-  };
-
 
   const supplierInfo = loadedPOHeader?.supplierDetails 
     ? `${loadedPOHeader.supplierDetails.supplierName} (${loadedPOHeader.supplierDetails.supplierCode})`
     : loadedPOHeader?.supplierId || 'N/A';
   
   const totalItemsToReceive = grnItems.reduce((sum, item) => sum + item.receiveNowQty, 0);
-
-  if (showGrnConfirmedView && confirmedGrnData) {
-    return (
-      <div className="print-page-container">
-        <div className="print-page-inner-container">
-          <Card className="shadow-xl">
-            <CardHeader>
-              <CardTitle className="font-headline text-2xl">GRN Confirmed: {confirmedGrnData.grnNumber}</CardTitle>
-              <CardDescription>Goods received for PO: {confirmedGrnData.poNumber}. Review details below.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="my-4 flex flex-wrap gap-2 print:hidden print-hidden">
-                <Button onClick={handlePrintGRN} variant="outline"><Printer className="mr-2 h-4 w-4" /> Print GRN</Button>
-                <Button onClick={handleDownloadGRNPDF} variant="outline" disabled><Download className="mr-2 h-4 w-4" /> Download PDF (Soon)</Button>
-                <Button onClick={handleCreateNewGRN}><FilePlus className="mr-2 h-4 w-4" /> Create New GRN</Button>
-              </div>
-              <div className="printable-grn-content">
-                <PrintableGRN grnData={confirmedGrnData} logoDataUri={logoDataUri} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
 
   return (
     <Card className="shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 ease-in-out">
@@ -377,14 +320,15 @@ export function GRNInterface() {
             </div>
           </div>
         )}
-         {selectedPOId && !isLoadingPODetails && grnItems.length === 0 && !showGrnConfirmedView && (
+         {selectedPOId && !isLoadingPODetails && grnItems.length === 0 && (
             <div className="text-center py-6 text-muted-foreground">
                 <FileSearch className="mx-auto h-10 w-10 mb-2" />
                 <p>No items found for the selected PO, or all items have been fully received.</p>
             </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-end">
+      <CardFooter className="flex justify-between items-center">
+        <Button onClick={resetFormForNew} variant="outline"><FilePlus className="mr-2 h-4 w-4"/> Start New GRN</Button>
         <Button 
             onClick={handleConfirmReceipt} 
             disabled={isSubmittingGRN || isLoadingPODetails || grnItems.length === 0 || totalItemsToReceive === 0 || !selectedPOId}

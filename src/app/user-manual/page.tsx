@@ -5,7 +5,7 @@ import {
   BookUser, Info, Palette, LayoutDashboard, FilePlus2, ShoppingCart, FileText, ClipboardList,
   Truck, Fuel, UserCheck, ListChecks as ListChecksIcon, BarChart3, Settings, Package, Users, Building,
   Tag as TagLucideIcon, Briefcase, MessageCircleQuestion, ClipboardCheck as ClipboardCheckIcon, FileCode2, ArrowRight,
-  ShieldCheck, HelpCircle, Printer, UploadCloud, Edit2, Trash2, Save, Eye, AlertTriangle, Search, Mail
+  ShieldCheck, HelpCircle, Printer, UploadCloud, Edit2, Trash2, Save, Eye, AlertTriangle, Search, Mail, BrainCircuit
 } from "lucide-react";
 
 export default function UserManualPage() {
@@ -206,8 +206,8 @@ export default function UserManualPage() {
                 <li>Enter the GRN Date and Supplier Delivery Note No. (optional).</li>
                 <li>For each item, enter the "Receive Now" quantity. You can use the "All" button to quickly fill in the full outstanding quantity for an item. Add any item-specific notes (e.g., batch number).</li>
                 <li>Add any "Overall GRN Notes" for the entire delivery.</li>
-                <li>Click "Confirm Receipt". This action is currently simulated and will show a printable GRN. Full backend processing (updating PO item quantities and statuses) is pending.</li>
-                <li>After confirmation, you can print the GRN or create a new one.</li>
+                <li>Click "Confirm Receipt". This action processes the receipt, updates the quantities on the Purchase Order items, and updates the overall PO status (e.g., to 'Partially Received' or 'Completed').</li>
+                <li>After confirmation, the form will reset, ready for a new GRN. You can find the updated PO in the Purchase Orders list.</li>
               </ul>
 
               <h3 id="create-document-fuel" className="text-xl font-medium text-foreground mt-6 flex items-center">
@@ -220,7 +220,7 @@ export default function UserManualPage() {
                  <li>Navigate to "Create Document" <ArrowRight className="inline h-3 w-3" /> "Fuel Records" tab <ArrowRight className="inline h-3 w-3" /> "Record New Fuel Entry" tab.</li>
                 <li>Fill in Date, select Tag (Vehicle/Equipment), Site, Driver, Odometer (if applicable), Requisition No. (optional), Invoice No. (optional), Description (e.g., Diesel), UOM, Quantity, and Unit Cost.</li>
                 <li>The Total Cost is calculated automatically.</li>
-                <li>Click "Save Fuel Record". (Currently saves to mock data).</li>
+                <li>Click "Save Fuel Record". <strong>Note:</strong> This functionality is currently simulated and does not save to the main database.</li>
                 <li>The "List of Fuel Records" tab shows logged entries, calculating distance travelled between entries for the same tag.</li>
               </ul>
             </div>
@@ -232,7 +232,7 @@ export default function UserManualPage() {
             </h2>
             <p>
               The "My Approvals" page lists all documents (POs, Quotes, Requisitions) assigned to you that are in 'Pending Approval' status.
-              (Currently hardcoded for user: 'pita.domingos@jachris.com').
+              The backend APIs for approval/rejection are fully functional, but the system currently uses a mock logged-in user ('pita.domingos@jachris.com') for demonstration.
             </p>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-xs">
               <li><strong>Viewing Items:</strong> See a table of pending documents with key details.</li>
@@ -240,8 +240,8 @@ export default function UserManualPage() {
                 <ul className="list-['-_'] list-inside ml-6">
                   <li><Eye className="inline h-3 w-3" /> <strong>View:</strong> Opens the print preview page for the document.</li>
                   <li><UserCheck className="inline h-3 w-3" /> <strong>Approve:</strong> Approves the document. Its status will change to 'Approved'.</li>
-                  <li><AlertTriangle className="inline h-3 w-3" /> <strong>Reject:</strong> Opens a dialog to reject the document. You can optionally provide a reason (not yet stored for all document types).</li>
-                  <li><Mail className="inline h-3 w-3" /> <strong>Review (POs only):</strong> Opens a "Review PO Modal" where you can check specific items and add comments. Submitting feedback (simulated) sends comments to the creator; the PO remains 'Pending Approval'.</li>
+                  <li><AlertTriangle className="inline h-3 w-3" /> <strong>Reject:</strong> Opens a dialog to reject the document.</li>
+                  <li><Mail className="inline h-3 w-3" /> <strong>Review (POs only):</strong> Opens a "Review PO Modal" where you can add comments. Submitting feedback is simulated (an email would be sent to the creator).</li>
                 </ul>
               </li>
               <li><strong>Refresh:</strong> Use the "Refresh List" button to fetch the latest pending items.</li>
@@ -268,17 +268,13 @@ export default function UserManualPage() {
               <BarChart3 className="mr-2 h-6 w-6 text-primary" />7. Analytics
             </h2>
             <p>
-              The "Analytics" page provides visual insights into your procurement data. It includes:
+              The "Analytics" page provides visual insights into your procurement data. It features a powerful AI Analysis tool for POs and several key charts.
             </p>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-xs">
-              <li><strong>Filters:</strong> Date filters (Month/Year) apply to the charts on this page.</li>
-              <li><strong>PO Analytics (Tab):</strong>
-                <ul className="list-['-_'] list-inside ml-6">
-                    <li><strong>Spend by Vendor Chart:</strong> Visualizes total PO value per vendor.</li>
-                    <li><strong>PO Count by Category Chart:</strong> Shows the number of POs for each item/service category.</li>
-                </ul>
-              </li>
-              <li><strong>GRN Analytics, Client Quotes, Requisitions, Fuel Usage (Tabs):</strong> These sections currently display "Coming Soon!" placeholders with suggestions for potential analytics to be developed.</li>
+              <li><strong>AI-Powered PO Analysis:</strong> Ask natural language questions about your Purchase Order data (e.g., "Top 5 suppliers by PO value this year?") and get textual summaries and charts in response.</li>
+              <li><strong>Live Charts:</strong> The page includes live charts for PO Cycle Time, Maverick Spend, PO Value Distribution, and Value of Goods Received.</li>
+              <li><strong>Filters:</strong> Date filters (Month/Year) at the top apply to the charts on this page.</li>
+              <li><strong>Other Tabs (Quotes, Requisitions, etc.):</strong> These contain informational cards and AI prompt examples for future analyses.</li>
             </ul>
           </section>
 
@@ -296,17 +292,17 @@ export default function UserManualPage() {
               <Settings className="mr-2 h-6 w-6 text-primary" />9. Management
             </h2>
             <p>
-              The "Management" section allows administrators to manage core data entities within the application. Each sub-section provides a list view and options to Add, Edit, and Delete records.
+              The "Management" section allows administrators to manage core data entities within the application. Each sub-section provides a list view and full Create, Read, Update, and Delete (CRUD) functionality.
             </p>
             <ul className="list-disc list-inside ml-4 mt-2 space-y-2 text-xs">
-              <li><Package className="inline h-3 w-3 mr-1" /><strong>Suppliers:</strong> Manage vendor information (code, name, contact details, etc.). CSV upload available.</li>
-              <li><Users className="inline h-3 w-3 mr-1" /><strong>Approvers:</strong> Manage users who can approve documents (POs, Quotes, Requisitions), including their approval limits.</li>
-              <li><Users className="inline h-3 w-3 mr-1" /><strong>Users:</strong> Manage system user accounts, roles, and active status. Site access display is informational; direct management of site access per user is a future feature.</li>
-              <li><Building className="inline h-3 w-3 mr-1" /><strong>Sites:</strong> Manage company sites, locations, or departments used for cost allocation and assignments.</li>
-              <li><Briefcase className="inline h-3 w-3 mr-1" /><strong>Allocations:</strong> (Legacy) View pre-defined cost allocations. This is read-only and primarily for historical reference. Use "Sites" for current location management.</li>
-              <li><TagLucideIcon className="inline h-3 w-3 mr-1" /><strong>Categories:</strong> Manage categories for items and services used in POs and Requisitions.</li>
-              <li><Fuel className="inline h-3 w-3 mr-1" /><strong>Tags (Vehicles/Equipment):</strong> Manage vehicles, machinery, or other tagged assets, including their status and assigned site. CSV upload available.</li>
-              <li><Briefcase className="inline h-3 w-3 mr-1" /><strong>Clients:</strong> Manage information for clients for whom quotations are generated. CSV upload available.</li>
+              <li><Package className="inline h-3 w-3 mr-1" /><strong>Suppliers:</strong> Manage vendor information. CSV upload available.</li>
+              <li><Users className="inline h-3 w-3 mr-1" /><strong>Approvers:</strong> Manage users who can approve documents, including their approval limits.</li>
+              <li><Users className="inline h-3 w-3 mr-1" /><strong>Users:</strong> Manage system user accounts and roles.</li>
+              <li><Building className="inline h-3 w-3 mr-1" /><strong>Sites:</strong> Manage company sites, locations, or departments.</li>
+              <li><Briefcase className="inline h-3 w-3 mr-1" /><strong>Allocations:</strong> (Legacy) View-only list of historical cost allocations.</li>
+              <li><TagLucideIcon className="inline h-3 w-3 mr-1" /><strong>Categories:</strong> Manage categories for items and services.</li>
+              <li><Fuel className="inline h-3 w-3 mr-1" /><strong>Tags (Vehicles/Equipment):</strong> Manage tagged assets. CSV upload available.</li>
+              <li><Briefcase className="inline h-3 w-3 mr-1" /><strong>Clients:</strong> Manage client information. CSV upload available.</li>
             </ul>
              <p className="mt-2 text-xs">
                 For entities supporting CSV upload (Suppliers, Tags, Clients, Quotes), a "Download Template" link is provided on their respective management or list pages.
@@ -318,10 +314,7 @@ export default function UserManualPage() {
               <MessageCircleQuestion className="mr-2 h-6 w-6 text-primary" />10. Feedback Survey
             </h2>
             <p>
-              The "Feedback Survey" page allows you to provide valuable input on your experience using ProcureTrack. Please answer the questions regarding ease of use, feature satisfaction, responsiveness, and suggestions for improvement.
-            </p>
-            <p className="mt-1 text-xs">
-              Currently, submissions are logged to the console (simulated). Backend storage and analysis of survey data are planned.
+              The "Feedback Survey" page allows you to provide valuable input on your experience using ProcureTrack. Please answer the questions regarding ease of use, feature satisfaction, responsiveness, and suggestions for improvement. Submissions are currently simulated.
             </p>
           </section>
           
@@ -339,7 +332,7 @@ export default function UserManualPage() {
               <FileCode2 className="mr-2 h-6 w-6 text-primary" />12. System Documentation
             </h2>
             <p>
-              This page contains an overview of the application's architecture, key technologies used, database schema information, styling guidelines, a list of key files/directories, descriptions of core workflows, and notes on security considerations and future enhancements. It's primarily for developers or those interested in the technical aspects of ProcureTrack.
+              This page contains an overview of the application's architecture, key technologies used, database schema information, styling guidelines, and a list of key files/directories. It's primarily for developers.
             </p>
           </section>
 
@@ -366,39 +359,19 @@ export default function UserManualPage() {
               </div>
               <div>
                 <h4 className="font-medium text-foreground">Q: How do I record received goods (GRN)?</h4>
-                <p>A: Go to "Create Document" <ArrowRight className="inline h-3 w-3" /> "GRNs" tab. Select an approved PO, then enter the quantities received for each item. The backend processing for GRNs (updating PO item quantities/statuses) is currently simulated after confirmation.</p>
+                <p>A: Go to "Create Document" <ArrowRight className="inline h-3 w-3" /> "GRNs" tab. Select an approved PO, enter the quantities received for each item, and click "Confirm Receipt". This will update the PO item records in the database.</p>
               </div>
               <div>
                 <h4 className="font-medium text-foreground">Q: How do I manage suppliers, users, sites, etc.?</h4>
                 <p>A: Use the "Management" section. Each sub-page (e.g., Suppliers, Users, Sites) allows you to view, add, edit, and delete records. Some sections, like Clients, Tags, Suppliers, and Quotes, also support CSV data upload.</p>
               </div>
               <div>
-                <h4 className="font-medium text-foreground">Q: How do I change the application's theme (Light/Dark mode)?</h4>
-                <p>A: Click the sun/moon icon in the top header bar to cycle through Light, Dark, and System default themes.</p>
-              </div>
-               <div>
-                <h4 className="font-medium text-foreground">Q: Why can't I edit a Purchase Order/Quote/Requisition?</h4>
-                <p>A: Documents can typically only be edited if their status is 'Draft', 'Pending Approval', or 'Rejected'. Approved or Completed documents are usually locked to maintain data integrity. Check the document's status on its list view or print preview.</p>
-              </div>
-              <div>
-                <h4 className="font-medium text-foreground">Q: The "My Approvals" page is empty or not showing items for me. Why?</h4>
-                <p>A: Currently, the "My Approvals" page is hardcoded for a demo user ('pita.domingos@jachris.com'). For other users, it will appear empty. Full user-specific approval queues will be implemented with the authentication system.</p>
-              </div>
-              <div>
-                <h4 className="font-medium text-foreground">Q: Where are the PDF versions of documents stored?</h4>
-                <p>A: For Purchase Orders, a "Download PDF" button on the print preview page triggers server-side PDF generation. The PDF is generated on-the-fly and downloaded to your computer; it's not stored permanently on the server in this version. PDF generation for other document types is a planned feature.</p>
-              </div>
-              <div>
-                <h4 className="font-medium text-foreground">Q: How does the page rating system work?</h4>
-                <p>A: The star rating in the header of most pages allows you to provide quick feedback on the page's usefulness. Clicking the stars submits your rating (currently mocked). This helps us improve the application.</p>
-              </div>
-              <div>
                 <h4 className="font-medium text-foreground">Q: What if I find an error or have a feature request?</h4>
                 <p>A: Please use the "Feedback Survey" page to provide detailed feedback or suggestions. For critical errors, contact the system administrator or development team if applicable.</p>
               </div>
               <div>
-                <h4 className="font-medium text-foreground">Q: Why is some data (e.g., Fuel Records, GRN item updates) not persisting permanently?</h4>
-                <p>A: Some modules like Fuel Records currently use mock data or simulated saving for demonstration. Full backend database integration for all functionalities is ongoing. Always refer to the "To-Do / Progress" page for the latest development status.</p>
+                <h4 className="font-medium text-foreground">Q: Why is some data (e.g., Fuel Records) not persisting permanently?</h4>
+                <p>A: Some modules like Fuel Records currently use mock data for demonstration. Full backend database integration for all functionalities is ongoing. Always refer to the "To-Do / Progress" page for the latest development status.</p>
               </div>
             </div>
           </section>

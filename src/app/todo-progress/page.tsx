@@ -71,15 +71,24 @@ export default function TodoProgressPage() {
         { icon: LayoutDashboard, text: "Created Dashboard page (`src/app/page.tsx`) as the main overview." },
         { icon: LayoutDashboard, text: "Implemented dynamic grouped stat cards for key metrics (Users, POs, GRN Activity, Requisitions, Fuel, Quotes) fetching data via `/api/dashboard-stats`." },
         { icon: Settings2, text: "Integrated FilterBar for Month/Year filtering on dashboard charts." },
-        { icon: BarChart3, text: "Developed interactive charts: Monthly PO Status, Site PO Value Status, Requisitions by Status, Quotes by Status, all fetching live data from respective `/api/charts/*` endpoints." },
+        { icon: BarChart3, text: "Developed interactive charts: Monthly PO Status, Site PO Value Status, Requisitions by Status, and Quotes by Status, all fetching live data from respective `/api/charts/*` endpoints." },
         { icon: ListChecks, text: "Added a Recent Activity Log table, fetching limited entries from `/api/activity-log`." },
+      ]
+    },
+     {
+      category: "Analytics Page",
+      tasks: [
+        { icon: BarChart3, text: "Created the main Analytics page structure with tabs." },
+        { icon: BrainCircuit, text: "Implemented the AI-Powered PO Analysis section, including the Genkit flow, data tool, and frontend components." },
+        { icon: BarChart3, text: "Implemented live charts for PO Cycle Time, Maverick Spend, PO Value Distribution, and GRN Value." },
+        { icon: FileText, text: "Updated placeholder cards for other analytics sections (GRN, Quotes, Requisitions, Fuel) with informative text and AI prompt examples." },
       ]
     },
     {
       category: "Document Creation & Management (`/create-document`)",
       tasks: [
         { icon: LayoutList, text: "Built a tabbed interface for POs, GRNs, Quotes, Requisitions, and Fuel Records." },
-        { icon: FileSignature, text: "Purchase Orders (PO): Comprehensive `POForm` for creation & editing; loading items from approved Requisitions (header site ID from Req applied to PO items); unique PO Number generation; CRUD APIs; `PrintablePO` component & Playwright PDF generation; PO List View with actions." },
+        { icon: FileSignature, text: "Purchase Orders (PO): Comprehensive `POForm` for creation & editing; loading items from approved Requisitions; unique PO Number generation; CRUD APIs; `PrintablePO` component & Playwright PDF generation; PO List View with actions." },
         { icon: FileSignature, text: "Client Quotations: `QuoteForm` for creation & editing; unique Quote Number generation; CRUD APIs; `PrintableQuote` component; Quote List View with actions; CSV Upload for quotes." },
         { icon: ClipboardListIcon, text: "Purchase Requisitions: `RequisitionForm` for creation & editing; unique Requisition Number generation; CRUD APIs; `PrintableRequisition` component; Requisition List View with actions." },
         { icon: Truck, text: "Goods Received Notes (GRN): `GRNInterface` UI for PO selection and item quantity input; Backend API (`/api/grn`) for processing GRN submissions (updates POItem quantities and PO status); `PrintableGRN` component." },
@@ -115,7 +124,7 @@ export default function TodoProgressPage() {
       category: "Supporting Pages & Features",
       tasks: [
         { icon: ListChecks, text: "`ActivityLogPage` (`/activity-log`): Detailed view with filtering, fetching from `/api/activity-log`." },
-        { icon: BarChart3, text: "`AnalyticsPage` (`/analytics`): Initial charts and placeholders for future detailed analytics." },
+        { icon: BarChart3, text: "`AnalyticsPage` (`/analytics`): Page for advanced data analysis and visualization." },
         { icon: FileText, text: "`ReportsPage` (`/reports`): Basic placeholder structure." },
         { icon: MessageCircleQuestion, text: "`SurveyPage` (`/survey`): UI for user feedback collection (submission mocked)." },
         { icon: BookUser, text: "`UserManualPage` (`/user-manual`): Comprehensive user guide generated and refined." },
@@ -170,8 +179,7 @@ export default function TodoProgressPage() {
     {
       category: "GRN Module Enhancements",
       tasks: [
-        { icon: Truck, text: "Complete full backend integration for GRN processing: Update POItem quantities, PO status, and log activity in ActivityLog table." },
-        { icon: History, text: "Develop GRN document history, search, and detailed view functionalities (Printable GRN already exists)." },
+        { icon: History, text: "Develop GRN document history, search, and detailed view functionalities." },
         { icon: ArrowRightLeft, text: "Implement systematic handling of discrepancies (short/over-shipments) and returns to supplier processes." },
         { icon: Layers, text: "Integrate GRN processing with a potential inventory module for stock updates (if inventory module is added)." },
       ]
@@ -187,7 +195,7 @@ export default function TodoProgressPage() {
     {
       category: "Reporting & Analytics",
       tasks: [
-        { icon: BarChart3, text: "Fully implement the 'Coming Soon' analytics tabs (GRN detailed analytics, Client Quote conversion funnels, Requisition lifecycle efficiency, detailed Fuel Usage trends)." },
+        { icon: BarChart3, text: "Fully implement the remaining analytics tabs (GRN detailed analytics, Client Quote conversion funnels, Requisition lifecycle efficiency, detailed Fuel Usage trends)." },
         { icon: Settings2, text: "Create a customizable report builder for users to generate ad-hoc reports with selectable columns, filters, and grouping." },
         { icon: FileText, text: "Enable scheduled report generation and email delivery for key reports." },
         { icon: Printer, text: "Add PDF export functionality for all generated reports and charts." },
