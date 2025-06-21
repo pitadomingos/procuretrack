@@ -35,7 +35,7 @@ interface FuelRecordFormValues {
   unitCost: number;
 }
 
-const MOCK_RECORDER_USER_ID = 'USR_FUEL_RECORDER_001';
+const MOCK_RECORDER_USER_ID = 'user_005'; // Corrected to a valid user ID
 
 export function FuelRecordForm() {
   const { toast } = useToast();
@@ -246,7 +246,7 @@ export function FuelRecordForm() {
               )} />
               <FormField control={form.control} name="unitCost" rules={{ required: 'Unit Cost is required', min: { value: 0.01, message: 'Must be > 0' } }} render={({ field }) => (
                 <FormItem> <FormLabel>Unit Cost (MZN)</FormLabel>
-                  <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} /></FormControl> <FormMessage />
+                  <FormControl><Input type="number" step="0.01" placeholder="0.00" {...field} value={field.value ?? 0} onChange={e => field.onChange(parseFloat(e.target.value) || 0.00)} /></FormControl> <FormMessage />
                 </FormItem>
               )} />
               <FormItem>
