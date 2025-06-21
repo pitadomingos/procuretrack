@@ -54,7 +54,7 @@ export function ActivityLogTable({
         ) : (
           <ScrollArea style={{ height: maxHeight }}>
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Action</TableHead>

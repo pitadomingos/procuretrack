@@ -34,7 +34,7 @@ export function DataTable<TData>({
   return (
     <ScrollArea className="rounded-md border">
       <Table>
-        <TableHeader>
+        <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
           <TableRow>
             {columns.map((column, index) => (
               <TableHead key={index}>{column.header}</TableHead>

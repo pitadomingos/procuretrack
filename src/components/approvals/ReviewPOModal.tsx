@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -136,7 +135,7 @@ export function ReviewPOModal({ poId, poNumber, creatorName, open, onOpenChange 
           <div className="py-4 space-y-4">
             <ScrollArea className="h-[400px] border rounded-md">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                   <TableRow>
                     <TableHead className="w-[50px]"></TableHead>
                     <TableHead>Description</TableHead>
