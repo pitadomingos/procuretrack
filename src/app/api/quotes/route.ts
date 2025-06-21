@@ -4,6 +4,8 @@ import { pool } from '../../../../backend/db.js';
 import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import { randomUUID } from 'crypto';
+
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
   let connection;
@@ -63,7 +65,7 @@ export async function POST(request: Request) {
       const importErrors: string[] = [];
 
       for (const [index, record] of results.entries()) {
-        const quoteId = record['ID'] || record['id'] || crypto.randomUUID();
+        const quoteId = record['ID'] || record['id'] || randomUUID();
         const quoteData: Partial<QuotePayload> = {
           id: quoteId,
           quoteNumber: record['QuoteNumber'] || `CSV-Q-${quoteId.slice(0,8)}`,
@@ -187,7 +189,7 @@ export async function POST(request: Request) {
           await connection.execute(
             `INSERT INTO QuoteItem (id, quoteId, partNumber, customerRef, description, quantity, unitPrice)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [item.id || crypto.randomUUID(), quoteDataFromForm.id, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
+            [item.id || randomUUID(), quoteDataFromForm.id, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
           );
         }
         console.log(`[API_INFO] /api/quotes POST JSON: Finished processing items for quote ID: ${quoteDataFromForm.id}.`);

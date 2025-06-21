@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../../backend/db.js';
 import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
+import { randomUUID } from 'crypto';
 
 export async function GET(
   request: Request,
@@ -112,7 +113,7 @@ export async function PUT(
         await connection.execute(
           `INSERT INTO QuoteItem (id, quoteId, partNumber, customerRef, description, quantity, unitPrice)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [item.id || crypto.randomUUID(), quoteId, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
+          [item.id || randomUUID(), quoteId, item.partNumber, item.customerRef, item.description, item.quantity, item.unitPrice]
         );
       }
     }

@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { pool } from '../../../../../backend/db.js';
 import type { RequisitionPayload, RequisitionItem, Site, Category as CategoryType, User as UserType, Approver } from '@/types';
+import { randomUUID } from 'crypto';
 
 export async function GET(
   request: Request,
@@ -135,7 +136,7 @@ export async function PUT(
           `INSERT INTO RequisitionItem (id, requisitionId, partNumber, description, categoryId, quantity, notes, createdAt, updatedAt)
            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`, // siteId removed, notes for item justification
           [
-            item.id || crypto.randomUUID(),
+            item.id || randomUUID(),
             id, 
             item.partNumber, 
             item.description, 
