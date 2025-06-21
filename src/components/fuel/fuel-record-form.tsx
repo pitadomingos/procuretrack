@@ -155,22 +155,61 @@ export function FuelRecordForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid md:grid-cols-3 gap-4">
               <FormField control={form.control} name="fuelDate" rules={{ required: 'Date is required' }} render={({ field }) => ( <FormItem> <FormLabel>Date</FormLabel> <FormControl><Input type="date" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="tagId" rules={{ required: 'Tag (Vehicle/Equipment) is required' }} render={({ field }) => (
-                <FormItem> <FormLabel>Tag (Vehicle/Equipment)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select Tag" /></SelectTrigger></FormControl>
-                    <SelectContent>{tags.map(t => (<SelectItem key={t.id} value={t.id}>{t.tagNumber} ({t.make} {t.model || t.type})</SelectItem>))}</SelectContent>
-                  </Select> <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="siteId" rules={{ required: 'Site is required' }} render={({ field }) => (
-                <FormItem> <FormLabel>Site</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Select Site" /></SelectTrigger></FormControl>
-                    <SelectContent>{sites.map(s => (<SelectItem key={s.id} value={s.id.toString()}>{s.name} ({s.siteCode})</SelectItem>))}</SelectContent>
-                  </Select> <FormMessage />
-                </FormItem>
-              )} />
+              <FormField
+                control={form.control}
+                name="tagId"
+                rules={{ required: 'Tag (Vehicle/Equipment) is required' }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tag (Vehicle/Equipment)</FormLabel>
+                    <Select
+                      onValueChange={(selectedTagId) => {
+                        field.onChange(selectedTagId); // Update the form state for tagId
+                        const selectedTag = tags.find(t => t.id === selectedTagId);
+                        if (selectedTag && selectedTag.siteId) {
+                          form.setValue('siteId', selectedTag.siteId.toString());
+                        } else {
+                          form.setValue('siteId', null); // Reset site if tag has no assigned site
+                        }
+                      }}
+                      value={field.value || ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select Tag" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tags.map(t => (
+                          <SelectItem key={t.id} value={t.id}>{t.tagNumber}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="siteId"
+                rules={{ required: 'Site is required' }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Site</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select Site" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {sites.map(s => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.name} ({s.siteCode})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <div className="grid md:grid-cols-3 gap-4">
