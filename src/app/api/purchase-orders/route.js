@@ -10,6 +10,7 @@ export async function GET(request) {
   const year = searchParams.get('year');
   const approverId = searchParams.get('approverId');
   const creatorUserId = searchParams.get('creatorUserId'); 
+  const status = searchParams.get('status');
   // const overallSiteId = searchParams.get('siteId'); // Overall PO siteId filter removed
 
   let query = `
@@ -43,6 +44,10 @@ export async function GET(request) {
   if (creatorUserId && creatorUserId !== 'all') {
     query += ' AND po.creatorUserId = ?';
     queryParams.push(creatorUserId);
+  }
+  if (status && status !== 'all') {
+    query += ' AND po.status = ?';
+    queryParams.push(status);
   }
   // Overall PO siteId filter is removed as the field is removed from the form
   // if (overallSiteId && overallSiteId !== 'all') { 
