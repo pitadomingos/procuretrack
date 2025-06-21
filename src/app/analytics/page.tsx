@@ -4,7 +4,8 @@
 import { FilterBar } from '@/components/shared/filter-bar';
 import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart';
 import { MaverickSpendChart } from '@/components/analytics/maverick-spend-chart';
-import { POValueDistributionChart } from '@/components/analytics/po-value-distribution-chart'; 
+import { POValueDistributionChart } from '@/components/analytics/po-value-distribution-chart';
+import { GrnValueChart } from '@/components/analytics/grn-value-chart'; // New import
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -223,14 +224,14 @@ export default function AnalyticsPage() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="mb-4">
-                  Percentage of PO items delivered on or before the promised/expected date by supplier.
+                  Percentage of PO items delivered on or before the promised date by supplier.
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                   <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
                   <p className="text-xs text-muted-foreground mb-2">This analysis requires `Expected Delivery Date` on PO items and `Actual Receipt Date` on GRNs, which are not yet in the database schema.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For supplier [Supplier Name] over the last quarter, calculate their on-time delivery percentage based on [PO Item Expected Delivery Date] vs [GRN Item Receipt Date]. List top 3 suppliers by on-time delivery rate.`}</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For supplier [Supplier Name] over the last quarter, calculate their on-time delivery percentage. List top 3 suppliers by on-time delivery rate.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -249,7 +250,7 @@ export default function AnalyticsPage() {
                    <p className="text-xs text-muted-foreground mb-2">Requires structured data for rejection reasons on GRNs (e.g., 'Damaged', 'Wrong Item'), which is not yet in the database schema.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Analyze GRNs for item [Item SKU] from last month. What's the discrepancy rate (ordered vs. received quantity)? What are the most common reasons if items were rejected or partially received?`}</code></CardContent>
+                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Analyze GRNs for item [Item SKU] from last month. What's the discrepancy rate (ordered vs. received quantity)? What are the most common reasons if items were rejected?`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>
@@ -265,7 +266,7 @@ export default function AnalyticsPage() {
                 </CardDescription>
                 <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
                    <h3 className="text-md font-semibold text-foreground mb-1">Analysis Requires More Data</h3>
-                   <p className="text-xs text-muted-foreground mb-2">Requires capturing 'Physical Receipt Date' on GRNs, which is not yet in the database schema. System entry date can be derived from the Activity Log.</p>
+                   <p className="text-xs text-muted-foreground mb-2">Requires capturing 'Physical Receipt Date' on GRNs, which is not yet in the database schema. The system entry date can be derived from the Activity Log.</p>
                   <Card className="mt-1 text-left text-xs bg-background/50">
                     <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                     <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`What's the average GRN processing time (physical receipt to system entry) for the receiving team at [Site Name] over the past month? Identify any GRNs that took significantly longer.`}</code></CardContent>
@@ -273,25 +274,7 @@ export default function AnalyticsPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-headline text-xl">Value of Goods Received Over Time</CardTitle>
-                <BarChartHorizontalBig className="h-6 w-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4">
-                  Trend of the total value of goods received and accepted (daily, weekly, monthly).
-                </CardDescription>
-                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Analysis Available via AI</h3>
-                  <p className="text-xs text-muted-foreground mb-2">This analysis can be performed by the AI by cross-referencing received quantities with PO item prices. A dedicated chart is coming soon.</p>
-                  <Card className="mt-1 text-left text-xs bg-background/50">
-                    <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                    <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`Plot the total value of goods successfully received and recorded in the system per week for the last two months. Are there any weeks with exceptionally high or low receipt values?`}</code></CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+            <GrnValueChart key={`grn-value-${refreshKey}`} filters={currentFilters} />
           </section>
         </TabsContent>
 
