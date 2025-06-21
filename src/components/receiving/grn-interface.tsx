@@ -109,7 +109,7 @@ export function GRNInterface() {
 
   const handleQuantityChange = (itemId: number | undefined, receiveNowStr: string) => {
     if (!itemId) return;
-    const receiveNowQty = parseInt(receiveNowStr, 10);
+    const receiveNowQty = parseFloat(receiveNowStr);
 
     setGrnItems(prevItems =>
       prevItems.map(item => {
@@ -284,7 +284,6 @@ export function GRNInterface() {
                           className="h-8 text-right w-full"
                           disabled={item.outstandingQty <= 0}
                           min="0"
-                          max={item.outstandingQty}
                         />
                       </TableCell>
                        <TableCell className="text-center py-2">
