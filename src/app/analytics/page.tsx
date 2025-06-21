@@ -5,7 +5,8 @@ import { FilterBar } from '@/components/shared/filter-bar';
 import { POCycleTimeChart } from '@/components/analytics/po-cycle-time-chart';
 import { MaverickSpendChart } from '@/components/analytics/maverick-spend-chart';
 import { POValueDistributionChart } from '@/components/analytics/po-value-distribution-chart';
-import { GrnValueChart } from '@/components/analytics/grn-value-chart'; // New import
+import { GrnValueChart } from '@/components/analytics/grn-value-chart';
+import { FuelCostByTagChart } from '@/components/analytics/fuel-cost-by-tag-chart'; // New import
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -438,6 +439,7 @@ export default function AnalyticsPage() {
         
         <TabsContent value="fuel-analytics">
           <section className="grid gap-6 lg:grid-cols-1 xl:grid-cols-2">
+            <FuelCostByTagChart key={`fuel-cost-by-tag-${refreshKey}`} filters={currentFilters} />
             <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="font-headline text-xl">Fuel Consumption Efficiency</CardTitle>
@@ -452,24 +454,6 @@ export default function AnalyticsPage() {
                   <Card className="mt-1 text-left text-xs bg-background/50">
                       <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
                       <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`For vehicle [Tag Number], calculate its average fuel efficiency (L/100km) for the last month based on fuel records and odometer readings. Compare this to its average from the previous month.`}</code></CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 ease-in-out">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="font-headline text-xl">Total Fuel Cost per Tag/Site</CardTitle>
-                <CircleDollarSign className="h-6 w-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="mb-4">
-                  Track fuel expenditure for each vehicle/equipment or site over time. (Chart: Bar chart or line chart)
-                </CardDescription>
-                <div className="p-4 text-center border-2 border-dashed border-muted-foreground/50 rounded-lg bg-muted/20">
-                  <h3 className="text-md font-semibold text-foreground mb-1">Coming Soon!</h3>
-                  <Card className="mt-1 text-left text-xs bg-background/50">
-                      <CardHeader className="p-2"><CardTitle className="text-xs font-semibold flex items-center"><Brain className="h-3 w-3 mr-1 text-primary" /> AI Prompt Example</CardTitle></CardHeader>
-                      <CardContent className="p-2"><code className="block whitespace-pre-wrap">{`List the top 5 tags with the highest total fuel cost this month. Also, show total fuel cost per site for the same period.`}</code></CardContent>
                   </Card>
                 </div>
               </CardContent>

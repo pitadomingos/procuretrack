@@ -19,6 +19,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Save, Loader2 } from 'lucide-react';
+import { randomUUID } from 'crypto';
 
 interface FuelRecordFormValues {
   fuelDate: string;
@@ -127,7 +128,7 @@ export function FuelRecordForm() {
       }
 
       const result = await response.json();
-      toast({ title: 'Fuel Record Saved (Simulated)', description: `Fuel record ID ${result.fuelRecordId} has been saved.` });
+      toast({ title: 'Fuel Record Saved', description: `Fuel record ID ${result.fuelRecordId} has been saved successfully.` });
       form.reset();
       setTotalCost(0);
 
@@ -226,7 +227,7 @@ export function FuelRecordForm() {
       </CardContent>
       <CardFooter>
         <p className="text-xs text-muted-foreground">
-          Ensure all fuel consumption details are accurate. <strong>Note:</strong> Fuel record data is currently simulated and not persisted to the database.
+          Ensure all fuel consumption details are accurate. Data is now saved directly to the database.
         </p>
       </CardFooter>
     </Card>
