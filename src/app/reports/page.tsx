@@ -66,6 +66,12 @@ function PurchaseOrderReport() {
   const { toast } = useToast();
   const reportContentRef = useRef<HTMLDivElement>(null);
   const [currentFilters, setCurrentFilters] = useState<any>({});
+  const [generatedOn, setGeneratedOn] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // This runs only on the client, after the initial render, preventing a mismatch.
+    setGeneratedOn(new Date());
+  }, []);
 
 
   const fetchReportData = useCallback(async (filters?: any) => {
@@ -107,7 +113,7 @@ function PurchaseOrderReport() {
         year: filters.year,
         siteId: filters.siteId,
         approverId: filters.approverId,
-        creatorUserId: filters.creatorUserId,
+        creatorUserId: filters.requestor,
         status: filters.status,
     };
     setCurrentFilters(apiFilters);
@@ -138,7 +144,9 @@ function PurchaseOrderReport() {
         <div className="flex justify-between items-center mb-4">
           <div className="print-header">
             <h2 className="text-xl font-bold">Purchase Order Report</h2>
-            <p className="text-sm text-muted-foreground">Generated on: {format(new Date(), 'dd MMM yyyy, HH:mm')}</p>
+            <p className="text-sm text-muted-foreground">
+              Generated on: {generatedOn ? format(generatedOn, 'dd MMM yyyy, HH:mm') : '...'}
+            </p>
           </div>
           <Button onClick={handlePrint} variant="outline" className="print-hidden">
             <Printer className="mr-2 h-4 w-4" />
