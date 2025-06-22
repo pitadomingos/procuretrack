@@ -42,7 +42,8 @@ import {
   Globe,
   DollarSign,
   ShieldAlert,
-  History
+  History,
+  FileCode
 } from "lucide-react";
 
 export default function TodoProgressPage() {
@@ -80,8 +81,8 @@ export default function TodoProgressPage() {
       tasks: [
         { icon: BarChart3, text: "Created the main Analytics page structure with tabs." },
         { icon: BrainCircuit, text: "Implemented the AI-Powered PO Analysis section, including the Genkit flow, data tool, and frontend components." },
-        { icon: BarChart3, text: "Implemented live charts for PO Cycle Time, Maverick Spend, PO Value Distribution, and GRN Value." },
-        { icon: FileText, text: "Updated placeholder cards for other analytics sections (GRN, Quotes, Requisitions, Fuel) with informative text and AI prompt examples." },
+        { icon: BarChart3, text: "Implemented live charts for PO Cycle Time, Maverick Spend, PO Value Distribution, GRN Value, and Fuel Cost by Tag." },
+        { icon: FileText, text: "Updated placeholder cards for GRN and Quote analytics with informative text and AI prompt examples." },
       ]
     },
     {
@@ -92,7 +93,7 @@ export default function TodoProgressPage() {
         { icon: FileSignature, text: "Client Quotations: `QuoteForm` for creation & editing; unique Quote Number generation; CRUD APIs; `PrintableQuote` component; Quote List View with actions; CSV Upload for quotes." },
         { icon: ClipboardListIcon, text: "Purchase Requisitions: `RequisitionForm` for creation & editing; unique Requisition Number generation; CRUD APIs; `PrintableRequisition` component; Requisition List View with actions." },
         { icon: Truck, text: "Goods Received Notes (GRN): `GRNInterface` UI for PO selection and item quantity input; Backend API (`/api/grn`) for processing GRN submissions (updates POItem quantities and PO status); `PrintableGRN` component." },
-        { icon: Fuel, text: "Fuel Records: `FuelRecordForm` UI; Fuel Record List View with distance calculation (currently mock data backed, API exists)." },
+        { icon: Fuel, text: "Fuel Records: `FuelRecordForm` UI with live backend database integration; Fuel Record List View with distance calculation; CSV Upload for fuel records." },
       ]
     },
     {
@@ -125,7 +126,7 @@ export default function TodoProgressPage() {
       tasks: [
         { icon: ListChecks, text: "`ActivityLogPage` (`/activity-log`): Detailed view with filtering, fetching from `/api/activity-log`." },
         { icon: BarChart3, text: "`AnalyticsPage` (`/analytics`): Page for advanced data analysis and visualization." },
-        { icon: FileText, text: "`ReportsPage` (`/reports`): Basic placeholder structure." },
+        { icon: FileText, text: "`ReportsPage` (`/reports`): PO Report implemented with filtering and printing capabilities." },
         { icon: MessageCircleQuestion, text: "`SurveyPage` (`/survey`): UI for user feedback collection (submission mocked)." },
         { icon: BookUser, text: "`UserManualPage` (`/user-manual`): Comprehensive user guide generated and refined." },
         { icon: FileCode2, text: "`SystemDocumentationPage` (`/system-documentation`): Technical overview of the application." },
@@ -148,11 +149,23 @@ export default function TodoProgressPage() {
         { icon: Zap, text: "Integrated toast notifications for user feedback on operations." },
         { icon: ShieldAlert, text: "Implemented loading states and error messages for data-fetching components." },
         { icon: Palette, text: "Refined print styles for better document presentation, including sticky footer." },
+        { icon: Table2, text: "Implemented sticky table headers for all main data tables for improved usability on scroll." },
       ]
     }
   ];
 
   const upcomingTasks = [
+    { 
+      category: "Database Migration (Aiven MySQL to Firebase)",
+      tasks: [
+        { icon: DatabaseZap, text: "Update database connection logic in `backend/db.js` to use the Firebase Admin SDK." },
+        { icon: ServerCog, text: "Refactor all API endpoints in `src/app/api/` to interact with Firestore instead of the MySQL database." },
+        { icon: ArrowRightLeft, text: "Replace `mysql2` package with `firebase-admin` for all backend database operations." },
+        { icon: FileCode, text: "Archive existing MySQL schema scripts in `/scripts` and define the new data structure using Firestore collections and documents." },
+        { icon: UploadCloud, text: "Develop and execute a one-time migration script to transfer data from the Aiven MySQL database to Firebase Firestore." },
+        { icon: ClipboardCheck, text: "Perform comprehensive testing of all application features (CRUD, analytics, reporting) to ensure full functionality with the new Firebase backend." },
+      ]
+    },
     { 
       category: "User Authentication & Authorization",
       tasks: [
@@ -171,7 +184,7 @@ export default function TodoProgressPage() {
     {
       category: "Data Management & Import/Export",
       tasks: [
-        { icon: UploadCloud, text: "Expand CSV/Excel import capabilities to all major entities (POs, Requisitions, Fuel Records) with robust validation, error reporting, and preview features." },
+        { icon: UploadCloud, text: "Expand CSV/Excel import capabilities to all major entities (POs, Requisitions) with robust validation, error reporting, and preview features." },
         { icon: UploadCloud, text: "Implement Excel/CSV export functionality for all data tables (POs, Quotes, Requisitions, Fuel Records, Management lists)." },
         { icon: Table2, text: "Implement batch update and delete functionalities in all management tables for efficiency." },
       ]
@@ -185,17 +198,9 @@ export default function TodoProgressPage() {
       ]
     },
     {
-      category: "Fuel Management Enhancements",
-      tasks: [
-        { icon: DatabaseZap, text: "Complete full backend CRUD operations for Fuel Records, moving beyond mock data to MySQL persistence." },
-        { icon: BarChart3, text: "Implement fuel efficiency calculations (e.g., Liters/100km, Liters/hr) based on odometer/hour meter readings using actual data." },
-        { icon: ShieldAlert, text: "Develop alerts for abnormal fuel consumption patterns or discrepancies between odometer and fuel." },
-      ]
-    },
-    {
       category: "Reporting & Analytics",
       tasks: [
-        { icon: BarChart3, text: "Fully implement the remaining analytics tabs (GRN detailed analytics, Client Quote conversion funnels, Requisition lifecycle efficiency, detailed Fuel Usage trends)." },
+        { icon: BarChart3, text: "Fully implement the remaining analytics tabs (GRN detailed analytics, Client Quote conversion funnels, Requisition lifecycle efficiency)." },
         { icon: Settings2, text: "Create a customizable report builder for users to generate ad-hoc reports with selectable columns, filters, and grouping." },
         { icon: FileText, text: "Enable scheduled report generation and email delivery for key reports." },
         { icon: Printer, text: "Add PDF export functionality for all generated reports and charts." },

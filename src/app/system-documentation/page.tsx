@@ -58,7 +58,7 @@ export default function SystemDocumentationPage() {
             <ul className="list-disc list-inside ml-4 space-y-1">
               <li><strong>Frontend:</strong> Next.js (App Router), React, TypeScript, ShadCN UI, Tailwind CSS.</li>
               <li><strong>Backend:</strong> Next.js API Routes (wrapping Express.js for some existing logic), Node.js.</li>
-              <li><strong>Database:</strong> MySQL (connected via `mysql2` driver).</li>
+              <li><strong>Database:</strong> MySQL (connected via `mysql2` driver). <strong>Note: A migration to Firebase Firestore is currently planned.</strong></li>
               <li><strong>AI Integration:</strong> Genkit (for future AI features).</li>
               <li><strong>Styling:</strong> Tailwind CSS with HSL CSS variables defined in `globals.css` for theming.</li>
               <li><strong>Deployment:</strong> Configured for Firebase App Hosting (see `apphosting.yaml`).</li>
@@ -91,7 +91,8 @@ export default function SystemDocumentationPage() {
                   <li><strong>Next.js API Routes:</strong> Primary mechanism for backend endpoints.</li>
                   <li><strong>Express.js:</strong> Some existing API logic in `backend/apiRoutes.js` uses Express conventions, integrated into Next.js API routes.</li>
                   <li><strong>Node.js:</strong> Runtime environment.</li>
-                  <li><strong>MySQL2:</strong> Node.js driver for MySQL database interaction.</li>
+                  <li><strong>MySQL2:</strong> Node.js driver for MySQL database interaction. <strong>(To be replaced by Firebase Admin SDK)</strong>.</li>
+                  <li><strong>Firebase Admin SDK:</strong> For backend interaction with Firebase services (Firestore). <strong>(Planned)</strong></li>
                   <li><strong>Dotenv:</strong> For managing environment variables (e.g., database credentials in `backend/.env`).</li>
                   <li><strong>Multer:</strong> For handling file uploads (e.g., CSV imports).</li>
                   <li><strong>CSV-Parser:</strong> For parsing uploaded CSV files.</li>
@@ -115,7 +116,11 @@ export default function SystemDocumentationPage() {
               The database schema is managed through SQL scripts located in the `/scripts` directory. These scripts include `CREATE TABLE` statements for all primary entities and `ALTER TABLE` scripts for modifications.
               Key tables include:
             </p>
-            <ul className="list-disc list-inside ml-4 text-sm space-y-1">
+            <div className="p-3 border-l-4 border-amber-500 bg-amber-50 text-amber-800 rounded-r-md text-xs mt-2">
+              <h4 className="font-bold mb-1">Note on Migration:</h4>
+              <p>The current SQL scripts are for the legacy MySQL setup. With the planned migration to Firebase, the database schema will be managed using Firestore's NoSQL collection/document model. The existing scripts will be archived and will no longer represent the active database structure post-migration.</p>
+            </div>
+            <ul className="list-disc list-inside ml-4 mt-2 text-sm space-y-1">
               <li>`PurchaseOrder`, `POItem`</li>
               <li>`Supplier`, `Approver`, `User`, `Site`, `Category`</li>
               <li>`Quote`, `QuoteItem`, `Client`</li>
@@ -124,7 +129,7 @@ export default function SystemDocumentationPage() {
               <li>`ActivityLog`, `UserSiteAccess`</li>
             </ul>
             <p className="mt-2 text-xs">
-              Refer to the individual `.js` files in the `/scripts` directory for detailed `CREATE TABLE` and `ALTER TABLE` statements.
+              Refer to the individual `.js` files in the `/scripts` directory for detailed `CREATE TABLE` and `ALTER TABLE` statements for the MySQL implementation.
               The `backend/db.js` file handles the database connection pool configuration using environment variables from `backend/.env`.
             </p>
           </section>
@@ -240,7 +245,7 @@ export default function SystemDocumentationPage() {
               <li><strong>Complete Backend Integration:</strong> Ensure all forms and data tables are fully connected to the MySQL database via robust API endpoints for all CRUD operations (Suppliers, Categories, Tags, Clients, etc.).</li>
               <li><strong>Advanced CSV Data Upload:</strong> Enhance CSV upload functionality for more entities (e.g., Purchase Orders, Fuel Records) with robust validation, error reporting, and preview capabilities. Provide downloadable templates for all applicable entities.</li>
               <li><strong>Comprehensive GRN Functionality:</strong> Implement actual item receipt processing, including stock level updates (if applicable), back-order handling, and PO status updates (e.g., 'Partially Received', 'Fully Received').</li>
-              <li><strong>Detailed Reporting Module:</strong> Develop a dynamic reporting module allowing users to generate custom reports on PO status, spend analysis by vendor/category/site, GRN summaries, fuel consumption trends, and more. Include export options (Excel, PDF).</li>
+              <li><strong>Detailed Reporting Module:</strong> Develop a dynamic reporting module allowing users to generate custom reports on PO status, spend analysis by vendor/category/site, GRN summaries, and more. Include export options (Excel, PDF).</li>
               <li><strong>Real-time Notifications:</strong> Integrate email or in-app notifications for events like PO submission, approval/rejection, GRN processing, and low stock alerts (if inventory is tracked).</li>
               <li><strong>Genkit AI Features:</strong>
                 <ul className="list-['-_'] list-inside ml-4">
