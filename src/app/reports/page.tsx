@@ -105,9 +105,9 @@ function PurchaseOrderReport() {
     const apiFilters = {
         month: filters.month,
         year: filters.year,
-        siteId: filters.site,
-        approverId: filters.approver,
-        creatorUserId: filters.requestor,
+        siteId: filters.siteId,
+        approverId: filters.approverId,
+        creatorUserId: filters.creatorUserId,
         status: filters.status,
     };
     setCurrentFilters(apiFilters);
@@ -120,7 +120,7 @@ function PurchaseOrderReport() {
   
   useEffect(() => {
     fetchReportData();
-  }, []);
+  }, [fetchReportData]);
 
   return (
     <div className="space-y-4">
