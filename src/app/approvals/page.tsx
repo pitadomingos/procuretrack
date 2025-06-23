@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,15 +11,15 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { RejectDocumentModal } from '@/components/approvals/RejectDocumentModal';
 import { ReviewPOModal } from '@/components/approvals/ReviewPOModal';
-
-// --- AUTHENTICATION PLACEHOLDER ---
-const MOCK_LOGGED_IN_APPROVER_EMAIL = 'pita.domingos@jachris.com';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function ApprovalsPage() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const [pendingItems, setPendingItems] = useState<UnifiedApprovalItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const [selectedItemForReject, setSelectedItemForReject] = useState<UnifiedApprovalItem | null>(null);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
@@ -31,17 +30,19 @@ export default function ApprovalsPage() {
   const [isProcessingItemId, setIsProcessingItemId] = useState<string | number | null>(null);
 
   const fetchPendingApprovals = useCallback(async () => {
+    if (!user || !user.email) {
+      setLoading(false);
+      setError("User not authenticated or email not available.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      if (!MOCK_LOGGED_IN_APPROVER_EMAIL) {
-        throw new Error("Approver email is not defined (authentication placeholder).");
-      }
-
       const [poResponse, quoteResponse, requisitionResponse] = await Promise.all([
-        fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`),
-        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`),
-        fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(MOCK_LOGGED_IN_APPROVER_EMAIL)}`)
+        fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(user.email)}`),
+        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(user.email)}`),
+        fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(user.email)}`)
       ]);
 
       let allPendingItems: UnifiedApprovalItem[] = [];
@@ -92,7 +93,7 @@ export default function ApprovalsPage() {
           documentNumber: req.documentNumber,
           creationDate: req.creationDate,
           submittedBy: req.submittedBy || 'N/A',
-          entityName: req.entityName || 'N/A', // Site name/code
+          entityName: req.entityName || 'N/A',
           totalAmount: req.totalAmount, 
           currency: req.currency,
           status: req.status,
@@ -113,7 +114,7 @@ export default function ApprovalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, user]);
 
   useEffect(() => {
     fetchPendingApprovals();
@@ -190,7 +191,8 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentType', 
       header: 'Type',
-      cell: (item: UnifiedApprovalItem) => { 
+      cell: ({ row }) => { 
+        const item = row.original;
         if (item.documentType === 'PO') return <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span>;
         if (item.documentType === 'Quote') return <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
         if (item.documentType === 'Requisition') return <span className="flex items-center"><RequisitionListIcon className="mr-2 h-4 w-4 text-purple-500" /> Requisition</span>;
@@ -200,27 +202,28 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: (item: UnifiedApprovalItem) => <span className="font-medium">{item.documentNumber}</span>
+      cell: ({ row }) => <span className="font-medium">{row.original.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (item: UnifiedApprovalItem) => format(new Date(item.creationDate), 'PP')
+      cell: ({ row }) => format(new Date(row.original.creationDate), 'PP')
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: (item: UnifiedApprovalItem) => item.submittedBy || 'N/A'
+      cell: ({ row }) => row.original.submittedBy || 'N/A'
     },
     { 
       accessorKey: 'entityName', 
       header: 'Supplier/Client/Site',
-      cell: (item: UnifiedApprovalItem) => item.entityName || 'N/A'
+      cell: ({ row }) => row.original.entityName || 'N/A'
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (item: UnifiedApprovalItem) => { 
+      cell: ({ row }) => {
+        const item = row.original;
         if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
         return `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency || ''}`;
       }
@@ -228,7 +231,7 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (item: UnifiedApprovalItem) => <span className="text-orange-600 font-semibold">{item.status}</span>
+      cell: ({ row }) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
     },
   ];
 
@@ -236,7 +239,7 @@ export default function ApprovalsPage() {
     return (
       <div className="flex flex-col justify-center items-center h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading pending approvals for {MOCK_LOGGED_IN_APPROVER_EMAIL}...</p>
+        <p className="text-muted-foreground">Loading pending approvals for {user?.email || '...'}...</p>
       </div>
     );
   }
@@ -262,7 +265,7 @@ export default function ApprovalsPage() {
           <div>
             <CardTitle className="font-headline text-2xl">My Pending Approvals</CardTitle>
             <CardDescription>
-              Documents awaiting your approval. (Showing for: <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>)
+              Documents awaiting your approval. (Showing for: <span className="font-semibold">{user?.email || 'loading...'}</span>)
             </CardDescription>
           </div>
           <Button onClick={fetchPendingApprovals} variant="outline" size="sm" disabled={loading}>
@@ -289,7 +292,7 @@ export default function ApprovalsPage() {
           <DataTable
             columns={columns}
             data={pendingItems}
-            renderRowActions={(item) => { // Changed from 'row' to 'item' to reflect direct data access
+            renderRowActions={(item) => {
               let viewPath = '';
               if (item.documentType === 'PO') viewPath = `/purchase-orders/${item.id}/print`;
               else if (item.documentType === 'Quote') viewPath = `/quotes/${item.id}/print`;
@@ -331,7 +334,7 @@ export default function ApprovalsPage() {
              <div className="text-center py-8 text-muted-foreground">
                 <p className="mb-2">No documents are currently pending your approval.</p>
                 <p className="text-xs">
-                  Ensure documents (POs, Quotes, Requisitions) are in 'Pending Approval' status and assigned to <span className="font-semibold">{MOCK_LOGGED_IN_APPROVER_EMAIL}</span>.
+                  Ensure documents (POs, Quotes, Requisitions) are in 'Pending Approval' status and assigned to your email address.
                 </p>
              </div>
            )}
@@ -358,11 +361,6 @@ export default function ApprovalsPage() {
           onOpenChange={setIsReviewModalOpen}
         />
       )}
-       <div className="text-center text-xs text-muted-foreground mt-4">
-        <strong>Note:</strong> Full authentication and user-specific approval queues will be implemented in a future update.
-        Email notifications for review feedback are simulated.
-      </div>
     </div>
   );
 }
-    

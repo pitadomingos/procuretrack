@@ -1,0 +1,14 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // By default, deny all reads and writes.
+    // This is the most secure starting point.
+    // You should explicitly grant access to specific collections
+    // as you build out your Firestore integration.
+    // e.g., match /users/{userId} { allow read, write: if request.auth.uid == userId; }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

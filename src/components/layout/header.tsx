@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -16,20 +15,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Bell, UserCircle, LogOut, Settings, ChevronLeft, Sun, Moon, Computer } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { navItems } from '@/config/site';
 import { useTheme } from 'next-themes';
 import { ClientOnly } from '@/components/shared/ClientOnly';
-import { StarRating } from '@/components/shared/star-rating'; // Import StarRating
+import { StarRating } from '@/components/shared/star-rating';
+import { useAuth } from '@/hooks/use-auth';
 
-// Mock ratings for demonstration
 const mockPageRatings: Record<string, { initialRating: number; totalVoters: number }> = {
   '/': { initialRating: 4, totalVoters: 120 },
   '/create-document': { initialRating: 3.5, totalVoters: 85 },
   '/approvals': { initialRating: 4.2, totalVoters: 95 },
   '/activity-log': { initialRating: 3, totalVoters: 40 },
   '/analytics': { initialRating: 4.5, totalVoters: 60 },
-  '/reports': { initialRating: 0, totalVoters: 0 }, // No ratings yet
+  '/reports': { initialRating: 0, totalVoters: 0 },
   '/management': { initialRating: 3.8, totalVoters: 70 },
   '/survey': { initialRating: 0, totalVoters: 0 },
   '/todo-progress': { initialRating: 4.8, totalVoters: 25 },
@@ -37,16 +36,29 @@ const mockPageRatings: Record<string, { initialRating: number; totalVoters: numb
   '/system-documentation': { initialRating: 4, totalVoters: 10 },
 };
 
-
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const { setTheme } = useTheme();
+  const { user } = useAuth();
 
-  const [avatarFallbackContent, setAvatarFallbackContent] = useState("U"); 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/auth');
+    } catch (error) {
+      console.error('Failed to log out:', error);
+    }
+  };
 
-  useEffect(() => {
-    setAvatarFallbackContent("PD");
-  }, []);
+  const getAvatarFallback = (displayName: string | null | undefined): string => {
+    if (!displayName) return 'U';
+    const names = displayName.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    }
+    return displayName.substring(0, 2).toUpperCase();
+  };
 
   const currentNavItem = navItems.find(item => {
     if (item.href === '/') return pathname === '/';
@@ -56,7 +68,6 @@ export function AppHeader() {
   let pageTitle = currentNavItem ? currentNavItem.title : "ProcureTrack";
   let breadcrumbBase = null;
 
-  // Determine current page rating data
   const currentPageKey = currentNavItem?.href || pathname;
   const currentRatingData = mockPageRatings[currentPageKey] || { initialRating: 0, totalVoters: 0 };
 
@@ -77,10 +88,7 @@ export function AppHeader() {
 
   const handleRating = (newRating: number) => {
     console.log(`Page ${currentPageKey} rated ${newRating} stars.`);
-    // In a real app, you would send this rating to a backend
-    // For now, the StarRating component updates its internal mock store
   };
-
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8 print-hidden">
@@ -104,7 +112,7 @@ export function AppHeader() {
             <h1 className="text-lg font-semibold font-headline md:text-xl">{pageTitle}</h1>
             <div className="mt-1 sm:mt-0">
                 <StarRating
-                key={currentPageKey} // Important for re-rendering if page changes
+                key={currentPageKey}
                 pageKey={currentPageKey}
                 initialRating={currentRatingData.initialRating}
                 totalVoters={currentRatingData.totalVoters}
@@ -155,40 +163,46 @@ export function AppHeader() {
           />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://placehold.co/40x40.png" alt="User avatar" data-ai-hint="user avatar" />
-                <AvatarFallback>{avatarFallbackContent}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Pita Domingos</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  pita.domingos@jachris.com
-                </p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserCircle className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.photoURL || 'https://placehold.co/40x40.png'} alt="User avatar" data-ai-hint="user avatar" />
+                  <AvatarFallback>{getAvatarFallback(user.displayName)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user.displayName || 'User'}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user.email}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+           <Button variant="outline" asChild>
+              <Link href="/auth">Sign In</Link>
+           </Button>
+        )}
       </div>
     </header>
   );

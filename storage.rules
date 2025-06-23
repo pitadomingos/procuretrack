@@ -1,0 +1,13 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // By default, deny all reads and writes.
+    // This is the most secure starting point.
+    // You should explicitly grant access to specific paths.
+    // e.g., match /users/{userId}/{allPaths=**} { allow read, write: if request.auth.uid == userId; }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
