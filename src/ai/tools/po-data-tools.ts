@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { pool } from '../../../backend/db.js'; // Corrected path
+// DEFERRED: import { pool } from '../../../backend/db.js';
 
 // Input schema for the getPurchaseOrdersTool
 const GetPurchaseOrdersInputSchema = z.object({
@@ -43,6 +43,10 @@ export const getPurchaseOrdersTool = ai.defineTool(
     outputSchema: z.array(PurchaseOrderToolOutputSchema),
   },
   async (input) => {
+    // Lazily import the pool to prevent server crashes if DB env vars are not set.
+    // This moves the potential error from load time to runtime, where it can be caught.
+    const { pool } = await import('../../../backend/db.js');
+
     console.log('[getPurchaseOrdersTool] Received input:', input);
     let connection;
     try {
@@ -104,12 +108,12 @@ export const getPurchaseOrdersTool = ai.defineTool(
       }));
 
     } catch (error: any) {
-      console.error('[getPurchaseOrdersTool] Error fetching purchase orders:', error);
-      // It's often better for the LLM to know an error occurred rather than getting empty data without context
-      throw new Error(`Failed to fetch purchase orders from database: ${error.message}`);
+      console.error('[getPurchaseOrdersTool] Error executing tool:', error);
+      // Re-throwing the error so it can be caught by the flow's more robust error handler.
+      // This ensures a proper JSON error response is sent to the client.
+      throw new Error(`Failed to execute purchase order tool: ${error.message}`);
     } finally {
       if (connection) connection.release();
     }
   }
 );
-
