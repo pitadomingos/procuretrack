@@ -58,9 +58,15 @@ export default function AnalyticsPage() {
         body: JSON.stringify({ prompt: aiPrompt }),
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({error: "An unknown error occurred with the AI analysis."}));
-        const specificError = errorData.details || errorData.error || `AI analysis failed: ${response.statusText}`;
-        throw new Error(specificError);
+        const errorText = await response.text();
+        console.error("AI API Error Response Text:", errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          const specificError = errorData.details || errorData.error || `AI analysis failed with status: ${response.status}`;
+          throw new Error(specificError);
+        } catch (e) {
+           throw new Error(`AI analysis failed: ${response.statusText}. The server returned a non-JSON response, which may indicate a server crash.`);
+        }
       }
       const data: POAnalysisOutput = await response.json();
       setAiResponse(data);

@@ -45,7 +45,9 @@ export const getPurchaseOrdersTool = ai.defineTool(
   async (input) => {
     // Lazily import the pool to prevent server crashes if DB env vars are not set.
     // This moves the potential error from load time to runtime, where it can be caught.
+    console.log('[getPurchaseOrdersTool] Attempting to lazy-import database pool...');
     const { pool } = await import('../../../backend/db.js');
+    console.log('[getPurchaseOrdersTool] Database pool imported successfully.');
 
     console.log('[getPurchaseOrdersTool] Received input:', input);
     let connection;
