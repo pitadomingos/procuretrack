@@ -11,13 +11,13 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getPurchaseOrdersTool } from '../tools/po-data-tools';
 
-// Input schema for the flow (no longer exported)
+// Input schema for the flow
 const POAnalysisInputSchema = z.object({
   prompt: z.string().describe("The user's natural language question or request about Purchase Orders."),
 });
 export type POAnalysisInput = z.infer<typeof POAnalysisInputSchema>;
 
-// Output schema for the flow (no longer exported)
+// Output schema for the flow
 const POAnalysisOutputSchema = z.object({
   responseText: z.string().describe("The textual summary or answer to the user's prompt."),
   chartData: z.array(z.object({ name: z.string(), value: z.number() })).optional().describe("Optional data for a simple bar chart if applicable (e.g., {name: 'Supplier A', value: 12000}). 'name' is the bar label, 'value' is the bar height."),
@@ -32,7 +32,7 @@ const poAnalysisSystemPrompt = ai.definePrompt({
   input: { schema: POAnalysisInputSchema },
   output: { schema: POAnalysisOutputSchema },
   tools: [getPurchaseOrdersTool],
-  system: `You are an expert data analyst specializing in Purchase Orders (POs) for a company named Jachris.
+  prompt: `You are an expert data analyst specializing in Purchase Orders (POs) for a company named Jachris.
 Your goal is to answer the user's question by fetching data using the available tools and then analyzing it.
 
 Available tools:
