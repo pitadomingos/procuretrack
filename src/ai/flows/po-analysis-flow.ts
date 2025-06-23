@@ -11,14 +11,14 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { getPurchaseOrdersTool } from '../tools/po-data-tools';
 
-// Input schema for the flow
-export const POAnalysisInputSchema = z.object({
+// Input schema for the flow (no longer exported)
+const POAnalysisInputSchema = z.object({
   prompt: z.string().describe("The user's natural language question or request about Purchase Orders."),
 });
 export type POAnalysisInput = z.infer<typeof POAnalysisInputSchema>;
 
-// Output schema for the flow
-export const POAnalysisOutputSchema = z.object({
+// Output schema for the flow (no longer exported)
+const POAnalysisOutputSchema = z.object({
   responseText: z.string().describe("The textual summary or answer to the user's prompt."),
   chartData: z.array(z.object({ name: z.string(), value: z.number() })).optional().describe("Optional data for a simple bar chart if applicable (e.g., {name: 'Supplier A', value: 12000}). 'name' is the bar label, 'value' is the bar height."),
   chartTitle: z.string().optional().describe("Title for the chart if chartData is provided."),
