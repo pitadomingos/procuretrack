@@ -1,4 +1,5 @@
 
+
 import { pool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 import csv from 'csv-parser';
@@ -17,7 +18,7 @@ export async function GET(request) {
     SELECT
         po.id, po.poNumber, po.creationDate, po.status, po.subTotal, po.vatAmount,
         po.grandTotal, po.currency, po.pricesIncludeVat, po.notes, po.requestedByName, 
-        po.creatorUserId, po.approverId, po.supplierId, po.siteId AS overallSiteId, 
+        po.creatorUserId, po.approverId, po.siteId AS overallSiteId, 
         s.supplierName, app.name AS approverName, u.name AS creatorName,
         overall_site.siteCode AS overallSiteName 
     FROM PurchaseOrder po
@@ -193,24 +194,30 @@ export async function POST(request) {
         const headerRow = poItems[0];
 
         try {
-          if (!supplierSet.has(headerRow.supplierid)) {
-            throw new Error(`Supplier ID '${headerRow.supplierid}' does not exist.`);
+          const supplierCode = headerRow.suppliercode;
+          const approverId = headerRow.approverid;
+          const poDate = headerRow.podate;
+          const notes = headerRow.overallnotes;
+          const pricesIncludeVatValue = String(headerRow.pricesincludevat || '0').toLowerCase();
+
+          if (!supplierSet.has(supplierCode)) {
+            throw new Error(`Supplier Code '${supplierCode}' does not exist.`);
           }
-          if (headerRow.approverid && !approverSet.has(headerRow.approverid)) {
-            throw new Error(`Approver ID '${headerRow.approverid}' does not exist.`);
+          if (approverId && !approverSet.has(approverId)) {
+            throw new Error(`Approver ID '${approverId}' does not exist.`);
           }
           
           let subTotal = 0;
           for (const item of poItems) {
-            const qty = parseFloat(item.quantity);
-            const price = parseFloat(item.unitprice);
+            const qty = parseFloat(item.itemquantity);
+            const price = parseFloat(item.itemunitprice);
             if (isNaN(qty) || isNaN(price)) {
               throw new Error(`Invalid quantity or unit price for an item in PO ${poNumber}.`);
             }
             subTotal += qty * price;
           }
 
-          const pricesIncludeVat = ['true', '1', 'yes'].includes((headerRow.pricesincludevat || '').toLowerCase());
+          const pricesIncludeVat = ['true', '1', 'yes'].includes(pricesIncludeVatValue);
           let vatAmount = 0;
           if (headerRow.currency === 'MZN' && !pricesIncludeVat) {
               vatAmount = subTotal * 0.16;
@@ -223,23 +230,24 @@ export async function POST(request) {
           `;
           const [poResult] = await connection.execute(poInsertQuery, [
             poNumber,
-            headerRow.creationdate ? new Date(headerRow.creationdate) : new Date(),
+            poDate ? new Date(poDate) : new Date(),
             null,
             headerRow.requestedbyname || null,
-            headerRow.supplierid || null,
-            headerRow.approverid || null,
+            supplierCode || null,
+            approverId || null,
             null,
             headerRow.status || 'Approved',
             subTotal, vatAmount, grandTotal,
             headerRow.currency || 'MZN',
             pricesIncludeVat,
-            headerRow.notes || null,
+            notes || null,
           ]);
           const newPoId = poResult.insertId;
 
           for (const item of poItems) {
-            const categoryId = item.categoryid ? parseInt(item.categoryid, 10) : null;
-            const siteId = item.siteid ? parseInt(item.siteid, 10) : null;
+            const categoryId = item.itemcategoryid ? parseInt(item.itemcategoryid, 10) : null;
+            const siteId = item.itemsiteid ? parseInt(item.itemsiteid, 10) : null;
+            
             if (categoryId && !categorySet.has(categoryId)) {
                 throw new Error(`Item in PO ${poNumber} has an invalid Category ID: ${categoryId}`);
             }
@@ -253,12 +261,12 @@ export async function POST(request) {
             `;
             await connection.execute(itemInsertQuery, [
               newPoId,
-              item.partnumber || null,
-              item.description || 'N/A',
+              item.itempartnumber || null,
+              item.itemdescription || 'N/A',
               categoryId, siteId,
-              item.uom || 'EA',
-              parseFloat(item.quantity) || 0,
-              parseFloat(item.unitprice) || 0,
+              item.itemuom || 'EA',
+              parseFloat(item.itemquantity) || 0,
+              parseFloat(item.itemunitprice) || 0,
             ]);
           }
           successfulImports++;
