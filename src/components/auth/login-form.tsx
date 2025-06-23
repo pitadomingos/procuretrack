@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
-import { getAuth, EmailAuthProvider } from 'firebase/auth';
-import { getApp } from '@/lib/firebase/client';
+import { GoogleAuthProvider } from 'firebase/auth';
+import { auth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 
 export function LoginForm() {
@@ -19,8 +19,12 @@ export function LoginForm() {
     signInFlow: 'popup',
     signInOptions: [
       {
-        provider: EmailAuthProvider.PROVIDER_ID,
-        requireDisplayName: true, // It's good practice to require a name
+        provider: GoogleAuthProvider.PROVIDER_ID,
+        // Optional: If all corporate accounts are on the same domain,
+        // you can enforce it here to streamline the login process.
+        // customParameters: {
+        //   hd: 'your-corporate-domain.com'
+        // }
       },
     ],
     callbacks: {
@@ -36,7 +40,7 @@ export function LoginForm() {
   return (
     <div>
       {renderAuth ? (
-        <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={getAuth(getApp())} />
+        <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
       ) : null}
     </div>
   );

@@ -11,7 +11,7 @@ export default function AuthPage() {
         <CardHeader className="text-center">
           <Flame className="mx-auto h-12 w-12 text-primary" />
           <CardTitle className="mt-4 font-headline text-2xl">Welcome to ProcureTrack</CardTitle>
-          <CardDescription>Please sign in to continue</CardDescription>
+          <CardDescription>Please sign in with your corporate Google account to continue.</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />

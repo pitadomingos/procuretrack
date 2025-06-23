@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
-import { getApp } from '@/lib/firebase/client';
-import { getAuth, onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
+import { auth } from '@/lib/firebase/client';
+import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
 
 export interface AuthUser {
@@ -28,7 +28,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuth(getApp());
+    // The 'auth' object is imported directly from the firebase/client setup file
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // User is signed in.
