@@ -68,17 +68,26 @@ const poAnalysisFlow = ai.defineFlow(
   },
   async (input): Promise<POAnalysisOutput> => {
     console.log('[poAnalysisFlow] Received input:', input);
+    try {
+        const { output } = await poAnalysisSystemPrompt(input);
 
-    const { output } = await poAnalysisSystemPrompt(input);
+        if (!output) {
+          console.error('[poAnalysisFlow] LLM returned a null or undefined output. This can happen if the model response does not conform to the output schema.');
+          throw new Error('The AI model failed to produce a valid response. Please try rephrasing your question.');
+        }
+        
+        console.log('[poAnalysisFlow] Successfully processed. LLM Output:', JSON.stringify(output).substring(0, 500) + "...");
+        return output;
 
-    if (!output) {
-      console.error('[poAnalysisFlow] LLM returned a null or undefined output. This can happen if the model response does not conform to the output schema.');
-      throw new Error('The AI model failed to produce a valid response. Please try rephrasing your question.');
+    } catch (error: any) {
+        console.error("[poAnalysisFlow] An error occurred during flow execution:", error);
+        // This catch block handles errors from the tool (e.g., DB connection) or the LLM call itself.
+        // It formats the error into the expected output structure.
+        return {
+            responseText: `An error occurred while analyzing the data: ${error.message || 'Unknown error'}. Please check the system logs or try again.`,
+            debugInfo: `Error caught in poAnalysisFlow: ${error.stack || error.message}`,
+        };
     }
-    
-    console.log('[poAnalysisFlow] Successfully processed. LLM Output:', JSON.stringify(output).substring(0, 500) + "...");
-
-    return output;
   }
 );
 

@@ -1,3 +1,4 @@
+
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -38,7 +39,7 @@ if (missingEnvVars.length > 0) {
     console.error(`CRITICAL_DB_INIT_ERROR: Missing essential database environment variables: ${missingEnvVars.join(', ')}. These should be defined in backend/.env for local development or configured in your hosting environment. Database connections will fail.`);
     // To make the server fail fast and clearly, throwing an error here is a good practice.
     // This prevents a more obscure "Internal Server Error" later.
-    // throw new Error(`Missing critical DB environment variables: ${missingEnvVars.join(', ')}. Check your backend/.env file or hosting configuration.`);
+    throw new Error(`Missing critical DB environment variables: ${missingEnvVars.join(', ')}. Check your backend/.env file or hosting configuration.`);
 }
 
 let pool;
