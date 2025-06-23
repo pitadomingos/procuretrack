@@ -134,56 +134,160 @@ export async function POST(request) {
     }
   } else if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/purchase-orders POST: Received multipart/form-data request for CSV upload.');
+    let connection;
     try {
       const formData = await request.formData();
       const file = formData.get('file');
       
       if (!file || typeof file === 'string') { 
-        console.error('[API_ERROR] /api/purchase-orders POST CSV: No file uploaded or file is not a File object.');
         return NextResponse.json({ error: 'No file uploaded or invalid file type' }, { status: 400 });
       }
-      console.log(`[API_INFO] /api/purchase-orders POST CSV: Received file: ${file.name}, size: ${file.size}, type: ${file.type}`);
-
+      
       const fileBuffer = Buffer.from(await file.arrayBuffer());
       const results = [];
       const stream = Readable.from(fileBuffer);
-      let firstRecordLogged = false;
 
-      console.log('[API_INFO] /api/purchase-orders POST CSV: Starting CSV parsing...');
       await new Promise((resolve, reject) => {
         stream
           .pipe(csv({
-            mapHeaders: ({ header }) => header.trim() 
+            mapHeaders: ({ header }) => header.trim().toLowerCase() // Normalize headers
           }))
-          .on('headers', (headers) => {
-            console.log('[API_INFO] /api/purchase-orders POST CSV: Detected CSV Headers:', headers);
-          })
-          .on('data', (data) => {
-            if (!firstRecordLogged) {
-              console.log('[API_DEBUG] /api/purchase-orders POST CSV: First parsed data record from CSV:', data);
-              firstRecordLogged = true;
-            }
-            results.push(data);
-          })
-          .on('end', () => {
-            console.log(`[API_INFO] /api/purchase-orders POST CSV: CSV parsing finished. ${results.length} records found.`);
-            resolve();
-          })
-          .on('error', (parseError) => {
-            console.error('[API_ERROR] /api/purchase-orders POST CSV: Error during CSV parsing:', parseError);
-            reject(parseError);
-          });
+          .on('data', (data) => results.push(data))
+          .on('end', resolve)
+          .on('error', reject);
       });
 
       if (results.length === 0) {
-        console.warn('[API_WARN] /api/purchase-orders POST CSV: CSV file is empty or could not be parsed into records.');
-        return NextResponse.json({ message: 'Purchase Order CSV file is empty or yielded no records.' }, { status: 400 });
+        return NextResponse.json({ message: 'Purchase Order CSV file is empty or could not be parsed.' }, { status: 400 });
       }
 
-      return NextResponse.json({ message: `Purchase order CSV uploaded and parsed successfully. ${results.length} POs found. (Data not saved to DB yet)`, data: results });
+      // Group by PO number
+      const posGroupedByNumber = results.reduce((acc, row) => {
+        const poNumber = row.ponumber;
+        if (!poNumber) return acc;
+        if (!acc[poNumber]) acc[poNumber] = [];
+        acc[poNumber].push(row);
+        return acc;
+      }, {});
+
+      connection = await pool.getConnection();
+      
+      const [suppliers] = await connection.execute('SELECT supplierCode FROM Supplier');
+      const [approvers] = await connection.execute('SELECT id FROM Approver');
+      const [categories] = await connection.execute('SELECT id FROM Category');
+      const [sites] = await connection.execute('SELECT id FROM Site');
+
+      const supplierSet = new Set(suppliers.map(s => s.supplierCode));
+      const approverSet = new Set(approvers.map(a => a.id));
+      const categorySet = new Set(categories.map(c => c.id));
+      const siteSet = new Set(sites.map(s => s.id));
+
+      let successfulImports = 0;
+      let failedImports = 0;
+      const errors = [];
+
+      await connection.beginTransaction();
+
+      for (const poNumber in posGroupedByNumber) {
+        const poItems = posGroupedByNumber[poNumber];
+        const headerRow = poItems[0];
+
+        try {
+          if (!supplierSet.has(headerRow.supplierid)) {
+            throw new Error(`Supplier ID '${headerRow.supplierid}' does not exist.`);
+          }
+          if (headerRow.approverid && !approverSet.has(headerRow.approverid)) {
+            throw new Error(`Approver ID '${headerRow.approverid}' does not exist.`);
+          }
+          
+          let subTotal = 0;
+          for (const item of poItems) {
+            const qty = parseFloat(item.quantity);
+            const price = parseFloat(item.unitprice);
+            if (isNaN(qty) || isNaN(price)) {
+              throw new Error(`Invalid quantity or unit price for an item in PO ${poNumber}.`);
+            }
+            subTotal += qty * price;
+          }
+
+          const pricesIncludeVat = ['true', '1', 'yes'].includes((headerRow.pricesincludevat || '').toLowerCase());
+          let vatAmount = 0;
+          if (headerRow.currency === 'MZN' && !pricesIncludeVat) {
+              vatAmount = subTotal * 0.16;
+          }
+          const grandTotal = subTotal + vatAmount;
+
+          const poInsertQuery = `
+            INSERT INTO PurchaseOrder (poNumber, creationDate, creatorUserId, requestedByName, supplierId, approverId, siteId, status, subTotal, vatAmount, grandTotal, currency, pricesIncludeVat, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `;
+          const [poResult] = await connection.execute(poInsertQuery, [
+            poNumber,
+            headerRow.creationdate ? new Date(headerRow.creationdate) : new Date(),
+            null,
+            headerRow.requestedbyname || null,
+            headerRow.supplierid || null,
+            headerRow.approverid || null,
+            null,
+            headerRow.status || 'Approved',
+            subTotal, vatAmount, grandTotal,
+            headerRow.currency || 'MZN',
+            pricesIncludeVat,
+            headerRow.notes || null,
+          ]);
+          const newPoId = poResult.insertId;
+
+          for (const item of poItems) {
+            const categoryId = item.categoryid ? parseInt(item.categoryid, 10) : null;
+            const siteId = item.siteid ? parseInt(item.siteid, 10) : null;
+            if (categoryId && !categorySet.has(categoryId)) {
+                throw new Error(`Item in PO ${poNumber} has an invalid Category ID: ${categoryId}`);
+            }
+            if (siteId && !siteSet.has(siteId)) {
+                throw new Error(`Item in PO ${poNumber} has an invalid Site ID: ${siteId}`);
+            }
+
+            const itemInsertQuery = `
+              INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            await connection.execute(itemInsertQuery, [
+              newPoId,
+              item.partnumber || null,
+              item.description || 'N/A',
+              categoryId, siteId,
+              item.uom || 'EA',
+              parseFloat(item.quantity) || 0,
+              parseFloat(item.unitprice) || 0,
+            ]);
+          }
+          successfulImports++;
+        } catch (error) {
+          failedImports++;
+          errors.push(`Failed to import PO ${poNumber}: ${error.message}`);
+        }
+      }
+
+      if (failedImports > 0) {
+        await connection.rollback();
+        console.warn(`[API_WARN] PO CSV Upload: Rolled back transaction due to ${failedImports} errors.`, errors);
+        return NextResponse.json({
+            message: `Processing complete. ${successfulImports} POs were valid but the transaction was rolled back due to ${failedImports} errors. Please fix the CSV and re-upload.`,
+            errors: errors
+        }, { status: 400 });
+      } else {
+        await connection.commit();
+        console.log(`[API_INFO] PO CSV Upload: Transaction committed successfully for ${successfulImports} POs.`);
+        return NextResponse.json({
+            message: `Successfully imported ${successfulImports} Purchase Orders and their items into the database.`,
+        }, { status: 200 });
+      }
     } catch (error) {
+      if (connection) await connection.rollback();
       console.error('[API_ERROR] /api/purchase-orders POST CSV: Error handling purchase order file upload:', error);
       return NextResponse.json({ error: 'Failed to handle purchase order file upload', details: error.message }, { status: 500 });
+    } finally {
+      if (connection) connection.release();
     }
   } else {
     console.warn(`[API_WARN] /api/purchase-orders POST: Unsupported Content-Type: ${contentType}`);
