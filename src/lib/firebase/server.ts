@@ -1,7 +1,7 @@
 // This file is for SERVER-SIDE use only.
 // It initializes the Firebase Admin SDK.
 
-import { initializeApp, getApp, getApps, type App } from 'firebase-admin/app';
+import { initializeApp, getApp, getApps, type App, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
@@ -12,18 +12,21 @@ const serviceAccount = {
 };
 
 function getAdminApp(): App {
-  if (getApps().length > 0) {
+  // Check if the default app is already initialized
+  if (getApps().some(app => app.name === '[DEFAULT]')) {
     return getApp();
   }
+
+  // Check for credentials before initializing to provide a clearer error
+  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+    throw new Error('Firebase Admin credentials are not set in the environment. Please check your .env.local file.');
+  }
+
   return initializeApp({
-    credential: {
-        projectId: serviceAccount.projectId,
-        clientEmail: serviceAccount.clientEmail,
-        privateKey: serviceAccount.privateKey,
-    }
+    credential: cert(serviceAccount),
   });
 }
 
-export const app = getAdminApp();
-export const getAuth = () => getAdminAuth(app);
-export const getFirestore = () => getAdminFirestore(app);
+// Directly export functions that return the initialized services
+export const getAuth = () => getAdminAuth(getAdminApp());
+export const getFirestore = () => getAdminFirestore(getAdminApp());
