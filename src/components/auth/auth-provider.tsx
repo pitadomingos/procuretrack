@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
@@ -28,7 +29,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // The 'auth' object is imported directly from the firebase/client setup file
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // User is signed in.
