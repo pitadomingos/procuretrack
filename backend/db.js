@@ -6,8 +6,9 @@ const essentialEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
 const missingEnvVars = essentialEnvVars.filter(v => !process.env[v]);
 
 if (missingEnvVars.length > 0) {
-    console.error(`CRITICAL_DB_INIT_ERROR: Missing essential database environment variables: ${missingEnvVars.join(', ')}. These should be defined in your hosting environment or a root .env.local file. Database connections will fail.`);
-    throw new Error(`Missing critical DB environment variables: ${missingEnvVars.join(', ')}. Check your environment configuration.`);
+    const errorMessage = `CRITICAL_DB_INIT_ERROR: Missing essential database environment variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file. Database connections will fail until this is resolved.`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
 }
 
 // The CA certificate content is now expected to be in an environment variable.
