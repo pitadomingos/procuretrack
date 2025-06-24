@@ -1,47 +1,47 @@
-'use client';
+import { NextResponse, type NextRequest } from 'next/server';
 
-import React, { useEffect, useState } from 'react';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
-import { GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
-import { useRouter } from 'next/navigation';
+const PROTECTED_ROUTES = ['/', '/create-document', '/approvals', '/activity-log', '/analytics', '/reports', '/management'];
+const AUTH_ROUTE = '/auth';
+const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
-export function LoginForm() {
-  const [renderAuth, setRenderAuth] = useState(false);
-  const router = useRouter();
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  const isApiRoute = pathname.startsWith('/api/');
+  const isStaticFile = pathname.startsWith('/_next/') || pathname.startsWith('/static/') || /^\/.*\.(ico|png|jpg|jpeg|svg|css|js)$/.test(pathname);
+  
+  // Skip middleware for API routes and static files
+  if (isApiRoute || isStaticFile) {
+    return NextResponse.next();
+  }
 
-  useEffect(() => {
-    // FirebaseUI uses `window`, so we can't render it on the server
-    setRenderAuth(true);
-  }, []);
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
 
-  const uiConfig: firebaseui.auth.Config = {
-    signInFlow: 'popup',
-    signInOptions: [
-      {
-        provider: GoogleAuthProvider.PROVIDER_ID,
-        // Optional: If all corporate accounts are on the same domain,
-        // you can enforce it here to streamline the login process.
-        // customParameters: {
-        //   hd: 'your-corporate-domain.com'
-        // }
-      },
-    ],
-    callbacks: {
-      signInSuccessWithAuthResult: (authResult, redirectUrl) => {
-        // The onAuthStateChanged listener in AuthProvider will handle session creation.
-        // We just need to redirect to the home page upon success.
-        router.push('/');
-        return false; // Prevents redirecting to a default FirebaseUI page
-      },
-    },
-  };
+  const isAccessingProtectedRoute = PROTECTED_ROUTES.some(p => pathname.startsWith(p));
+  const isAccessingAuthRoute = pathname.startsWith(AUTH_ROUTE);
+  
+  // If user has a session cookie and tries to access the auth page, redirect to home
+  if (sessionCookie && isAccessingAuthRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
 
-  return (
-    <div>
-      {renderAuth ? (
-        <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={auth} />
-      ) : null}
-    </div>
-  );
+  // If user does not have a session cookie and is trying to access a protected route, redirect to auth page
+  if (!sessionCookie && isAccessingProtectedRoute) {
+    return NextResponse.redirect(new URL(AUTH_ROUTE, request.url));
+  }
+
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * This simplified matcher is generally sufficient. The logic inside handles /api routes.
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
+};

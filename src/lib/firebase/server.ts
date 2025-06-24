@@ -1,32 +1,47 @@
-// This file is for SERVER-SIDE use only.
-// It initializes the Firebase Admin SDK.
+import { NextResponse, type NextRequest } from 'next/server';
 
-import { initializeApp, getApp, getApps, type App, cert } from 'firebase-admin/app';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+const PROTECTED_ROUTES = ['/', '/create-document', '/approvals', '/activity-log', '/analytics', '/reports', '/management'];
+const AUTH_ROUTE = '/auth';
+const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
-const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'), // Important for Vercel/env variables
-};
-
-function getAdminApp(): App {
-  // Check if the default app is already initialized
-  if (getApps().some(app => app.name === '[DEFAULT]')) {
-    return getApp();
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  const isApiRoute = pathname.startsWith('/api/');
+  const isStaticFile = pathname.startsWith('/_next/') || pathname.startsWith('/static/') || /^\/.*\.(ico|png|jpg|jpeg|svg|css|js)$/.test(pathname);
+  
+  // Skip middleware for API routes and static files
+  if (isApiRoute || isStaticFile) {
+    return NextResponse.next();
   }
 
-  // Check for credentials before initializing to provide a clearer error
-  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-    throw new Error('Firebase Admin credentials are not set in the environment. Please check your .env.local file.');
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
+
+  const isAccessingProtectedRoute = PROTECTED_ROUTES.some(p => pathname.startsWith(p));
+  const isAccessingAuthRoute = pathname.startsWith(AUTH_ROUTE);
+  
+  // If user has a session cookie and tries to access the auth page, redirect to home
+  if (sessionCookie && isAccessingAuthRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
-  return initializeApp({
-    credential: cert(serviceAccount),
-  });
+  // If user does not have a session cookie and is trying to access a protected route, redirect to auth page
+  if (!sessionCookie && isAccessingProtectedRoute) {
+    return NextResponse.redirect(new URL(AUTH_ROUTE, request.url));
+  }
+
+  return NextResponse.next();
 }
 
-// Directly export functions that return the initialized services
-export const getAuth = () => getAdminAuth(getAdminApp());
-export const getFirestore = () => getAdminFirestore(getAdminApp());
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * This simplified matcher is generally sufficient. The logic inside handles /api routes.
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
+};

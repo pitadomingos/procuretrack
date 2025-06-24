@@ -1,30 +1,47 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getAuth } from '@/lib/firebase/server';
-import { cookies } from 'next/headers';
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const idToken = body.idToken;
+const PROTECTED_ROUTES = ['/', '/create-document', '/approvals', '/activity-log', '/analytics', '/reports', '/management'];
+const AUTH_ROUTE = '/auth';
+const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
-    if (!idToken) {
-      return NextResponse.json({ error: 'ID token is required' }, { status: 400 });
-    }
-
-    // Set session expiration to 14 days.
-    const expiresIn = 60 * 60 * 24 * 14 * 1000;
-    const sessionCookie = await getAuth().createSessionCookie(idToken, { expiresIn });
-
-    cookies().set(process.env.SESSION_COOKIE_NAME!, sessionCookie, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: expiresIn,
-      path: '/',
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('Error creating session cookie:', error);
-    return NextResponse.json({ error: 'Failed to create session', details: error.message }, { status: 401 });
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  const isApiRoute = pathname.startsWith('/api/');
+  const isStaticFile = pathname.startsWith('/_next/') || pathname.startsWith('/static/') || /^\/.*\.(ico|png|jpg|jpeg|svg|css|js)$/.test(pathname);
+  
+  // Skip middleware for API routes and static files
+  if (isApiRoute || isStaticFile) {
+    return NextResponse.next();
   }
+
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
+
+  const isAccessingProtectedRoute = PROTECTED_ROUTES.some(p => pathname.startsWith(p));
+  const isAccessingAuthRoute = pathname.startsWith(AUTH_ROUTE);
+  
+  // If user has a session cookie and tries to access the auth page, redirect to home
+  if (sessionCookie && isAccessingAuthRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  // If user does not have a session cookie and is trying to access a protected route, redirect to auth page
+  if (!sessionCookie && isAccessingProtectedRoute) {
+    return NextResponse.redirect(new URL(AUTH_ROUTE, request.url));
+  }
+
+  return NextResponse.next();
 }
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * This simplified matcher is generally sufficient. The logic inside handles /api routes.
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
+  ],
+};
