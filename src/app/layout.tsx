@@ -1,11 +1,10 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/auth/auth-provider';
-import { ClientOnly } from '@/components/shared/ClientOnly';
-import { ConditionalLayout } from '@/components/layout/conditional-layout';
-
+import { AppLayout } from '@/components/layout/app-layout';
 
 export const metadata: Metadata = {
   title: 'ProcureTrack',
@@ -32,11 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <ClientOnly>
-                <ConditionalLayout>
-                  {children}
-                </ConditionalLayout>
-            </ClientOnly>
+            <AppLayout>
+              {children}
+            </AppLayout>
           </AuthProvider>
           <Toaster />
         </ThemeProvider>
