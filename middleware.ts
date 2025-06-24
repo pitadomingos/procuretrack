@@ -1,7 +1,7 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAuth } from '@/lib/firebase/server';
-import { pool } from './backend/db.js';
 
 const PROTECTED_ROUTES = ['/', '/create-document', '/approvals', '/activity-log', '/analytics', '/reports', '/management'];
 const AUTH_ROUTE = '/auth';
@@ -31,36 +31,17 @@ export async function middleware(request: NextRequest) {
   try {
     if (sessionCookie) {
       // 1. Verify the Firebase session cookie. If invalid, it will throw an error.
-      const decodedToken = await getAuth().verifySessionCookie(sessionCookie, true);
+      // Database checks for user status are incompatible with the Edge Runtime and have been removed.
+      // This type of authorization should be handled in API routes or Server Components.
+      await getAuth().verifySessionCookie(sessionCookie, true);
       
-      // 2. Check if the user exists and is active in the application's database.
-      if (!decodedToken.email) {
-          throw new Error('No email found in Firebase token.');
-      }
-      
-      const [userRows]: any[] = await pool.execute(
-          'SELECT id, role, isActive FROM User WHERE email = ?',
-          [decodedToken.email]
-      );
-      
-      if (userRows.length === 0) {
-          throw new Error(`User with email ${decodedToken.email} not found in application database.`);
-      }
-      
-      const appUser = userRows[0];
-      if (!appUser.isActive) {
-          throw new Error(`User ${decodedToken.email} is inactive.`);
-      }
-
-      // If checks pass, user is valid.
-
       // If authenticated user tries to access the auth page, redirect to home
       if (pathname === AUTH_ROUTE) {
         return NextResponse.redirect(new URL('/', request.url));
       }
     }
   } catch (error: any) {
-    // Catches errors from verifySessionCookie and our custom authorization checks.
+    // Catches errors from verifySessionCookie.
     console.error('Middleware auth error:', error.message);
     // Session cookie is invalid or user not authorized. Clear it and redirect to auth page.
     const response = NextResponse.redirect(new URL(AUTH_ROUTE, request.url));
