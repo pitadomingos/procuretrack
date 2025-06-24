@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
 import type { FetchedDashboardStats } from '@/types';
+// The static pool import is removed from here
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,6 +10,9 @@ export async function GET(request: Request) {
   
   let connection;
   try {
+    // Dynamic import: The database pool is imported only when the API is called.
+    // This allows the try/catch block to handle missing DB environment variables gracefully.
+    const { pool } = await import('../../../../backend/db.js');
     connection = await pool.getConnection();
 
     let poWhereClause = '';
@@ -92,7 +95,7 @@ export async function GET(request: Request) {
     const totalPOsWithGRNActivity = Number(grnPOsRows[0]?.count || 0);
     
     // Approved POs for GRN stat (this count might also be filtered by date)
-    const [approvedPORowsForGRN]: any[] = await connection.execute(`SELECT COUNT(*) as count FROM PurchaseOrder WHERE status = 'Approved' ${poWhereClause ? `AND ${poWhereClause.substring(5)}` : ''}`, queryParams); // Reuse poWhereClause but remove initial 'WHERE'
+    const [approvedPORowsForGRN]: any[] = await connection.execute(`SELECT COUNT(*) as count FROM PurchaseOrder WHERE status = 'Approved' ${poWhereClause ? `AND ${poWhereClause.substring(6)}` : ''}`, queryParams);
     const totalApprovedPOsForGRN = Number(approvedPORowsForGRN[0]?.count || 0);
 
 
