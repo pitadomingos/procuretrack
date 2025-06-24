@@ -1,29 +1,16 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { AppLayout } from '@/components/layout/app-layout';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/components/auth/auth-provider';
-import { usePathname } from 'next/navigation';
 import { ClientOnly } from '@/components/shared/ClientOnly';
+import { ConditionalLayout } from '@/components/layout/conditional-layout';
 
 
 export const metadata: Metadata = {
   title: 'ProcureTrack',
   description: 'PO Management System by Firebase Studio',
 };
-
-function ConditionalLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isAuthPage = pathname === '/auth';
-
-  if (isAuthPage) {
-    return <>{children}</>;
-  }
-
-  return <AppLayout>{children}</AppLayout>;
-}
-
 
 export default function RootLayout({
   children,

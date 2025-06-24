@@ -8,14 +8,8 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from './sidebar';
 import { AppHeader } from './header';
-import { usePathname } from 'next/navigation';
 
 export function AppLayout({ children }: PropsWithChildren) {
-  const pathname = usePathname();
-  
-  if (pathname === '/auth') {
-    return <main>{children}</main>;
-  }
   
   return (
     <SidebarProvider defaultOpen>
