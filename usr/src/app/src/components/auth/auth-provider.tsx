@@ -2,60 +2,78 @@
 'use client';
 
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
-import { auth } from '@/lib/firebase/client';
-import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 import { Loader2 } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 
 export interface AuthUser {
-  uid: string;
+  id: string;
+  name: string;
   email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
+  role: string | null;
+  isActive: boolean;
 }
 
 export interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
+  login: (email: string, password?: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        // User is signed in.
-        setUser({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-        });
-        
-        // Create session cookie by calling our API endpoint
-        const idToken = await firebaseUser.getIdToken();
-        await fetch('/api/auth/session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-        });
-
-      } else {
-        // User is signed out.
+    const verifySession = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Failed to verify session:', error);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+    };
+    verifySession();
+  }, []);
+
+  const login = async (email: string, password?: string) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
-    return () => unsubscribe();
-  }, []);
+    if (res.ok) {
+      const userData = await res.json();
+      setUser(userData);
+      router.push('/');
+    } else {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Login failed');
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+        console.error("Error during logout API call:", error);
+    } finally {
+        setUser(null);
+        window.location.href = '/auth'; // Force a hard reload to the auth page
+    }
+  };
 
   if (loading) {
     return (
@@ -66,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

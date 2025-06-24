@@ -1,52 +1,35 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
-import { getAuth } from './lib/firebase/server';
 
 const PROTECTED_ROUTES = ['/', '/create-document', '/approvals', '/activity-log', '/analytics', '/reports', '/management'];
 const AUTH_ROUTE = '/auth';
+const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Skip middleware for static files, API routes, and Next.js internals
+  
+  // Allow all requests for static files, images, and API routes to pass through
   if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/static/') ||
-    ['/favicon.ico', '/jachris-logo.png', '/headerlogo.png'].includes(pathname)
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.startsWith('/api') ||
+    pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
   ) {
     return NextResponse.next();
   }
 
-  const sessionCookie = cookies().get(process.env.SESSION_COOKIE_NAME!)?.value;
-
-  // Redirect to auth page if trying to access a protected route without a session
-  if (!sessionCookie && PROTECTED_ROUTES.some(p => pathname.startsWith(p))) {
-    const url = request.nextUrl.clone();
-    url.pathname = AUTH_ROUTE;
-    return NextResponse.redirect(url);
+  const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
+  const isAccessingProtectedRoute = PROTECTED_ROUTES.some(p => pathname.startsWith(p) && (p !== '/' || pathname === '/'));
+  const isAccessingAuthRoute = pathname.startsWith(AUTH_ROUTE);
+  
+  // If user has a session cookie and tries to access the auth page, redirect to home
+  if (sessionCookie && isAccessingAuthRoute) {
+    return NextResponse.redirect(new URL('/', request.url));
   }
 
-  try {
-    if (sessionCookie) {
-      // 1. Verify the Firebase session cookie. If invalid, it will throw an error.
-      // Database checks for user status are incompatible with the Edge Runtime and have been removed.
-      // This type of authorization should be handled in API routes or Server Components.
-      await getAuth().verifySessionCookie(sessionCookie, true);
-      
-      // If authenticated user tries to access the auth page, redirect to home
-      if (pathname === AUTH_ROUTE) {
-        return NextResponse.redirect(new URL('/', request.url));
-      }
-    }
-  } catch (error: any) {
-    // Catches errors from verifySessionCookie.
-    console.error('Middleware auth error:', error.message);
-    // Session cookie is invalid or user not authorized. Clear it and redirect to auth page.
-    const response = NextResponse.redirect(new URL(AUTH_ROUTE, request.url));
-    response.cookies.set(process.env.SESSION_COOKIE_NAME!, '', { maxAge: -1 });
-    return response;
+  // If user does not have a session cookie and is trying to access a protected route, redirect to auth page
+  if (!sessionCookie && isAccessingProtectedRoute) {
+    return NextResponse.redirect(new URL(AUTH_ROUTE, request.url));
   }
 
   return NextResponse.next();
@@ -56,10 +39,8 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * - This pattern is now handled inside the middleware logic itself.
+     * The matcher can be simplified to run on almost everything, and we filter inside.
      */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],

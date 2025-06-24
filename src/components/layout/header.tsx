@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Bell, UserCircle, LogOut, Settings, ChevronLeft, Sun, Moon, Computer } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { navItems } from '@/config/site';
 import { useTheme } from 'next-themes';
 import { ClientOnly } from '@/components/shared/ClientOnly';
@@ -38,18 +38,8 @@ const mockPageRatings: Record<string, { initialRating: number; totalVoters: numb
 
 export function AppHeader() {
   const pathname = usePathname();
-  const router = useRouter();
+  const { user, logout } = useAuth();
   const { setTheme } = useTheme();
-  const { user } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/auth');
-    } catch (error) {
-      console.error('Failed to log out:', error);
-    }
-  };
 
   const getAvatarFallback = (displayName: string | null | undefined): string => {
     if (!displayName) return 'U';
@@ -168,15 +158,15 @@ export function AppHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.photoURL || 'https://placehold.co/40x40.png'} alt="User avatar" data-ai-hint="user avatar" />
-                  <AvatarFallback>{getAvatarFallback(user.displayName)}</AvatarFallback>
+                  <AvatarImage src={'https://placehold.co/40x40.png'} alt="User avatar" data-ai-hint="user avatar" />
+                  <AvatarFallback>{getAvatarFallback(user.name)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.displayName || 'User'}</p>
+                  <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user.email}
                   </p>
@@ -192,7 +182,7 @@ export function AppHeader() {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
