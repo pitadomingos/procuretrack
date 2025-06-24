@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
 import type { ChartDataPoint } from '@/types';
 
 interface CycleTimeQueryResult {
@@ -18,6 +17,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     connection = await pool.getConnection();
     let whereClauses: string[] = ["status = 'Approved'", "approvalDate IS NOT NULL", "creationDate IS NOT NULL"];
     const queryParams: (string | number)[] = [];

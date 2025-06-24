@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js'; 
 import type { ChartDataPoint, PurchaseOrderStatus } from '@/types';
 
 interface SitePOValueQueryResult {
@@ -17,6 +16,7 @@ export async function GET(request: Request) {
   
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     connection = await pool.getConnection();
     
     let poWhereClauses: string[] = ["po.status IN ('Pending Approval', 'Approved')"];

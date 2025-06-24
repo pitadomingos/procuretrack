@@ -1,24 +1,28 @@
 
-import { pool } from '../../../../../../backend/db.js'; 
 import { NextResponse } from 'next/server';
 import csv from 'csv-parser';
 import { Readable } from 'stream'; 
 
 export async function GET(request, { params }) {
   const { poId } = params;
-
+  let connection;
   try {
-    const [rows] = await pool.execute('SELECT * FROM POItem WHERE poId = ?', [poId]);
+    const { pool } = await import('../../../../../../backend/db.js'); 
+    connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT * FROM POItem WHERE poId = ?', [poId]);
     return NextResponse.json(rows);
   } catch (error) {
     console.error(`[API_ERROR] /api/purchase-orders/${poId}/items GET: Error fetching PO items:`, error);
     return NextResponse.json({ error: `Failed to fetch PO items for PO ${poId}`, details: error.message }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }
 
 export async function POST(request, { params }) {
   const { poId } = params; 
   const contentType = request.headers.get('content-type');
+  let connection;
 
   if (!(contentType && contentType.includes('multipart/form-data'))) {
     console.warn(`[API_WARN] /api/purchase-orders/${poId}/items POST: Unsupported Content-Type: ${contentType}`);
@@ -27,6 +31,8 @@ export async function POST(request, { params }) {
 
   console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST: Received multipart/form-data request for CSV upload.`);
   try {
+    const { pool } = await import('../../../../../../backend/db.js'); 
+    connection = await pool.getConnection();
     const formData = await request.formData();
     const file = formData.get('file');
 
@@ -78,5 +84,7 @@ export async function POST(request, { params }) {
   } catch (error) {
     console.error(`[API_ERROR] /api/purchase-orders/${poId}/items POST CSV: Error handling PO item file upload:`, error);
     return NextResponse.json({ error: 'Failed to handle PO item file upload', details: error.message }, { status: 500 });
+  } finally {
+    if (connection) connection.release();
   }
 }

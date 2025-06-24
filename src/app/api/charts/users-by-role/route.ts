@@ -1,16 +1,16 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
 import type { ChartDataPoint } from '@/types';
 
 interface UserRoleQueryResult {
-  role: string | null; // Role can be null
+  role_name: string | null; // Role can be null
   count: number | string;
 }
 
 export async function GET() {
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     connection = await pool.getConnection();
     const query = `
       SELECT 

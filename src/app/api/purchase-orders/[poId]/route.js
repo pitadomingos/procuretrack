@@ -1,13 +1,14 @@
 
-
-import { pool } from '../../../../../backend/db.js'; 
 import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
   const { poId } = params;
+  let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
+    connection = await pool.getConnection();
     // Selecting all columns, including siteId from PurchaseOrder table
-    const [rows] = await pool.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [poId]);
+    const [rows] = await connection.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [poId]);
     if (rows.length > 0) {
       return NextResponse.json(rows[0]);
     } else {
@@ -16,6 +17,8 @@ export async function GET(request, { params }) {
   } catch (error) {
     console.error(`Error fetching purchase order with ID ${poId}:`, error);
     return NextResponse.json({ error: `Failed to fetch purchase order with ID ${poId}` }, { status: 500 });
+  } finally {
+      if (connection) connection.release();
   }
 }
 
@@ -29,6 +32,7 @@ export async function PUT(request, { params }) {
 
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     const poData = await request.json();
     const {
       poNumber,

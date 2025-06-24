@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
 import type { ChartDataPoint } from '@/types';
 
 interface ValueDistributionQueryResult {
@@ -18,6 +17,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     connection = await pool.getConnection();
     let whereClauses: string[] = []; // POs of any status are considered for value distribution
     const queryParams: (string | number)[] = [];

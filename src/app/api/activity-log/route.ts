@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
 import type { ActivityLogEntry } from '@/types';
 
 export async function GET(request: Request) {
@@ -23,6 +22,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const { pool } = await import('../../../../backend/db.js');
     connection = await pool.getConnection();
     console.log(`[API_INFO] /api/activity-log GET: Database connection obtained.`);
 
@@ -69,7 +69,6 @@ export async function GET(request: Request) {
     
     console.log(`[API_INFO] /api/activity-log GET: Executing query: ${query.replace(/\s+/g, ' ').trim()} with params: ${JSON.stringify(queryParams)}`);
     
-    // Changed from connection.execute to connection.query
     const [rows]: any[] = await connection.query(query, queryParams); 
 
     console.log(`[API_INFO] /api/activity-log GET: Successfully fetched ${rows.length} activity log entries.`);

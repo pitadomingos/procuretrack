@@ -1,25 +1,28 @@
 
-import { pool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 import multer from 'multer';
 import csv from 'csv-parser';
 import { Readable } from 'stream'; // Import Readable stream
 
 export async function GET() {
+  let connection;
   try {
-    const [rows] = await pool.execute('SELECT * FROM Supplier');
+    const { pool } = await import('../../../../backend/db.js');
+    connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT * FROM Supplier');
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Error fetching suppliers:', error);
     return NextResponse.json({ error: 'Failed to fetch suppliers' }, { status: 500 });
+  } finally {
+      if (connection) connection.release();
   }
 }
 
 // Configure multer for file uploads
-// Using memoryStorage for temporary storage
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper function to run multer middleware (needed for Next.js API Routes with multer)
+// Helper function to run multer middleware
 const runMiddleware = (req, res, fn) => {
   return new Promise((resolve, reject) => {
     fn(req, res, (result) => {
@@ -31,30 +34,25 @@ const runMiddleware = (req, res, fn) => {
   });
 };
 
-// Ensure the request is not body-parsed by Next.js for file uploads
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-
-// Export a POST handler for file uploads
 export async function POST(request) {
-  const res = new NextResponse(); // Create a NextResponse instance for multer
+  const res = new NextResponse(); 
 
   try {
-    // Run the multer middleware
     await runMiddleware(request, res, upload.single('file'));
 
-    const file = request.file; // Access the uploaded file (available after multer processing)
+    const file = request.file;
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
     const results = [];
-    // Create a readable stream from the file buffer
     const stream = Readable.from(file.buffer);
 
     await new Promise((resolve, reject) => {
@@ -73,11 +71,9 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('Error uploading or parsing supplier CSV:', error);
-    // Check if the error is from multer (e.g., file size limit)
     if (error instanceof multer.MulterError) {
       return NextResponse.json({ error: `Multer error: ${error.message}` }, { status: 400 });
     }
-    // General error
     return NextResponse.json({ error: 'Failed to upload or process supplier file' }, { status: 500 });
   }
 }

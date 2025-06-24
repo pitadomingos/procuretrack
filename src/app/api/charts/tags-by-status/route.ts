@@ -1,16 +1,16 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
 import type { ChartDataPoint, TagStatus } from '@/types';
 
 interface TagStatusQueryResult {
-  status: TagStatus | null;
+  status_name: TagStatus | null;
   count: number | string;
 }
 
 export async function GET() {
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     connection = await pool.getConnection();
     const query = `
       SELECT 

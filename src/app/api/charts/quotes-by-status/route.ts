@@ -1,10 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
 import type { ChartDataPoint } from '@/types';
 
 interface QuoteStatusQueryResult {
-  status: string | null;
+  status_name: string | null;
   count: number | string;
 }
 
@@ -15,6 +14,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const { pool } = await import('../../../../../backend/db.js');
     connection = await pool.getConnection();
     let whereClauses: string[] = [];
     const queryParams: (string | number)[] = [];

@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
 import type { TagStatus } from '@/types';
 
 interface ManagementStats {
@@ -17,6 +16,7 @@ interface ManagementStats {
 export async function GET() {
   let connection;
   try {
+    const { pool } = await import('../../../../backend/db.js');
     connection = await pool.getConnection();
 
     const [suppliersRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Supplier');
@@ -74,4 +74,3 @@ export async function GET() {
     if (connection) connection.release();
   }
 }
-

@@ -1,32 +1,37 @@
 
-import { pool } from '../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 
 export async function GET() {
+  let connection;
   try {
-    const [rows] = await pool.execute('SELECT * FROM Site ORDER BY name ASC');
+    const { pool } = await import('../../../../backend/db.js');
+    connection = await pool.getConnection();
+    const [rows] = await connection.execute('SELECT * FROM Site ORDER BY name ASC');
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Error fetching sites:', error);
     return NextResponse.json({ error: 'Failed to fetch sites' }, { status: 500 });
+  } finally {
+      if (connection) connection.release();
   }
 }
 
 export async function POST(request) { // Removed ": Request" type annotation
+  let connection;
   try {
+    const { pool } = await import('../../../../backend/db.js');
+    connection = await pool.getConnection();
     const { name, location, siteCode } = await request.json();
 
     if (!name) {
       return NextResponse.json({ error: 'Site name is required' }, { status: 400 });
     }
 
-    const [result] = await pool.execute(
+    const [result] = await connection.execute(
       'INSERT INTO Site (name, location, siteCode) VALUES (?, ?, ?)',
       [name, location || null, siteCode || null]
     );
 
-    // In JavaScript, result from execute might not directly have insertId in the first element
-    // For mysql2/promise, insertId is on the result object itself.
     const insertId = result.insertId;
 
     if (!insertId) {
@@ -34,7 +39,7 @@ export async function POST(request) { // Removed ": Request" type annotation
         return NextResponse.json({ error: 'Failed to create site, could not retrieve ID.' }, { status: 500 });
     }
 
-    const [newSiteRows] = await pool.execute('SELECT * FROM Site WHERE id = ?', [insertId]);
+    const [newSiteRows] = await connection.execute('SELECT * FROM Site WHERE id = ?', [insertId]);
     
     if (Array.isArray(newSiteRows) && newSiteRows.length > 0) {
         return NextResponse.json(newSiteRows[0], { status: 201 });
@@ -44,11 +49,12 @@ export async function POST(request) { // Removed ": Request" type annotation
 
   } catch (error) {
     console.error('Error creating site:', error);
-    // Check if error is an object and has a code property before accessing it
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_DUP_ENTRY') {
         return NextResponse.json({ error: 'A site with this name or code may already exist.' }, { status: 409 });
     }
     const errorMessage = (error instanceof Error) ? error.message : String(error);
     return NextResponse.json({ error: 'Failed to create site', details: errorMessage }, { status: 500 });
+  } finally {
+      if (connection) connection.release();
   }
 }
