@@ -2,33 +2,29 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
-// Define public routes that don't require authentication
-const PUBLIC_ROUTES = ['/auth'];
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME);
   const isAuthenticated = !!sessionCookie;
 
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+  const isAuthPage = pathname === '/auth';
 
-  // If user is authenticated
-  if (isAuthenticated) {
-    // If they try to access a public route (like the login page), redirect them to the dashboard
-    if (isPublicRoute) {
+  // If the user is on the login page
+  if (isAuthPage) {
+    // If they are already authenticated, redirect them to the dashboard
+    if (isAuthenticated) {
       return NextResponse.redirect(new URL('/', request.url));
     }
-  } 
-  // If user is not authenticated
-  else {
-    // If they try to access a protected route, redirect them to the login page
-    if (!isPublicRoute) {
-      return NextResponse.redirect(new URL('/auth', request.url));
-    }
+    // Otherwise, let them see the login page
+    return NextResponse.next();
   }
 
-  // Allow the request to proceed if no redirect is needed
+  // For any other page, if the user is not authenticated, redirect them to the login page
+  if (!isAuthenticated) {
+    return NextResponse.redirect(new URL('/auth', request.url));
+  }
+
+  // If the user is authenticated and not on the login page, let them proceed
   return NextResponse.next();
 }
 

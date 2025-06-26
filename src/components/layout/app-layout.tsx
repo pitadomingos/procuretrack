@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { PropsWithChildren } from 'react';
@@ -9,19 +10,17 @@ import {
 } from '@/components/ui/sidebar';
 import { AppSidebar } from './sidebar';
 import { AppHeader } from './header';
-import { useAuth } from '@/hooks/use-auth';
 
 export function AppLayout({ children }: PropsWithChildren) {
   const pathname = usePathname();
-  const { user } = useAuth();
 
-  // If the user is not authenticated, we're likely on the login page,
-  // which handles its own layout. So, we just render the children directly.
-  if (!user) {
+  // If we are on the login page, don't render the main app layout.
+  // This prevents the sidebar and header from flashing on the login screen.
+  if (pathname === '/auth') {
     return <>{children}</>;
   }
 
-  // If the user is authenticated, render the full app layout.
+  // For all other authenticated pages, render the full app layout.
   return (
     <SidebarProvider defaultOpen>
       <Sidebar collapsible="icon">
