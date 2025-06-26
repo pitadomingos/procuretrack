@@ -1,0 +1,1 @@
+self.__BUILD_MANIFEST = {"__rewrites":{"afterFiles":[],"beforeFiles":[],"fallback":[]},"/_app":["static/chunks/pages/_app.js"],"/_error":["static/chunks/pages/_error.js"],"/api/generate-po-pdf":["static/chunks/pages/api/generate-po-pdf.js"],"sortedPages":["/_app","/_error","/api/generate-po-pdf"]};self.__BUILD_MANIFEST_CB && self.__BUILD_MANIFEST_CB()

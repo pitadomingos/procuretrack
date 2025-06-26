@@ -1,0 +1,3 @@
+{
+  "/api/purchase-orders/next-po-number/route": "app/api/purchase-orders/next-po-number/route.js"
+}

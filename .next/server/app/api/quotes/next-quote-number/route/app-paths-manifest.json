@@ -1,0 +1,3 @@
+{
+  "/api/quotes/next-quote-number/route": "app/api/quotes/next-quote-number/route.js"
+}

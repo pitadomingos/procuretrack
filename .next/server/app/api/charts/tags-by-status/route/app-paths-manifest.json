@@ -1,0 +1,3 @@
+{
+  "/api/charts/tags-by-status/route": "app/api/charts/tags-by-status/route.js"
+}

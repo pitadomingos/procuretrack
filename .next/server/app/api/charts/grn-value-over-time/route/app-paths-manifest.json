@@ -1,0 +1,3 @@
+{
+  "/api/charts/grn-value-over-time/route": "app/api/charts/grn-value-over-time/route.js"
+}

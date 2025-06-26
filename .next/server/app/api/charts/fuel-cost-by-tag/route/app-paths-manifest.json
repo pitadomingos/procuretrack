@@ -1,0 +1,3 @@
+{
+  "/api/charts/fuel-cost-by-tag/route": "app/api/charts/fuel-cost-by-tag/route.js"
+}

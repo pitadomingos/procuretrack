@@ -1,0 +1,3 @@
+{
+  "/api/charts/requisitions-by-status/route": "app/api/charts/requisitions-by-status/route.js"
+}

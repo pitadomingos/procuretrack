@@ -1,0 +1,3 @@
+{
+  "/api/purchase-orders/get-by-po-number/[poNumber]/route": "app/api/purchase-orders/get-by-po-number/[poNumber]/route.js"
+}

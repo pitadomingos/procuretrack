@@ -1,0 +1,3 @@
+{
+  "/api/charts/users-by-role/route": "app/api/charts/users-by-role/route.js"
+}

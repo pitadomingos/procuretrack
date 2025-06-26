@@ -1,0 +1,3 @@
+{
+  "/api/charts/quotes-by-status/route": "app/api/charts/quotes-by-status/route.js"
+}

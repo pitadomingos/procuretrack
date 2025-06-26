@@ -1,0 +1,3 @@
+{
+  "/api/requisitions/next-requisition-number/route": "app/api/requisitions/next-requisition-number/route.js"
+}
