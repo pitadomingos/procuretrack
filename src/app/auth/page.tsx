@@ -50,10 +50,9 @@ export default function LoginPage() {
         title: 'Login Successful',
         description: 'Welcome back!',
       });
-      
-      // Instead of router.push, we reload the page.
-      // The middleware will then correctly route the authenticated user.
-      window.location.href = '/';
+
+      // Use client-side navigation for a smoother transition.
+      router.push('/');
 
     } catch (err: any) {
       setError(err.message);

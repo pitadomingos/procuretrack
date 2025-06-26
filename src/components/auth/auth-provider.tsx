@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
@@ -62,16 +63,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
   };
-
+  
+  // By rendering children immediately, we prevent a jarring layout shift.
+  // The middleware is responsible for protecting routes, so children will only
+  // be the actual application layout if the user is authenticated.
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </AuthContext.Provider>
   );
 };
