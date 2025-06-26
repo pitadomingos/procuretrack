@@ -1,2 +1,2 @@
 csv
-poNumber,partNumber,description,categoryId,uom,quantity,unitPrice
+poNumber,creationDate,creatorUserId,requestedByName,supplierId,approverId,siteId,status,currency,pricesIncludeVat,notes,partNumber,description,categoryId,itemSiteId,uom,quantity,unitPrice

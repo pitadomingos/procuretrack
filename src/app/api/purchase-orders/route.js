@@ -129,6 +129,7 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Purchase order created successfully', poId: newPoId, poNumber: poNumber }, { status: 201 });
 
     } else if (contentType && contentType.includes('multipart/form-data')) {
+      // REFACTORED CSV UPLOAD LOGIC
       console.log('[API_INFO] /api/purchase-orders POST: Received multipart/form-data request for CSV upload.');
       
       const formData = await request.formData();
@@ -145,7 +146,7 @@ export async function POST(request) {
       await new Promise((resolve, reject) => {
         stream
           .pipe(csv({
-            mapHeaders: ({ header }) => header.trim().toLowerCase()
+            mapHeaders: ({ header }) => header.trim().toLowerCase().replace(/\s+/g, '') // Make headers consistent
           }))
           .on('data', (data) => results.push(data))
           .on('end', resolve)
@@ -185,33 +186,37 @@ export async function POST(request) {
         const headerRow = poItems[0];
 
         try {
-          const supplierCode = headerRow.suppliercode?.trim();
+          // --- Standardized Header Mapping ---
+          const supplierId = headerRow.supplierid?.trim();
           const approverId = headerRow.approverid?.trim();
-          const poDate = headerRow.podate?.trim();
-          const notes = headerRow.overallnotes?.trim();
-          const pricesIncludeVatValue = String(headerRow.pricesincludevat || '0').toLowerCase().trim();
+          const creationDate = headerRow.podate?.trim();
+          const notes = headerRow.notes?.trim();
+          const status = headerRow.status?.trim() || 'Approved';
+          const pricesIncludeVatValue = String(headerRow.pricesincludevat || 'false').toLowerCase().trim();
 
-          if (!supplierSet.has(supplierCode)) {
-            throw new Error(`Supplier Code '${supplierCode}' does not exist.`);
+          // --- Validation ---
+          if (!supplierId || !supplierSet.has(supplierId)) {
+            throw new Error(`SupplierID '${supplierId || 'empty'}' does not exist.`);
           }
-          if (approverId && !approverSet.has(approverId)) {
-            throw new Error(`Approver ID '${approverId}' does not exist.`);
+          if (!approverId || !approverSet.has(approverId)) {
+            throw new Error(`ApproverID '${approverId || 'empty'}' does not exist.`);
           }
           
           let subTotal = 0;
-          for (const item of poItems) {
+          for (const [index, item] of poItems.entries()) {
             const qty = parseFloat(item.itemquantity?.trim());
             const price = parseFloat(item.itemunitprice?.trim());
             if (isNaN(qty) || isNaN(price)) {
-              throw new Error(`Invalid quantity or unit price for an item in PO ${poNumber}.`);
+              throw new Error(`Invalid quantity or unit price for an item at row ${index + 2} in PO ${poNumber}.`);
             }
             subTotal += qty * price;
           }
 
           const pricesIncludeVat = ['true', '1', 'yes'].includes(pricesIncludeVatValue);
           let vatAmount = 0;
+          // --- FIXED VAT CALCULATION ---
           if (headerRow.currency?.trim() === 'MZN' && !pricesIncludeVat) {
-              vatAmount = subTotal * 0.16;
+            vatAmount = subTotal * 0.16;
           }
           const grandTotal = subTotal + vatAmount;
 
@@ -221,13 +226,13 @@ export async function POST(request) {
           `;
           const [poResult] = await connection.execute(poInsertQuery, [
             poNumber,
-            poDate ? new Date(poDate) : new Date(),
-            null,
+            creationDate ? new Date(creationDate) : new Date(),
+            headerRow.creatorid?.trim() || null,
             headerRow.requestedbyname?.trim() || null,
-            supplierCode || null,
-            approverId || null,
-            null,
-            headerRow.status?.trim() || 'Approved',
+            supplierId,
+            approverId,
+            null, // Header siteId is not imported via CSV for simplicity
+            status,
             subTotal, vatAmount, grandTotal,
             headerRow.currency?.trim() || 'MZN',
             pricesIncludeVat,
@@ -237,13 +242,13 @@ export async function POST(request) {
 
           for (const item of poItems) {
             const categoryId = item.itemcategoryid ? parseInt(item.itemcategoryid.trim(), 10) : null;
-            const siteId = item.itemsiteid ? parseInt(item.itemsiteid.trim(), 10) : null;
+            const itemSiteId = item.itemsiteid ? parseInt(item.itemsiteid.trim(), 10) : null;
             
             if (categoryId && !categorySet.has(categoryId)) {
-                throw new Error(`Item in PO ${poNumber} has an invalid Category ID: ${categoryId}`);
+                throw new Error(`Item in PO ${poNumber} has an invalid CategoryID: ${categoryId}`);
             }
-            if (siteId && !siteSet.has(siteId)) {
-                throw new Error(`Item in PO ${poNumber} has an invalid Site ID: ${siteId}`);
+            if (itemSiteId && !siteSet.has(itemSiteId)) {
+                throw new Error(`Item in PO ${poNumber} has an invalid ItemSiteID: ${itemSiteId}`);
             }
 
             const itemInsertQuery = `
@@ -254,7 +259,8 @@ export async function POST(request) {
               newPoId,
               item.itempartnumber?.trim() || null,
               item.itemdescription?.trim() || 'N/A',
-              categoryId, siteId,
+              categoryId,
+              itemSiteId,
               item.itemuom?.trim() || 'EA',
               parseFloat(item.itemquantity?.trim()) || 0,
               parseFloat(item.itemunitprice?.trim()) || 0,

@@ -104,6 +104,7 @@ export default function ApprovalsPage() {
         console.warn('Error fetching Requisition approvals:', reqErrorData.message);
       }
       
+ console.log("Fetched and mapped pending items:", allPendingItems);
       allPendingItems.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime());
       setPendingItems(allPendingItems);
 

@@ -1,7 +1,4 @@
-
-PONumber,PODate,SupplierCode,RequestedByName,ApproverID,Currency,PricesIncludeVAT,OverallNotes,ItemPartNumber,ItemDescription,ItemCategoryID,ItemSiteID,ItemUOM,ItemQuantity,ItemUnitPrice
-PO-CSV-001,2024-08-01,SUP001,John Doe,APPROVER001,MZN,FALSE,"Notes for PO-CSV-001",PART001,Item A Description,1,1,EA,10,100.00
-PO-CSV-001,2024-08-01,SUP001,John Doe,APPROVER001,MZN,FALSE,"Notes for PO-CSV-001",PART002,Item B Description,2,1,BOX,5,25.50
-PO-CSV-002,2024-08-02,SUP002,Jane Smith,APPROVER002,USD,TRUE,"Notes for PO-CSV-002",PART003,Service C Description,3,2,SVC,1,500.00
-
-    
+PONumber,PODate,SupplierID,ApproverID,RequestedByName,CreatorID,Status,Currency,PricesIncludeVAT,Notes,ItemPartNumber,ItemDescription,ItemCategoryID,ItemSiteID,ItemUOM,ItemQuantity,ItemUnitPrice
+PO-CSV-001,2024-08-15,ACP01,approver_001,John Doe,user_002,Approved,MZN,FALSE,"Please deliver by EOD",PN-123,"10-inch Steel Bolts",2,1,BOX,10,50.00
+PO-CSV-001,2024-08-15,ACP01,approver_001,John Doe,user_002,Approved,MZN,FALSE,"Please deliver by EOD",PN-456,"Locking Nuts for 10-inch bolts",3,1,BAG,10,15.50
+PO-CSV-002,2024-08-16,ADV01,approver_002,Jane Smith,user_005,Pending Approval,USD,TRUE,"Urgent requirement for Site B",SRV-WELD,"On-site welding services",12,2,SVC,8,120.00

@@ -26,33 +26,36 @@ const poColumns: ColumnDef<PurchaseOrderPayload>[] = [
   {
     accessorKey: 'creationDate',
     header: 'Date',
-    cell: (item) => format(new Date(item.creationDate), 'dd MMM yyyy')
+    cell: (item) => format(new Date(item.creationDate), 'dd MMM yyyy'),
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
   },
   {
     accessorKey: 'supplierName',
     header: 'Supplier',
-    cell: (item) => item.supplierName || item.supplierId || 'N/A'
+    cell: (item) => item.supplierName || item.supplierId || 'N/A',
   },
   {
     accessorKey: 'grandTotal',
     header: 'Total',
-    cell: (item) => `${item.currency} ${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    cell: (item) => `${item.currency} ${item.grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
   },
-  { accessorKey: 'status', header: 'Status' },
   {
     accessorKey: 'requestedByName',
-    header: 'Requestor (Entered)' ,
-    cell: (item) => item.requestedByName || 'N/A'
-  },
-  {
-    accessorKey: 'creatorName',
-    header: 'Creator (System User)',
-    cell: (item) => item.creatorName || item.creatorUserId || 'N/A'
+    header: 'Requestor',
+    cell: (item) => item.requestedByName || item.creatorName || 'N/A',
   },
   {
     accessorKey: 'approverName',
     header: 'Approver',
-    cell: (item) => item.approverName || item.approverId || 'N/A'
+    cell: (item) => item.approverName || item.approverId || 'N/A',
+  },
+  {
+    accessorKey: 'overallSiteName',
+    header: 'Site',
+    cell: (item) => item.overallSiteName || 'N/A'
   },
 ];
 
@@ -480,5 +483,3 @@ export function DocumentListView({ documentType }: DocumentListViewProps) {
     </Card>
   );
 }
-
-    
