@@ -274,9 +274,10 @@ export async function POST(request) {
                 throw new Error(`Item in PO ${poNumber} has an invalid ItemSiteID: ${itemSiteId}`);
             }
 
+            // CORRECTED: Explicitly include all non-null columns with defaults
             const itemInsertQuery = `
-              INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              INSERT INTO POItem (poId, partNumber, description, categoryId, siteId, uom, quantity, unitPrice, quantityReceived, itemStatus)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             await connection.execute(itemInsertQuery, [
               newPoId,
@@ -287,6 +288,8 @@ export async function POST(request) {
               item.itemuom?.trim() || 'EA',
               parseFloat(item.itemquantity?.trim()) || 0,
               parseFloat(item.itemunitprice?.trim()) || 0,
+              0, // Explicitly set quantityReceived to 0
+              'Pending' // Explicitly set itemStatus to 'Pending'
             ]);
           }
           successfulImports++;
@@ -299,9 +302,9 @@ export async function POST(request) {
 
       if (failedImports > 0) {
         await connection.rollback();
-        console.warn(`[API_WARN] PO CSV Upload: Rolled back transaction due to ${failedImports} errors.`, errors);
+        console.warn(`[API_WARN] PO CSV Upload: Rolled back transaction due to ${failedImports} POs failing.`, errors);
         return NextResponse.json({
-            message: `Processing complete. ${successfulImports} POs were valid but the transaction was rolled back due to ${failedImports} errors. Please fix the CSV and re-upload.`,
+            message: `Upload failed. ${failedImports} out of ${Object.keys(posGroupedByNumber).length} POs had errors, so the entire upload was cancelled. Please check the errors below, fix the CSV, and re-upload.`,
             errors: errors
         }, { status: 400 });
       } else {
