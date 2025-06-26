@@ -93,8 +93,8 @@ export default function ManageUsersPage() {
     {
       accessorKey: 'siteAccess',
       header: 'Site Access',
-      cell: (userRecord: User) => {
-        const siteAccess = userRecord.siteAccess;
+      cell: ({ row }) => {
+        const siteAccess = row.original.siteAccess;
         if (!siteAccess || siteAccess.length === 0 || siteAccess[0] === 'N/A (Manage separately)') return 'N/A';
         if (siteAccess.includes('all')) return 'All Sites';
         return siteAccess.join(', ');
@@ -103,8 +103,8 @@ export default function ManageUsersPage() {
     {
       accessorKey: 'isActive',
       header: 'Status',
-      cell: (userRecord: User) => // Correctly access isActive from the userRecord object
-        userRecord.isActive ? (
+      cell: ({ row }) => 
+        row.original.isActive ? (
           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
             <CheckCircle className="mr-1 h-3 w-3" /> Active
           </Badge>
@@ -147,12 +147,12 @@ export default function ManageUsersPage() {
             <DataTable
               columns={columns}
               data={users}
-              renderRowActions={(user) => (
+              renderRowActions={(row) => (
                 <div className="space-x-2">
-                  <Button variant="outline" size="icon" onClick={() => handleEdit(user)} title="Edit User">
+                  <Button variant="outline" size="icon" onClick={() => handleEdit(row)} title="Edit User">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="destructive" size="icon" onClick={() => openDeleteConfirmation(user)} title="Delete User">
+                  <Button variant="destructive" size="icon" onClick={() => openDeleteConfirmation(row)} title="Delete User">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

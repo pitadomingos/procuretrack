@@ -93,13 +93,16 @@ export default function ManageApproversPage() {
     { 
       accessorKey: 'approvalLimit', 
       header: 'Limit (MZN)', 
-      cell: (approver) => approver.approvalLimit ? Number(approver.approvalLimit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'
+      cell: ({ row }) => {
+        const limit = row.original.approvalLimit;
+        return limit ? Number(limit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'
+      }
     },
     {
       accessorKey: 'isActive',
       header: 'Status',
-      cell: (approver) => // Corrected: access isActive directly from the approver object
-        approver.isActive ? (
+      cell: ({ row }) =>
+        row.original.isActive ? (
           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
             <CheckCircle className="mr-1 h-3 w-3" /> Active
           </Badge>
@@ -142,12 +145,12 @@ export default function ManageApproversPage() {
             <DataTable
               columns={columns}
               data={approvers}
-              renderRowActions={(approver) => (
+              renderRowActions={(row) => (
                 <div className="space-x-2">
-                  <Button variant="outline" size="icon" onClick={() => handleEdit(approver)} title="Edit Approver">
+                  <Button variant="outline" size="icon" onClick={() => handleEdit(row)} title="Edit Approver">
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="destructive" size="icon" onClick={() => openDeleteConfirmation(approver)} title="Delete Approver">
+                  <Button variant="destructive" size="icon" onClick={() => openDeleteConfirmation(row)} title="Delete Approver">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

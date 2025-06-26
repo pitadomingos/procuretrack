@@ -96,6 +96,7 @@ export interface User {
   id: string;
   name: string;
   email?: string | null;
+  password?: string;
   role?: string | null;
   siteAccess?: string[];
   isActive: boolean;

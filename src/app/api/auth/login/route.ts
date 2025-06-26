@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { pool } from '../../../../../backend/db.js';
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const [rows]: any[] = await pool.execute(
-      'SELECT id, name, email, role, isActive FROM User WHERE email = ?',
+      'SELECT id, name, email, role, isActive, password FROM User WHERE email = ?',
       [email]
     );
 
@@ -27,11 +28,9 @@ export async function POST(request: Request) {
     if (!user.isActive) {
       return NextResponse.json({ error: 'Your account is inactive. Please contact an administrator.' }, { status: 403 });
     }
-
-    // THIS IS A PROTOTYPE PASSWORD CHECK. DO NOT USE IN PRODUCTION.
-    // In a real app, you would use a library like bcrypt to compare a hashed password.
-    // e.g., const isValid = await bcrypt.compare(password, user.passwordHash);
-    const isValid = password.length > 0; // For demo, any password works.
+    
+    // In a real production app, use bcrypt.compare(password, user.password)
+    const isValid = password === user.password;
 
     if (!isValid) {
       return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
@@ -56,8 +55,10 @@ export async function POST(request: Request) {
       path: '/',
       sameSite: 'lax',
     });
-
-    return NextResponse.json(user);
+    
+    // Do not send the password back to the client
+    const { password: _, ...userResponse } = user;
+    return NextResponse.json(userResponse);
 
   } catch (error: any) {
     console.error('Login error:', error);
