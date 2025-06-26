@@ -3,6 +3,29 @@ import { NextResponse } from 'next/server';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
 
+// Helper to parse DD/MM/YYYY dates, common in CSVs
+function parseDMY(dateString) {
+    if (!dateString || typeof dateString !== 'string') return new Date();
+    // Use regex to handle DD/MM/YYYY or DD-MM-YYYY
+    const match = dateString.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+    if (match) {
+        // match[1] is day, match[2] is month, match[3] is year
+        const day = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10) - 1; // Month is 0-indexed in JS
+        const year = parseInt(match[3], 10);
+        // Create date in UTC to avoid timezone issues
+        const date = new Date(Date.UTC(year, month, day));
+        if (isNaN(date.getTime())) return new Date(); // Invalid date parsed
+        return date;
+    }
+    // Fallback for ISO or other standard formats
+    const parsedDate = new Date(dateString);
+    if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+    }
+    return new Date(); // Final fallback
+}
+
 export async function GET(request) {
   let connection;
   try {
@@ -226,7 +249,7 @@ export async function POST(request) {
           `;
           const [poResult] = await connection.execute(poInsertQuery, [
             poNumber,
-            creationDate ? new Date(creationDate) : new Date(),
+            creationDate ? parseDMY(creationDate) : new Date(),
             headerRow.creatorid?.trim() || null,
             headerRow.requestedbyname?.trim() || null,
             supplierId,
@@ -269,7 +292,8 @@ export async function POST(request) {
           successfulImports++;
         } catch (error) {
           failedImports++;
-          errors.push(`Failed to import PO ${poNumber}: ${error.message}`);
+          const errorMessage = `Failed to import PO ${poNumber}: ${error.message}. Check if all IDs (Supplier, Approver, Category, Site) exist and dates are DD/MM/YYYY.`;
+          errors.push(errorMessage);
         }
       }
 
