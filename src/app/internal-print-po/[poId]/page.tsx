@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { pool } from '../../../../../backend/db.js'; 
+import { pool } from '../../../../backend/db.js';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, POItemForPrint, Approver } from '@/types';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import fs from 'fs/promises';
