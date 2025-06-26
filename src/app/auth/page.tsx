@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -65,13 +66,13 @@ export default function LoginPage() {
     <main className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <div className="absolute inset-0 z-0">
         <Image
-          src="/login-background.jpg"
-          alt="An industrial warehouse background"
+          src="/background.png"
+          alt="Application background image"
           layout="fill"
           objectFit="cover"
           quality={80}
           priority
-          data-ai-hint="warehouse interior"
+          data-ai-hint="background"
         />
         <div className="absolute inset-0 bg-black/60" />
       </div>
