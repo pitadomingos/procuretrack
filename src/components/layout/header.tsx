@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect } from 'react';
@@ -15,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Bell, UserCircle, Settings, ChevronLeft, Sun, Moon, Computer } from 'lucide-react';
+import { Bell, UserCircle, Settings, ChevronLeft, Sun, Moon, Computer, LogOut } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { navItems } from '@/config/site';
 import { useTheme } from 'next-themes';
@@ -39,7 +38,7 @@ const mockPageRatings: Record<string, { initialRating: number; totalVoters: numb
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { setTheme } = useTheme();
 
   const getAvatarFallback = (displayName: string | null | undefined): string => {
@@ -181,6 +180,11 @@ export function AppHeader() {
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -1,9 +1,8 @@
-
 'use client';
 
 import React, { createContext, useState, useEffect, type ReactNode } from 'react';
+import { Loader2 } from 'lucide-react';
 
-// Simplified user structure for the mock provider
 export interface AuthUser {
   id: string;
   name: string;
@@ -12,7 +11,6 @@ export interface AuthUser {
   isActive: boolean;
 }
 
-// Simplified context type
 export interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
@@ -22,28 +20,58 @@ export interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// A mock user to be used across the app
-const MOCK_USER: AuthUser = {
-  id: 'user_001',
-  name: 'Pita Domingos',
-  email: 'pita.domingos@jachris.com',
-  role: 'Admin',
-  isActive: true,
-};
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // The provider no longer needs to fetch anything. It just provides the mock user.
-  // Loading is set to false immediately.
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const response = await fetch('/api/auth/me');
+        if (response.ok) {
+          const userData = await response.json();
+          setUser(userData);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user session:', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkUser();
+  }, []);
+
+  const login = async (email: string, password?: string) => {
+    // This function is for components to call, but the login form handles it directly.
+    // It's here for completeness if other parts of the app need to trigger login.
+    console.log("Login triggered from AuthContext, but form handles POST directly.");
+  };
+
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    setUser(null);
+    window.location.href = '/auth'; // Force reload to ensure middleware catches the unauthenticated state
+  };
+
   const value: AuthContextType = {
-    user: MOCK_USER,
-    loading: false,
-    login: async () => { console.warn("Login functionality is currently disabled."); },
-    logout: async () => { console.warn("Logout functionality is currently disabled."); },
+    user,
+    loading,
+    login,
+    logout,
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {loading ? (
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };
