@@ -1,15 +1,13 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-// The static pool import is removed from here to prevent module-level crashes.
-// import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 
 const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
 export async function POST(request: Request) {
   try {
-    // Dynamic import: DB connection is only attempted when the API is called.
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     
     const body = await request.json();
     const { email, password } = body;
@@ -65,12 +63,10 @@ export async function POST(request: Request) {
     return NextResponse.json(userResponse);
 
   } catch (error: any) {
-    console.error('Login error:', error);
+    console.error('[API_ERROR] /api/auth/login POST:', error);
     
-    // Default error message
     let errorMessage = 'An internal server error occurred during login.';
     
-    // Check for specific DB connection errors by looking at the error code or message
     if (error.code && ['ECONNREFUSED', 'ER_ACCESS_DENIED_ERROR', 'ENOTFOUND'].includes(error.code)) {
         errorMessage = 'Database connection failed. Please verify your DB_HOST, DB_USER, and DB_PASSWORD in the .env file.';
     } else if (error.message && error.message.includes('Missing essential database environment variables')) {
@@ -79,7 +75,7 @@ export async function POST(request: Request) {
     
     return NextResponse.json({ 
         error: errorMessage, 
-        details: `[${error.code || 'NO_CODE'}] ${error.message}` // Provide more detail for debugging
+        details: `[${error.code || 'NO_CODE'}] ${error.message}`
     }, { status: 500 });
   }
 }

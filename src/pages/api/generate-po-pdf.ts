@@ -6,7 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import React from 'react'; 
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
-import { pool } from '../../../backend/db.js'; 
+import { getDbPool } from '../../../backend/db.js'; 
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, Approver, POItemForPrint } from '@/types';
 
 async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | null> {
@@ -19,6 +19,7 @@ async function getPODataForPdf(poId: string): Promise<PurchaseOrderPayload | nul
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     console.log(`[PDF API][getPODataForPdf] Database connection obtained for PO ID: ${numericPoId}`);
 

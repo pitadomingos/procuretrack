@@ -7,7 +7,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-// DEFERRED: import { pool } from '../../../backend/db.js';
+import { getDbPool } from '../../../backend/db.js';
 
 // Input schema for the getPurchaseOrdersTool
 const GetPurchaseOrdersInputSchema = z.object({
@@ -43,15 +43,10 @@ export const getPurchaseOrdersTool = ai.defineTool(
     outputSchema: z.array(PurchaseOrderToolOutputSchema),
   },
   async (input) => {
-    // Lazily import the pool to prevent server crashes if DB env vars are not set.
-    // This moves the potential error from load time to runtime, where it can be caught.
-    console.log('[getPurchaseOrdersTool] Attempting to lazy-import database pool...');
-    const { pool } = await import('../../../backend/db.js');
-    console.log('[getPurchaseOrdersTool] Database pool imported successfully.');
-
     console.log('[getPurchaseOrdersTool] Received input:', input);
     let connection;
     try {
+      const pool = await getDbPool();
       connection = await pool.getConnection();
       let query = `
         SELECT 

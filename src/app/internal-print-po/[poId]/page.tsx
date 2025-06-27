@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import type { PurchaseOrderPayload, POItemPayload, Supplier, Site, Category as CategoryType, POItemForPrint, Approver } from '@/types';
 import { PrintablePO } from '@/components/purchase-orders/printable-po';
 import fs from 'fs/promises';
@@ -10,8 +10,12 @@ async function getPOData(poId: string): Promise<PurchaseOrderPayload | null> {
   const numericPoId = Number(poId);
   if (isNaN(numericPoId)) return null;
 
+  let connection;
   try {
-    const [poHeaderRows]: any[] = await pool.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [numericPoId]);
+    const pool = await getDbPool();
+    connection = await pool.getConnection();
+
+    const [poHeaderRows]: any[] = await connection.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [numericPoId]);
     if (poHeaderRows.length === 0) {
       console.error(`Purchase Order with ID ${numericPoId} not found in internal page.`);
       return null;
@@ -29,13 +33,13 @@ async function getPOData(poId: string): Promise<PurchaseOrderPayload | null> {
     };
 
     // Fetch items including new fields
-    const [poItemRows]: any[] = await pool.execute('SELECT * FROM POItem WHERE poId = ?', [numericPoId]);
+    const [poItemRows]: any[] = await connection.execute('SELECT * FROM POItem WHERE poId = ?', [numericPoId]);
     
     const [suppliersRes, sitesRes, categoriesRes, approversRes] = await Promise.all([
-      pool.query('SELECT * FROM Supplier'),
-      pool.query('SELECT * FROM Site'),
-      pool.query('SELECT * FROM Category'),
-      pool.query('SELECT * FROM Approver'),
+      connection.query('SELECT * FROM Supplier'),
+      connection.query('SELECT * FROM Site'),
+      connection.query('SELECT * FROM Category'),
+      connection.query('SELECT * FROM Approver'),
     ]);
 
     const allSuppliers = suppliersRes[0] as Supplier[];
@@ -77,6 +81,8 @@ async function getPOData(poId: string): Promise<PurchaseOrderPayload | null> {
   } catch (error) {
     console.error(`Error fetching PO data for internal print page (PO ID: ${poId}):`, error);
     return null;
+  } finally {
+      if(connection) connection.release();
   }
 }
 

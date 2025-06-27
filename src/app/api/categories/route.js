@@ -1,8 +1,10 @@
-import { pool } from '../../../../backend/db.js'; // Adjust path as needed
+
+import { getDbPool } from '../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
+    const pool = await getDbPool();
     const [rows] = await pool.execute('SELECT * FROM Category');
     return NextResponse.json(rows);
   } catch (error) {

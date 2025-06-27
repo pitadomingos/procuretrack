@@ -1,9 +1,10 @@
 
-import { pool } from '../../../../backend/db.js'; // Adjust path as needed
+import { getDbPool } from '../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
+    const pool = await getDbPool();
     // Fetch active approvers directly from the Approver table
     const query = `
       SELECT 

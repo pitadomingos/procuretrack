@@ -1,4 +1,5 @@
 
+import { getDbPool } from '../../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
@@ -11,7 +12,7 @@ export async function GET(request, { params }) {
   }
 
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     const [rows] = await connection.execute('SELECT * FROM Site WHERE id = ?', [numericId]);
     if (Array.isArray(rows) && rows.length > 0) {
@@ -38,7 +39,7 @@ export async function PUT(request, { params }) {
   }
 
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     const { name, location, siteCode } = await request.json();
 
@@ -86,7 +87,7 @@ export async function DELETE(request, { params }) {
   }
 
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     const [result] = await connection.execute('DELETE FROM Site WHERE id = ?', [numericId]);
 
