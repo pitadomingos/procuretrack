@@ -65,13 +65,8 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[API_ERROR] /api/auth/login POST:', error);
     
-    let errorMessage = 'An internal server error occurred during login.';
-    
-    if (error.code && ['ECONNREFUSED', 'ER_ACCESS_DENIED_ERROR', 'ENOTFOUND'].includes(error.code)) {
-        errorMessage = 'Database connection failed. Please verify your DB_HOST, DB_USER, and DB_PASSWORD in the .env file.';
-    } else if (error.message && error.message.includes('Missing essential database environment variables')) {
-        errorMessage = 'Database configuration is incomplete. Please define all required DB variables in the .env file.';
-    }
+    // Use the specific error message from getDbPool or a default
+    const errorMessage = error.message || 'An internal server error occurred during login.';
     
     return NextResponse.json({ 
         error: errorMessage, 

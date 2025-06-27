@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { Approver } from '@/types';
+import { getDbPool } from '../../../../../backend/db.js';
 
 export async function GET(
   request: Request,
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   const { id } = params;
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     const [rows]: any[] = await pool.execute('SELECT * FROM Approver WHERE id = ?', [id]);
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Approver not found' }, { status: 404 });
@@ -26,7 +27,7 @@ export async function PUT(
 ) {
   const { id } = params;
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     const approverData = await request.json() as Omit<Approver, 'id'>;
 
     if (!approverData.name) {
@@ -66,7 +67,7 @@ export async function DELETE(
 ) {
   const { id } = params;
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     const [result]: any[] = await pool.execute('DELETE FROM Approver WHERE id = ?', [id]);
 
     if (result.affectedRows === 0) {

@@ -10,14 +10,31 @@ async function getDbPool() {
     return pool;
   }
 
-  // This logic now runs only on the first API call that needs the DB
+  // --- Debugging Environment ---
+  console.log('[DB_INIT] Current working directory:', process.cwd());
+  console.log('[DB_INIT] Checking for environment variables...');
+  
   try {
     // Check for essential DB environment variables
     const essentialEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
-    const missingEnvVars = essentialEnvVars.filter(v => !process.env[v]);
+    const missingEnvVars = [];
+    for (const v of essentialEnvVars) {
+        if (!process.env[v]) {
+            missingEnvVars.push(v);
+        } else {
+            // Avoid logging password in production
+            if (v !== 'DB_PASSWORD') {
+                console.log(`[DB_INIT] Found ENV VAR: ${v} = ${process.env[v]}`);
+            } else {
+                 console.log(`[DB_INIT] Found ENV VAR: DB_PASSWORD = (hidden)`);
+            }
+        }
+    }
     
     if (missingEnvVars.length > 0) {
-      throw new Error(`CRITICAL_DB_INIT_ERROR: Missing essential database environment variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file.`);
+      const errorMsg = `Database configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file.`;
+      console.error(`[DB_INIT_ERROR] ${errorMsg}`);
+      throw new Error(errorMsg);
     }
 
     // --- SSL Certificate Handling ---
@@ -38,7 +55,7 @@ async function getDbPool() {
       console.warn(`DB_WARN: The DB_SSL_CA environment variable is not set. Connecting with SSL using system default CAs. If connection fails, please provide the path to your 'ca.pem' file in the DB_SSL_CA variable in your .env file.`);
     }
     
-    const sslConfig = { ca: caCertContent || undefined };
+    const sslConfig = { rejectUnauthorized: true, ca: caCertContent || undefined };
 
     // --- Connection Pool Creation ---
     console.log("DB_INIT_INFO: Creating database connection pool for the first time.");
@@ -54,14 +71,21 @@ async function getDbPool() {
       queueLimit: 0,
     });
 
-    // Test the connection before assigning it to the singleton
-    const connection = await newPool.getConnection();
-    console.log("DB_INIT_SUCCESS: Database connection pool created and verified successfully.");
-    connection.release();
+    try {
+      // Test the connection before assigning it to the singleton
+      const connection = await newPool.getConnection();
+      console.log("DB_INIT_SUCCESS: Database connection pool created and verified successfully.");
+      connection.release();
+    } catch (testError) {
+      console.error("CRITICAL_DB_INIT_ERROR: Failed to get a connection from the pool after creation.", testError);
+      // Destroy the pool if the initial connection test fails
+      newPool.end();
+      throw testError; // Re-throw to be caught by the main catch block
+    }
 
     pool = newPool;
     return pool;
-    
+
   } catch (error) {
     console.error(`CRITICAL_DB_INIT_ERROR: Failed to create and verify database connection pool. Error: ${error.message}`);
     // Re-throw the error to be caught by the calling API route

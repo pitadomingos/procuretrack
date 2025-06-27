@@ -1,11 +1,12 @@
 
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 import type { Category } from '@/types';
 
 export async function GET() {
   console.log('[API_INFO] /api/categories GET: Received request.');
   try {
+    const pool = await getDbPool();
     const [rows] = await pool.execute('SELECT id, category FROM Category ORDER BY category ASC');
     console.log(`[API_INFO] /api/categories GET: Successfully fetched ${Array.isArray(rows) ? rows.length : 0} categories.`);
     return NextResponse.json(rows);
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
   console.log('[API_INFO] /api/categories POST: Received request.');
   let requestBody;
   try {
+    const pool = await getDbPool();
     requestBody = await request.json();
     console.log('[API_INFO] /api/categories POST: Request body:', requestBody);
     const { category: categoryName } = requestBody as Pick<Category, 'category'>;

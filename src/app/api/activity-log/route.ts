@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { ActivityLogEntry } from '@/types';
+import { getDbPool } from '../../../../backend/db.js';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     console.log(`[API_INFO] /api/activity-log GET: Database connection obtained.`);
 

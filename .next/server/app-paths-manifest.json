@@ -1,5 +1,18 @@
 {
+  "/api/activity-log/route": "app/api/activity-log/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/auth/page": "app/auth/page.js"
+  "/api/charts/monthly-po-status/route": "app/api/charts/monthly-po-status/route.js",
+  "/api/charts/quotes-by-status/route": "app/api/charts/quotes-by-status/route.js",
+  "/api/charts/requisitions-by-status/route": "app/api/charts/requisitions-by-status/route.js",
+  "/api/charts/site-po-value-status/route": "app/api/charts/site-po-value-status/route.js",
+  "/api/dashboard-stats/route": "app/api/dashboard-stats/route.js",
+  "/api/purchase-orders/pending-approval/route": "app/api/purchase-orders/pending-approval/route.js",
+  "/api/quotes/pending-approval/route": "app/api/quotes/pending-approval/route.js",
+  "/api/requisitions/pending-approval/route": "app/api/requisitions/pending-approval/route.js",
+  "/approvals/page": "app/approvals/page.js",
+  "/auth/page": "app/auth/page.js",
+  "/create-document/page": "app/create-document/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js"
 }

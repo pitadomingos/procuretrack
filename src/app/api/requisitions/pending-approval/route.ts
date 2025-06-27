@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { RequisitionApprovalQueueItem } from '@/types';
 
 export async function GET(request: Request) {
@@ -13,6 +13,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     const [approverRows]: any[] = await connection.execute(

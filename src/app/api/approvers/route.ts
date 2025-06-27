@@ -1,10 +1,11 @@
 
 import { NextResponse } from 'next/server';
 import type { Approver } from '@/types';
+import { getDbPool } from '../../../../backend/db.js';
 
 export async function GET() {
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     const query = `
       SELECT 
         id,
@@ -26,7 +27,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     const approverData = await request.json() as Approver;
 
     if (!approverData.id || !approverData.name) {

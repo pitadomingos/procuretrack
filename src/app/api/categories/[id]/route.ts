@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { Category } from '@/types';
 
 export async function GET(
@@ -16,6 +16,7 @@ export async function GET(
   }
 
   try {
+    const pool = await getDbPool();
     console.log(`[API_INFO] /api/categories/${id} GET: Executing query to fetch category.`);
     const [rows]: any[] = await pool.execute('SELECT id, category FROM Category WHERE id = ?', [id]);
     if (rows.length === 0) {
@@ -44,6 +45,7 @@ export async function PUT(
   }
 
   try {
+    const pool = await getDbPool();
     requestBody = await request.json();
     console.log(`[API_INFO] /api/categories/${id} PUT: Request body:`, requestBody);
     const { category: categoryName } = requestBody as Pick<Category, 'category'>;
@@ -96,6 +98,7 @@ export async function DELETE(
   }
 
   try {
+    const pool = await getDbPool();
     console.log(`[API_INFO] /api/categories/${id} DELETE: Executing query to delete category.`);
     const [result]: any[] = await pool.execute('DELETE FROM Category WHERE id = ?', [id]);
     console.log(`[API_INFO] /api/categories/${id} DELETE: Database delete result:`, result);
