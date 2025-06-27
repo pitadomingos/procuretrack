@@ -72,8 +72,8 @@ async function GET(request) {
     let connection;
     try {
         // Dynamic import: The database pool is imported only when the API is called.
-        // This allows the try/catch block to handle missing DB environment variables gracefully.
-        const { pool } = await __turbopack_context__.r("[project]/backend/db.js [app-route] (ecmascript, async loader)")(__turbopack_context__.i);
+        const { getDbPool } = await __turbopack_context__.r("[project]/backend/db.js [app-route] (ecmascript, async loader)")(__turbopack_context__.i);
+        const pool = await getDbPool();
         connection = await pool.getConnection();
         let poWhereClause = '';
         let quoteWhereClause = '';

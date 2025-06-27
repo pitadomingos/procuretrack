@@ -2,6 +2,10 @@
 import mysql from 'mysql2/promise';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+
+// Configure dotenv to load the .env file from the backend directory
+dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
 
 let pool = null;
 

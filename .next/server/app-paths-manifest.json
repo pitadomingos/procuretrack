@@ -1,5 +1,13 @@
 {
+  "/api/approvers/route": "app/api/approvers/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
-  "/auth/page": "app/auth/page.js"
+  "/api/categories/route": "app/api/categories/route.js",
+  "/api/purchase-orders/next-po-number/route": "app/api/purchase-orders/next-po-number/route.js",
+  "/api/requisitions/for-po-creation/route": "app/api/requisitions/for-po-creation/route.js",
+  "/api/sites/route": "app/api/sites/route.js",
+  "/api/suppliers/route": "app/api/suppliers/route.js",
+  "/auth/page": "app/auth/page.js",
+  "/create-document/page": "app/create-document/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js"
 }
