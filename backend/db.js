@@ -14,8 +14,14 @@ if (missingEnvVars.length > 0) {
 // The CA certificate content is now expected to be in an environment variable.
 const caCert = process.env.DB_SSL_CA;
 
-if (!caCert) {
-    console.warn(`DB_WARN: The DB_SSL_CA environment variable is not set. Database connections may fail if SSL is required by your provider. For local development without SSL, this may be ignored.`);
+const sslConfig = caCert 
+  ? { ssl: { ca: caCert, rejectUnauthorized: true } } 
+  : {};
+
+if (caCert) {
+    console.log("DB_INIT_INFO: DB_SSL_CA variable found. Attempting to connect with SSL.");
+} else {
+    console.warn(`DB_WARN: The DB_SSL_CA environment variable is not set. Attempting to connect without SSL. This may fail if SSL is required by your provider.`);
 }
 
 let pool;
@@ -26,13 +32,7 @@ try {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-    // Conditionally add SSL options only if the certificate is provided.
-    ...(caCert && {
-      ssl: {
-        ca: caCert,
-        rejectUnauthorized: true, // Recommended for production if using a trusted CA
-      }
-    }),
+    ...sslConfig,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,

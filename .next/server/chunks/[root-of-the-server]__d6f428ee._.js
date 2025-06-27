@@ -132,11 +132,21 @@ async function POST(request) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(userResponse);
     } catch (error) {
         console.error('Login error:', error);
-        // This will now correctly catch database connection errors as well.
-        const errorMessage = error.code === 'CRITICAL_DB_INIT_ERROR' ? 'Database connection failed. Please check server logs and .env configuration.' : 'An internal server error occurred.';
+        // Default error message
+        let errorMessage = 'An internal server error occurred during login.';
+        // Check for specific DB connection errors by looking at the error code or message
+        if (error.code && [
+            'ECONNREFUSED',
+            'ER_ACCESS_DENIED_ERROR',
+            'ENOTFOUND'
+        ].includes(error.code)) {
+            errorMessage = 'Database connection failed. Please verify your DB_HOST, DB_USER, and DB_PASSWORD in the .env file.';
+        } else if (error.message && error.message.includes('Missing essential database environment variables')) {
+            errorMessage = 'Database configuration is incomplete. Please define all required DB variables in the .env file.';
+        }
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: errorMessage,
-            details: error.message
+            details: `[${error.code || 'NO_CODE'}] ${error.message}` // Provide more detail for debugging
         }, {
             status: 500
         });
