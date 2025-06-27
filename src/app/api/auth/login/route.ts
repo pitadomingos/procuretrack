@@ -1,12 +1,16 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { pool } from '../../../../../backend/db.js';
+// The static pool import is removed from here to prevent module-level crashes.
+// import { pool } from '../../../../../backend/db.js';
 
 const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 
 export async function POST(request: Request) {
   try {
+    // Dynamic import: DB connection is only attempted when the API is called.
+    const { pool } = await import('../../../../../backend/db.js');
+    
     const body = await request.json();
     const { email, password } = body;
 
@@ -62,6 +66,11 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Login error:', error);
-    return NextResponse.json({ error: 'An internal server error occurred.' }, { status: 500 });
+    // This will now correctly catch database connection errors as well.
+    const errorMessage = error.code === 'CRITICAL_DB_INIT_ERROR' 
+      ? 'Database connection failed. Please check server logs and .env configuration.'
+      : 'An internal server error occurred.';
+      
+    return NextResponse.json({ error: errorMessage, details: error.message }, { status: 500 });
   }
 }
