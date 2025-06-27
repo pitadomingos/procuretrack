@@ -1,10 +1,12 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterRequisitionsTableAddApprovalFields() {
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     const dbName = connection.config.database;
 
     // Check if approverId column exists
@@ -65,8 +67,10 @@ async function alterRequisitionsTableAddApprovalFields() {
       connection.release();
       console.log('Database connection released.');
     }
-    // Consider if you want to close the pool here if it's a standalone script
-    // await db.pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

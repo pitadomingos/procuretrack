@@ -1,10 +1,12 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterTagsTableAddStatus() {
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     const dbName = connection.config.database;
 
     // Check if the 'status' column exists
@@ -27,8 +29,6 @@ async function alterTagsTableAddStatus() {
       console.log("Successfully added 'status' column (VARCHAR(50) NOT NULL DEFAULT 'Active') to Tag table.");
     } else {
       console.log("Column 'status' already exists in Tag table. No alteration needed for column addition.");
-      // Optionally, you could check if the type/default needs updating, but that's more complex.
-      // For now, just ensuring it exists.
     }
 
   } catch (error) {
@@ -42,8 +42,10 @@ async function alterTagsTableAddStatus() {
         console.error('Error releasing connection:', releaseError);
       }
     }
-    // For a script, you might want to end the pool if it's the last operation.
-    // await db.pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

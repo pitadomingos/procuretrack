@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createFuelRecordsTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS FuelRecord (
           id VARCHAR(255) PRIMARY KEY,
@@ -25,12 +27,15 @@ async function createFuelRecordsTable() {
           FOREIGN KEY (recorderUserId) REFERENCES User(id) ON DELETE SET NULL
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('FuelRecord table created or already exists successfully.');
   } catch (error) {
     console.error('Error creating FuelRecord table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

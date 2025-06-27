@@ -1,10 +1,12 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterRequisitionItemsTableAddSiteId() {
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     const dbName = connection.config.database;
 
     // Check if siteId column exists
@@ -68,7 +70,10 @@ async function alterRequisitionItemsTableAddSiteId() {
       connection.release();
       console.log('Database connection released.');
     }
-    // await db.pool.end(); // Consider if it's a standalone script
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

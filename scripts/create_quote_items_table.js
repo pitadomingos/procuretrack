@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createQuoteItemsTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS QuoteItem (
           id VARCHAR(255) PRIMARY KEY,
@@ -17,12 +19,15 @@ async function createQuoteItemsTable() {
           FOREIGN KEY (quoteId) REFERENCES Quote(id) ON DELETE CASCADE
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('QuoteItem table created or already exists successfully.');
   } catch (error) {
     console.error('Error creating QuoteItem table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createQuotesTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS Quote (
           id VARCHAR(255) PRIMARY KEY,
@@ -25,14 +27,16 @@ async function createQuotesTable() {
           FOREIGN KEY (approverId) REFERENCES Approver(id) ON DELETE SET NULL -- Added FK for approverId
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('Quote table created or already exists successfully with approverId and approvalDate.');
   } catch (error) {
     console.error('Error creating Quote table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 
 createQuotesTable();
-

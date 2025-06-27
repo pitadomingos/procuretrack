@@ -1,10 +1,12 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterPOItemsTableAddReceivingFields() {
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     console.log('Attempting to alter POItem table...');
 
     // Check if quantityReceived column exists
@@ -56,8 +58,10 @@ async function alterPOItemsTableAddReceivingFields() {
       connection.release();
       console.log('Database connection released.');
     }
-    // Consider if you want to close the pool here if it's a standalone script
-    // await db.pool.end();
+    if (pool) {
+        await pool.end();
+        console.log('Database pool ended for script.');
+    }
   }
 }
 

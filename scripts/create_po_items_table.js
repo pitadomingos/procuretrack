@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createPOItemTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE POItem (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -21,12 +23,15 @@ async function createPOItemTable() {
           FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('POItem table created successfully with quantityReceived and itemStatus columns.');
   } catch (error) {
     console.error('Error creating POItem table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

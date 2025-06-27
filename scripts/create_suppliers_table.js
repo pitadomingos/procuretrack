@@ -1,7 +1,10 @@
-import * as db from '../backend/db.js';
+
+import { getDbPool } from '../backend/db.js';
 
 async function createSuppliersTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE Supplier (
           supplierCode VARCHAR(255) PRIMARY KEY,
@@ -13,14 +16,15 @@ async function createSuppliersTable() {
           emailAddress VARCHAR(255)
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('Supplier table created successfully.');
   } catch (error) {
     console.error('Error creating Supplier table:', error);
   } finally {
-    // It's generally better to keep the pool open for the application lifetime,
-    // but for a simple script, you might close it if it's the only script running.
-    // db.pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     const results: RequisitionApprovalQueueItem[] = reqRows.map((row: any) => ({
       id: row.id,
       documentNumber: row.requisitionNumber,
-      creationDate: row.requisitionDate,
+      creationDate: row.creationDate,
       submittedBy: row.submittedBy,
       entityName: row.siteName,
       totalAmount: row.totalEstimatedValue ? parseFloat(row.totalEstimatedValue) : null,

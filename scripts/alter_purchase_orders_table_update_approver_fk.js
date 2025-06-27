@@ -1,10 +1,12 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterPurchaseOrdersTableUpdateApproverFk() {
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     await connection.beginTransaction();
     const dbName = connection.config.database;
 
@@ -19,13 +21,11 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
     if (approverIdRows[0].count === 0) {
       console.log('Column approverId does not exist in PurchaseOrder table. Skipping FK update for it.');
       await connection.commit();
-      if (connection) connection.release();
       return;
     }
 
     // Define potential old constraint names to try to drop from approverId
-    // These might be leftover if approverId was previously linked to User or had other names.
-    const oldConstraintNamesToTryDrop = ['fk_po_approved_by_user', 'PurchaseOrder_ibfk_5']; // Add any other known old names
+    const oldConstraintNamesToTryDrop = ['fk_po_approved_by_user', 'PurchaseOrder_ibfk_5']; 
 
     for (const constraintName of oldConstraintNamesToTryDrop) {
       const checkConstraintQuery = `
@@ -44,7 +44,6 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
           await connection.execute(dropFkQuery);
           console.log(`Successfully dropped foreign key constraint ${constraintName} from approverId column.`);
         } catch (error) {
-          // If ER_CANT_DROP_FIELD_OR_KEY it means it might be an index or other issue, but typically it's not found.
           console.warn(`Could not drop foreign key constraint ${constraintName}. It might have been dropped already or is not on approverId. Error: ${error.message}`);
         }
       } else {
@@ -74,11 +73,9 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
         await connection.execute(addFkQuery);
         console.log(`Added new foreign key constraint ${newConstraintNameApproverTable} on approverId referencing Approver(id).`);
       } catch (addError) {
-        // Handle cases where it might fail due to data integrity issues or other reasons
         console.error(`Failed to add foreign key ${newConstraintNameApproverTable}. Error: ${addError.message}`);
         await connection.rollback();
-        if (connection) connection.release();
-        throw addError; // Rethrow to indicate failure
+        throw addError;
       }
     } else {
       console.log(`Foreign key constraint ${newConstraintNameApproverTable} on approverId already exists.`);
@@ -97,12 +94,10 @@ async function alterPurchaseOrdersTableUpdateApproverFk() {
     }
     console.error('Error updating PurchaseOrder table foreign key for approverId to Approver(id):', error.message);
   } finally {
-    if (connection) {
-        try {
-            connection.release();
-        } catch (releaseError) {
-            console.error('Error releasing connection:', releaseError);
-        }
+    if (connection) connection.release();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
     }
   }
 }

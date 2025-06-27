@@ -1,13 +1,15 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterPurchaseOrdersTableHandleApprovedByUserId() {
   console.log("Information: The 'approvedByUserId' column (linking to User.id for who performed approval action) is no longer part of the target PurchaseOrder schema as per recent design changes.");
   console.log("This script originally intended to add this column. It will now check if it exists and suggest removal if found, or confirm it's absent.");
 
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     const dbName = connection.config.database;
 
     const checkColumnQuery = `
@@ -31,7 +33,10 @@ async function alterPurchaseOrdersTableHandleApprovedByUserId() {
     console.error("Error during check for 'approvedByUserId' column:", error);
   } finally {
     if (connection) connection.release();
-    // await db.pool.end(); // Optional: end pool if script is standalone
+    if (pool) {
+        await pool.end();
+        console.log('Database pool ended for script.');
+    }
   }
 }
 

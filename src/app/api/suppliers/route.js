@@ -6,17 +6,13 @@ import csv from 'csv-parser';
 import { Readable } from 'stream'; // Import Readable stream
 
 export async function GET() {
-  let connection;
   try {
     const pool = await getDbPool();
-    connection = await pool.getConnection();
-    const [rows] = await connection.execute('SELECT * FROM Supplier');
+    const [rows] = await pool.execute('SELECT * FROM Supplier');
     return NextResponse.json(rows);
   } catch (error) {
     console.error('Error fetching suppliers:', error);
     return NextResponse.json({ error: 'Failed to fetch suppliers' }, { status: 500 });
-  } finally {
-      if (connection) connection.release();
   }
 }
 

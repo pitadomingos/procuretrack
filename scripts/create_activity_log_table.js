@@ -1,7 +1,10 @@
-import { pool } from '../backend/db.js';
+
+import { getDbPool } from '../backend/db.js';
 
 async function createActivityLogTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE ActivityLog (
           id VARCHAR(255) PRIMARY KEY,
@@ -16,10 +19,10 @@ async function createActivityLogTable() {
   } catch (error) {
     console.error('Error creating ActivityLog table:', error);
   } finally {
-    // In a script, you might want to end the process after execution,
-    // but if running multiple scripts sequentially, keep the pool open.
-    // For a simple single script execution:
-    // pool.end(); // Only call pool.end() when you're completely done with all database operations.
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

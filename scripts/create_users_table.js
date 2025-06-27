@@ -1,7 +1,10 @@
-import * as db from '../backend/db.js';
+
+import { getDbPool } from '../backend/db.js';
 
 async function createUserTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE User (
           id VARCHAR(255) PRIMARY KEY,
@@ -12,12 +15,15 @@ async function createUserTable() {
           isActive BOOLEAN
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('User table created successfully.');
   } catch (error) {
     console.error('Error creating User table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

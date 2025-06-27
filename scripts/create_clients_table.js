@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createClientsTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS Client (
           id VARCHAR(255) PRIMARY KEY,
@@ -16,14 +18,15 @@ async function createClientsTable() {
           updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       );
     `;
-    // Removed: contactNumber VARCHAR(50) NULL,
-    // Removed: nuit VARCHAR(50) NULL,
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('Client table created or already exists successfully with updated schema (city, country added; nuit, contactNumber removed).');
   } catch (error) {
     console.error('Error creating Client table:', error);
   } finally {
-    // pool.end(); // End pool if script is standalone and no other operations follow
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

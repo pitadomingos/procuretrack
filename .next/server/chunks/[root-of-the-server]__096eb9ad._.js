@@ -186,7 +186,9 @@ async function getDbPool() {
     if (pool) {
         return pool;
     }
-    // This logic now runs only on the first API call that needs the DB
+    // --- Debugging Environment ---
+    console.log('[DB_INIT] Current working directory:', process.cwd());
+    console.log('[DB_INIT] Checking for environment variables...');
     try {
         // Check for essential DB environment variables
         const essentialEnvVars = [
@@ -195,9 +197,23 @@ async function getDbPool() {
             'DB_PASSWORD',
             'DB_NAME'
         ];
-        const missingEnvVars = essentialEnvVars.filter((v)=>!process.env[v]);
+        const missingEnvVars = [];
+        for (const v of essentialEnvVars){
+            if (!process.env[v]) {
+                missingEnvVars.push(v);
+            } else {
+                // Avoid logging password in production
+                if (v !== 'DB_PASSWORD') {
+                    console.log(`[DB_INIT] Found ENV VAR: ${v} = ${process.env[v]}`);
+                } else {
+                    console.log(`[DB_INIT] Found ENV VAR: DB_PASSWORD = (hidden)`);
+                }
+            }
+        }
         if (missingEnvVars.length > 0) {
-            throw new Error(`CRITICAL_DB_INIT_ERROR: Missing essential database environment variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file.`);
+            const errorMsg = `Database configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file.`;
+            console.error(`[DB_INIT_ERROR] ${errorMsg}`);
+            throw new Error(errorMsg);
         }
         // --- SSL Certificate Handling ---
         const caCertPathOrContent = process.env.DB_SSL_CA;
@@ -215,15 +231,10 @@ async function getDbPool() {
             console.warn(`DB_WARN: The DB_SSL_CA environment variable is not set. Connecting with SSL using system default CAs. If connection fails, please provide the path to your 'ca.pem' file in the DB_SSL_CA variable in your .env file.`);
         }
         const sslConfig = {
+            rejectUnauthorized: true,
             ca: caCertContent || undefined
         };
         // --- Connection Pool Creation ---
-        console.log("DB_INIT_DEBUG: Using DB_HOST:", process.env.DB_HOST);
-        console.log("DB_INIT_DEBUG: Using DB_USER:", process.env.DB_USER);
-        // WARNING: Avoid logging the password in production
-        // console.log("DB_INIT_DEBUG: Using DB_PASSWORD:", process.env.DB_PASSWORD); 
-        console.log("DB_INIT_DEBUG: Using DB_NAME:", process.env.DB_NAME);
-        console.log("DB_INIT_DEBUG: Using DB_PORT:", process.env.DB_PORT);
         console.log("DB_INIT_INFO: Creating database connection pool for the first time.");
         const newPool = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$mysql2$2f$promise$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].createPool({
             host: process.env.DB_HOST,
@@ -333,16 +344,8 @@ async function POST(request) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(userResponse);
     } catch (error) {
         console.error('[API_ERROR] /api/auth/login POST:', error);
-        let errorMessage = 'An internal server error occurred during login.';
-        if (error.code && [
-            'ECONNREFUSED',
-            'ER_ACCESS_DENIED_ERROR',
-            'ENOTFOUND'
-        ].includes(error.code)) {
-            errorMessage = 'Database connection failed. Please verify your DB_HOST, DB_USER, and DB_PASSWORD in the .env file.';
-        } else if (error.message && error.message.includes('Missing essential database environment variables')) {
-            errorMessage = 'Database configuration is incomplete. Please define all required DB variables in the .env file.';
-        }
+        // Use the specific error message from getDbPool or a default
+        const errorMessage = error.message || 'An internal server error occurred during login.';
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: errorMessage,
             details: `[${error.code || 'NO_CODE'}] ${error.message}`

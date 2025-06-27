@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createRequisitionsTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE IF NOT EXISTS Requisition (
           id VARCHAR(255) PRIMARY KEY,
@@ -20,12 +22,15 @@ async function createRequisitionsTable() {
           FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('Requisition table created or already exists successfully.');
   } catch (error) {
     console.error('Error creating Requisition table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

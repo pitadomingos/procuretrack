@@ -1,10 +1,12 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function alterRequisitionItemsTableDropEstimatedUnitPrice() {
+  let pool;
   let connection;
   try {
-    connection = await db.pool.getConnection();
+    pool = await getDbPool();
+    connection = await pool.getConnection();
     const dbName = connection.config.database;
 
     // Check if the 'estimatedUnitPrice' column exists
@@ -40,8 +42,10 @@ async function alterRequisitionItemsTableDropEstimatedUnitPrice() {
         console.error('Error releasing connection:', releaseError);
       }
     }
-    // For a script, you might want to end the pool if it's the last operation.
-    // await db.pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

@@ -1,7 +1,10 @@
-import * as db from '../backend/db.js';
+
+import { getDbPool } from '../backend/db.js';
 
 async function createApproverTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE Approver (
           id VARCHAR(255) PRIMARY KEY,
@@ -12,12 +15,15 @@ async function createApproverTable() {
           approvalLimit DECIMAL(10, 2)
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('Approver table created successfully.');
   } catch (error) {
     console.error('Error creating Approver table:', error);
   } finally {
-    // pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

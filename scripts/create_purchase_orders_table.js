@@ -1,8 +1,10 @@
 
-import * as db from '../backend/db.js';
+import { getDbPool } from '../backend/db.js';
 
 async function createPurchaseOrderTable() {
+  let pool;
   try {
+    pool = await getDbPool();
     const createTableQuery = `
       CREATE TABLE PurchaseOrder (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -27,12 +29,15 @@ async function createPurchaseOrderTable() {
           FOREIGN KEY (siteId) REFERENCES Site(id) ON DELETE SET NULL -- FK for overall siteId (Re-added)
       );
     `;
-    await db.pool.execute(createTableQuery);
+    await pool.execute(createTableQuery);
     console.log('PurchaseOrder table created or verified successfully with overall siteId column.');
   } catch (error) {
     console.error('Error creating/updating PurchaseOrder table:', error);
   } finally {
-    // pool.end(); 
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

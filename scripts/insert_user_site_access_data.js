@@ -1,7 +1,10 @@
-import * as db from '../backend/db.js';
+
+import { getDbPool } from '../backend/db.js';
 
 async function insertUserSiteAccessData() {
+  let pool;
   try {
+    pool = await getDbPool();
     const userDataWithSiteCodes = [
       { userId: 'user_001', siteCodes: ['TMW', 'TML', 'MEM', 'FMS', 'CHW'] },
       { userId: 'user_002', siteCodes: ['TMW', 'TML', 'MEM', 'FMS', 'CHW'] },
@@ -15,7 +18,7 @@ async function insertUserSiteAccessData() {
     for (const user of userDataWithSiteCodes) {
       for (const siteCode of user.siteCodes) {
         if (!siteCodeToIdMap[siteCode]) { // Fetch only if not already fetched
-          const [siteRows] = await db.pool.execute(
+          const [siteRows] = await pool.execute(
             `SELECT id FROM Site WHERE siteCode = ?`,
             [siteCode]
           );
@@ -44,7 +47,7 @@ async function insertUserSiteAccessData() {
       const insertQuery = `
         INSERT INTO UserSiteAccess (userId, siteId) VALUES ?
       `;
-      await db.pool.query(insertQuery, [userSiteAccessData]);
+      await pool.query(insertQuery, [userSiteAccessData]);
       console.log('Sample data inserted into UserSiteAccess table successfully.');
     } else {
       console.log('No valid user-site access data to insert.');
@@ -53,7 +56,10 @@ async function insertUserSiteAccessData() {
   } catch (error) {
     console.error('Error inserting sample data into UserSiteAccess table:', error);
   } finally {
-    // pool.end(); // Consider if you want to close the pool here
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

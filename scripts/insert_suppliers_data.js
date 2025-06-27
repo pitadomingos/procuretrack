@@ -1,7 +1,10 @@
-import * as db from '../backend/db.js';
+
+import { getDbPool } from '../backend/db.js';
 
 async function insertSuppliersData() {
+  let pool;
   try {
+    pool = await getDbPool();
     const insertDataQuery = `
       INSERT INTO Supplier (supplierCode, supplierName, salesPerson, cellNumber, nuitNumber, physicalAddress, emailAddress) VALUES
       ('ACP01', 'AC PECAS ,LDA', 'Okechukwu', '258 87 588 8556', '400 515 931', 'Estrada Nacional 7, Bairro Chingodzi', 'okechukwuchigaemezu@gmail.com'),
@@ -19,13 +22,15 @@ async function insertSuppliersData() {
       ('BMG01', 'BEARING MAN GROUP MAPUTO LDA', 'Themba', '258 84 310 6960', '400221987', 'AV. DAS INDUSTRIAS, NO 163, MACHAVA, MAPUTO', 'Thembas@bmgworld.net'),
       ('BRM01', 'BSSC RADIATORS MOZAMBIQUE', NULL, '858320090', '401751807', NULL, NULL);
     `;
-    await db.pool.execute(insertDataQuery);
+    await pool.execute(insertDataQuery);
     console.log('Sample data inserted into Supplier table successfully.');
   } catch (error) {
     console.error('Error inserting sample data into Supplier table:', error);
   } finally {
-    // Close the pool if this is the only script running
-    // db.pool.end();
+    if (pool) {
+      await pool.end();
+      console.log('Database pool ended for script.');
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 
-import { getDbPool } from '../../../../backend/db.js'; // Adjust path as needed
+import { getDbPool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
