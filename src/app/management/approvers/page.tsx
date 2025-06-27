@@ -93,16 +93,16 @@ export default function ManageApproversPage() {
     { 
       accessorKey: 'approvalLimit', 
       header: 'Limit (MZN)', 
-      cell: ({ row }) => {
-        const limit = row.original.approvalLimit;
+      cell: (approver) => {
+        const limit = approver.approvalLimit;
         return limit ? Number(limit).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'
       }
     },
     {
       accessorKey: 'isActive',
       header: 'Status',
-      cell: ({ row }) =>
-        row.original.isActive ? (
+      cell: (approver) =>
+        approver.isActive ? (
           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
             <CheckCircle className="mr-1 h-3 w-3" /> Active
           </Badge>

@@ -93,8 +93,8 @@ export default function ManageUsersPage() {
     {
       accessorKey: 'siteAccess',
       header: 'Site Access',
-      cell: ({ row }) => {
-        const siteAccess = row.original.siteAccess;
+      cell: (user) => {
+        const siteAccess = user.siteAccess;
         if (!siteAccess || siteAccess.length === 0 || siteAccess[0] === 'N/A (Manage separately)') return 'N/A';
         if (siteAccess.includes('all')) return 'All Sites';
         return siteAccess.join(', ');
@@ -103,8 +103,8 @@ export default function ManageUsersPage() {
     {
       accessorKey: 'isActive',
       header: 'Status',
-      cell: ({ row }) => 
-        row.original.isActive ? (
+      cell: (user) => 
+        user.isActive ? (
           <Badge variant="default" className="bg-green-500 hover:bg-green-600">
             <CheckCircle className="mr-1 h-3 w-3" /> Active
           </Badge>
