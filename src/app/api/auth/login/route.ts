@@ -66,11 +66,20 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error('Login error:', error);
-    // This will now correctly catch database connection errors as well.
-    const errorMessage = error.code === 'CRITICAL_DB_INIT_ERROR' 
-      ? 'Database connection failed. Please check server logs and .env configuration.'
-      : 'An internal server error occurred.';
-      
-    return NextResponse.json({ error: errorMessage, details: error.message }, { status: 500 });
+    
+    // Default error message
+    let errorMessage = 'An internal server error occurred during login.';
+    
+    // Check for specific DB connection errors by looking at the error code or message
+    if (error.code && ['ECONNREFUSED', 'ER_ACCESS_DENIED_ERROR', 'ENOTFOUND'].includes(error.code)) {
+        errorMessage = 'Database connection failed. Please verify your DB_HOST, DB_USER, and DB_PASSWORD in the .env file.';
+    } else if (error.message && error.message.includes('Missing essential database environment variables')) {
+        errorMessage = 'Database configuration is incomplete. Please define all required DB variables in the .env file.';
+    }
+    
+    return NextResponse.json({ 
+        error: errorMessage, 
+        details: `[${error.code || 'NO_CODE'}] ${error.message}` // Provide more detail for debugging
+    }, { status: 500 });
   }
 }
