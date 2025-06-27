@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { GRNPostPayload, POItemPayload, PurchaseOrderPayload } from '@/types';
+import { getDbPool } from '../../../../backend/db.js';
 
 // Mock user ID for now, replace with actual authenticated user ID
 const MOCK_SYSTEM_USER_ID_FOR_GRN_LOG = 'GRN_PROCESSOR_001'; 
@@ -8,7 +9,7 @@ const MOCK_SYSTEM_USER_ID_FOR_GRN_LOG = 'GRN_PROCESSOR_001';
 export async function POST(request: Request) {
   let connection;
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     const payload = await request.json() as GRNPostPayload;
     const { poId, grnDate, deliveryNoteNumber, overallGrnNotes, receivedByUserId, items: receivedItems } = payload;
 

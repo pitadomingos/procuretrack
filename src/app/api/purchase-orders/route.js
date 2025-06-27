@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
+import { getDbPool } from '../../../../backend/db.js';
 
 // Helper to parse DD/MM/YYYY dates, common in CSVs
 function parseDMY(dateString) {
@@ -29,7 +30,7 @@ function parseDMY(dateString) {
 export async function GET(request) {
   let connection;
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     const { searchParams } = new URL(request.url);
@@ -100,7 +101,7 @@ export async function POST(request) {
   let connection;
 
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     if (contentType && contentType.includes('application/json')) {

@@ -2,12 +2,13 @@
 import { NextResponse } from 'next/server';
 import csv from 'csv-parser';
 import { Readable } from 'stream'; 
+import { getDbPool } from '../../../../../../backend/db.js';
 
 export async function GET(request, { params }) {
   const { poId } = params;
   let connection;
   try {
-    const { pool } = await import('../../../../../../backend/db.js'); 
+    const pool = await getDbPool(); 
     connection = await pool.getConnection();
     const [rows] = await connection.execute('SELECT * FROM POItem WHERE poId = ?', [poId]);
     return NextResponse.json(rows);
@@ -31,7 +32,7 @@ export async function POST(request, { params }) {
 
   console.log(`[API_INFO] /api/purchase-orders/${poId}/items POST: Received multipart/form-data request for CSV upload.`);
   try {
-    const { pool } = await import('../../../../../../backend/db.js'); 
+    const pool = await getDbPool(); 
     connection = await pool.getConnection();
     const formData = await request.formData();
     const file = formData.get('file');

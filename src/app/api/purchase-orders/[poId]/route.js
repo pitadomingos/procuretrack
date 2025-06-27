@@ -1,11 +1,12 @@
 
 import { NextResponse } from 'next/server';
+import { getDbPool } from '../../../../../backend/db.js';
 
 export async function GET(request, { params }) {
   const { poId } = params;
   let connection;
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     // Selecting all columns, including siteId from PurchaseOrder table
     const [rows] = await connection.execute('SELECT * FROM PurchaseOrder WHERE id = ?', [poId]);
@@ -32,7 +33,7 @@ export async function PUT(request, { params }) {
 
   let connection;
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     const poData = await request.json();
     const {
       poNumber,
