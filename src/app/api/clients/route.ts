@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import type { Client } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 export async function GET() {
   console.log('[API_INFO] /api/clients GET: Received request to fetch clients.');
   try {
+    const pool = await getDbPool();
     const [rows] = await pool.execute('SELECT id, name, address, city, country, contactPerson, email, createdAt, updatedAt FROM Client ORDER BY name ASC');
     console.log(`[API_INFO] /api/clients GET: Successfully fetched ${Array.isArray(rows) ? rows.length : 0} clients from DB.`);
     return NextResponse.json(rows);
@@ -31,6 +32,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
+  const pool = await getDbPool();
 
   if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/clients POST: Received multipart/form-data request for CSV upload.');
@@ -211,5 +213,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
-
-    

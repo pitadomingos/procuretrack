@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
   let connection;
+  const pool = await getDbPool();
   console.log(`[API_INFO] /api/quotes POST: Received request with Content-Type: ${contentType}`);
 
   if (contentType && contentType.includes('multipart/form-data')) {
@@ -238,6 +239,7 @@ export async function GET(request: Request) {
   console.log('[API_INFO] /api/quotes GET: Request received.');
   let connection; 
   try {
+    const pool = await getDbPool();
     const { searchParams } = new URL(request.url);
     console.log('[API_INFO] /api/quotes GET: URL parsed successfully.');
     const month = searchParams.get('month');

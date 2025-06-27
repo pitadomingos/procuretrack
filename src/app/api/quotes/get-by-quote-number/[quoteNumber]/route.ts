@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../../backend/db.js'; // Corrected path
+import { getDbPool } from '../../../../../../backend/db.js'; // Corrected path
 
 export async function GET(
   request: Request,
@@ -16,6 +16,7 @@ export async function GET(
   let connection;
 
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     // Fetch the ID as that's what's needed for the form to then fetch full details
     const [rows]: any[] = await connection.execute(

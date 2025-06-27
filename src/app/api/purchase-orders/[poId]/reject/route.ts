@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../../backend/db.js'; // Adjusted path
+import { getDbPool } from '../../../../../../backend/db.js'; // Adjusted path
 
 export async function POST(
   request: Request,
@@ -15,6 +15,7 @@ export async function POST(
 
   let connection;
   try {
+    const pool = await getDbPool();
     // const { reason } = await request.json(); // Optional: Get reason from body if provided
     // For now, we are not storing the reason to avoid schema changes.
 

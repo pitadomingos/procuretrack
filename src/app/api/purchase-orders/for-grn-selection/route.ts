@@ -1,11 +1,12 @@
 
-import { pool } from '../../../../../backend/db.js'; // Adjust path as needed
+import { getDbPool } from '../../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 import type { ApprovedPOForSelect } from '@/types';
 
 export async function GET(request: Request) {
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     // Select POs that are 'Approved' AND have at least one item not fully received.
     const query = `

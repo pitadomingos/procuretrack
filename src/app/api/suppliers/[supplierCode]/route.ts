@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js'; // Adjusted path
+import { getDbPool } from '../../../../../backend/db.js';
 import type { Supplier } from '@/types';
 
 export async function GET(
@@ -12,6 +12,7 @@ export async function GET(
     return NextResponse.json({ error: 'Supplier code is required' }, { status: 400 });
   }
   try {
+    const pool = await getDbPool();
     const [rows]: any[] = await pool.execute('SELECT * FROM Supplier WHERE supplierCode = ?', [supplierCode]);
     if (rows.length === 0) {
       return NextResponse.json({ error: 'Supplier not found' }, { status: 404 });
@@ -32,6 +33,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Supplier code is required for update' }, { status: 400 });
   }
   try {
+    const pool = await getDbPool();
     const supplierData = await request.json() as Omit<Supplier, 'supplierCode'>;
 
     if (!supplierData.supplierName) {
@@ -84,6 +86,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Supplier code is required for deletion' }, { status: 400 });
   }
   try {
+    const pool = await getDbPool();
     const [result]: any[] = await pool.execute('DELETE FROM Supplier WHERE supplierCode = ?', [supplierCode]);
 
     if (result.affectedRows === 0) {

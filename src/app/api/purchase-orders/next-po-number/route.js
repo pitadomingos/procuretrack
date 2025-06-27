@@ -1,9 +1,10 @@
 
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
+    const pool = await getDbPool();
     const prefix = "PO-";
     const numberLength = 5; // Defines the length of the numeric part, e.g., 00001
 

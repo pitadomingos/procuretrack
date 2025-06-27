@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { Client } from '@/types';
 
 export async function GET(
@@ -9,6 +9,7 @@ export async function GET(
 ) {
   const { id } = params;
   try {
+    const pool = await getDbPool();
     const [rows]: any[] = await pool.execute(
       'SELECT id, name, address, city, country, contactPerson, email, createdAt, updatedAt FROM Client WHERE id = ?', 
       [id]
@@ -29,6 +30,7 @@ export async function PUT(
 ) {
   const { id } = params;
   try {
+    const pool = await getDbPool();
     const clientData = await request.json() as Omit<Client, 'id' | 'createdAt' | 'updatedAt'>;
 
     if (!clientData.name) {
@@ -75,6 +77,7 @@ export async function DELETE(
 ) {
   const { id } = params;
   try {
+    const pool = await getDbPool();
     // Before deleting, check if this client is referenced in the Quote table
     const [quoteRows]: any[] = await pool.execute(
       'SELECT COUNT(*) as count FROM Quote WHERE clientId = ?',

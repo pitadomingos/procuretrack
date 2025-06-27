@@ -1,5 +1,5 @@
 
-import { pool } from '../../../../../../backend/db.js'; // Adjust path as needed
+import { getDbPool } from '../../../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 
 export async function GET(
@@ -15,6 +15,7 @@ export async function GET(
   const decodedPoNumber = decodeURIComponent(poNumber);
 
   try {
+    const pool = await getDbPool();
     // Fetch only the ID as that's what's needed for the print page navigation
     const [rows] = await pool.execute(
       'SELECT id FROM PurchaseOrder WHERE poNumber = ?',

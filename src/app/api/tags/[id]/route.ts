@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { Tag } from '@/types';
 
 export async function GET(
@@ -9,6 +9,7 @@ export async function GET(
 ) {
   const { id } = params;
   try {
+    const pool = await getDbPool();
     const query = `
       SELECT 
         t.id, t.tagNumber, t.registration, t.make, t.model, 
@@ -37,6 +38,7 @@ export async function PUT(
 ) {
   const { id } = params;
   try {
+    const pool = await getDbPool();
     const tagData = await request.json() as Omit<Tag, 'id' | 'siteName' | 'createdAt' | 'updatedAt'>;
 
     if (!tagData.tagNumber) {
@@ -95,6 +97,7 @@ export async function DELETE(
 ) {
   const { id } = params;
   try {
+    const pool = await getDbPool();
     const [result]: any[] = await pool.execute('DELETE FROM Tag WHERE id = ?', [id]);
 
     if (result.affectedRows === 0) {

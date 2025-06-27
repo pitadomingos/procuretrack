@@ -1,5 +1,5 @@
 
-import { pool } from '../../../../../../backend/db.js'; // Adjust path as needed
+import { getDbPool } from '../../../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 import type { PurchaseOrderPayload, POItemPayload, Supplier } from '@/types';
 
@@ -17,6 +17,7 @@ export async function GET(
   let connection;
 
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     const [poHeaderRows]: any[] = await connection.execute(

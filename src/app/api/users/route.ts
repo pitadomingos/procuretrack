@@ -1,11 +1,12 @@
 
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import { NextResponse } from 'next/server';
 import type { User, UserSiteAccessDisplay } from '@/types';
 
 export async function GET() {
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     const [users]: any[] = await connection.execute('SELECT * FROM User ORDER BY name ASC');
     
@@ -36,6 +37,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const pool = await getDbPool();
     const userData = await request.json() as User; // siteAccess will not be processed here
 
     if (!userData.id || !userData.name) {

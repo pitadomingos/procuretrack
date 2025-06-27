@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import type { Tag, Site, TagStatus } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
@@ -10,6 +10,7 @@ const tagStatuses: TagStatus[] = ['Active', 'Inactive', 'Under Maintenance', 'So
 
 export async function GET() {
   try {
+    const pool = await getDbPool();
     const query = `
       SELECT 
         t.id, t.tagNumber, t.registration, t.make, t.model, 
@@ -31,6 +32,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
+  const pool = await getDbPool();
 
   if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/tags POST: Received multipart/form-data request for CSV upload.');
@@ -230,4 +232,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 415 });
   }
 }
-

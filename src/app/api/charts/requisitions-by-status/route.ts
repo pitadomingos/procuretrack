@@ -1,6 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import type { ChartDataPoint } from '@/types';
+import { getDbPool } from '../../../../../backend/db.js';
 
 interface RequisitionStatusQueryResult {
   status: string | null;
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
-    const { pool } = await import('../../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     let whereClauses: string[] = [];
     const queryParams: (string | number)[] = [];
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
     const [rows]: any[] = await connection.execute(query, queryParams);
 
     const chartData: ChartDataPoint[] = rows.map((row: RequisitionStatusQueryResult) => ({
-      name: row.status_name || 'Unknown',
+      name: (row as any).status_name || 'Unknown',
       Count: Number(row.count),
     }));
 

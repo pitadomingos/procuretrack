@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { QuotePayload, QuoteItem, Client, Approver } from '@/types';
 import { randomUUID } from 'crypto';
 
@@ -16,6 +16,7 @@ export async function GET(
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     const quoteQuery = `
       SELECT 
@@ -72,6 +73,7 @@ export async function PUT(
 
   let connection;
   try {
+    const pool = await getDbPool();
     const quoteData = await request.json() as QuotePayload;
     console.log(`[API_INFO] /api/quotes/${quoteId} PUT: Data:`, JSON.stringify(quoteData).substring(0, 500));
     console.log(`[API_INFO] /api/quotes PUT JSON: Received approverId for update: '${quoteData.approverId}', Type: ${typeof quoteData.approverId}`);
@@ -146,4 +148,3 @@ export async function PUT(
     if (connection) connection.release();
   }
 }
-    

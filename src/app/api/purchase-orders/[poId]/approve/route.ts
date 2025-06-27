@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../../backend/db.js'; // Adjusted path
+import { getDbPool } from '../../../../../../backend/db.js'; // Adjusted path
 import type { PurchaseOrderPayload } from '@/types';
 
 export async function POST(
@@ -16,6 +16,7 @@ export async function POST(
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     await connection.beginTransaction();
 

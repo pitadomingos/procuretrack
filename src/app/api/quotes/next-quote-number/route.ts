@@ -1,9 +1,10 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 
 export async function GET() {
   try {
+    const pool = await getDbPool();
     const prefix = "Q-"; // Define your quote number prefix
     const numberLength = 5; // Desired length of the numeric part, e.g., 00001
 
@@ -38,4 +39,3 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to generate next quote number', details: error.message }, { status: 500 });
   }
 }
-    

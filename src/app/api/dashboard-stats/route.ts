@@ -11,8 +11,8 @@ export async function GET(request: Request) {
   let connection;
   try {
     // Dynamic import: The database pool is imported only when the API is called.
-    // This allows the try/catch block to handle missing DB environment variables gracefully.
-    const { pool } = await import('../../../../backend/db.js');
+    const { getDbPool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     let poWhereClause = '';

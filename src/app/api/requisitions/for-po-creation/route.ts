@@ -1,10 +1,11 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { RequisitionPayload } from '@/types';
 
 export async function GET() {
   try {
+    const pool = await getDbPool();
     // Fetches requisitions that are marked as 'Approved' and thus ready for PO creation
     // Only returns minimal data needed for selection in the PO form.
     // This query implicitly excludes 'Closed' requisitions because it only asks for 'Approved'.

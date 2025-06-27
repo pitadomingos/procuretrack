@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import type { FuelRecord, Tag, Site } from '@/types';
 import csv from 'csv-parser';
 import { Readable } from 'stream';
@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 export async function POST(request: Request) {
   const contentType = request.headers.get('content-type');
   let connection;
+  const pool = await getDbPool();
 
   if (contentType && contentType.includes('multipart/form-data')) {
     console.log('[API_INFO] /api/fuel-records POST: Received multipart/form-data for CSV upload.');
@@ -136,6 +137,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     let query = `

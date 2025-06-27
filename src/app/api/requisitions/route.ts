@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../backend/db.js';
+import { getDbPool } from '../../../../backend/db.js';
 import type { RequisitionPayload, RequisitionItem } from '@/types';
 import { randomUUID } from 'crypto';
 
@@ -18,6 +18,7 @@ const safeToISOString = (dateValue: any): string | null => {
 export async function POST(request: Request) {
   let connection;
   try {
+    const pool = await getDbPool();
     const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'status' | 'justification'> & { items: RequisitionItem[], status?: RequisitionPayload['status'], approverId?: string | null, siteId: number }; // siteId (header) is now expected to be number
     
     const generatedId = requisitionData.id || randomUUID();
@@ -132,6 +133,7 @@ export async function GET(request: Request) {
   const siteId = searchParams.get('siteId'); // This will filter by Requisition.siteId (header site)
   const requestedByUserId = searchParams.get('requestedByUserId');
   const status = searchParams.get('status');
+  const pool = await getDbPool();
 
   let query = `
     SELECT 

@@ -1,5 +1,5 @@
 
-import { pool } from '../../../../../backend/db.js'; // Adjust path as needed
+import { getDbPool } from '../../../../../backend/db.js'; // Adjust path as needed
 import { NextResponse } from 'next/server';
 import type { ApprovalQueueItem } from '@/types';
 
@@ -13,6 +13,7 @@ export async function GET(request: Request) {
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     // 1. Find the Approver ID from their email

@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../../backend/db.js';
+import { getDbPool } from '../../../../../../backend/db.js';
 
 export async function POST(
   request: Request,
@@ -15,6 +15,7 @@ export async function POST(
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
     await connection.beginTransaction();
 

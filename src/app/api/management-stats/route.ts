@@ -16,7 +16,8 @@ interface ManagementStats {
 export async function GET() {
   let connection;
   try {
-    const { pool } = await import('../../../../backend/db.js');
+    const { getDbPool } = await import('../../../../backend/db.js');
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     const [suppliersRows]: any[] = await connection.execute('SELECT COUNT(*) as count FROM Supplier');

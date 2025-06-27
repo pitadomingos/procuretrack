@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { pool } from '../../../../../backend/db.js';
+import { getDbPool } from '../../../../../backend/db.js';
 import type { RequisitionPayload, RequisitionItem, Site, Category as CategoryType, User as UserType, Approver } from '@/types';
 import { randomUUID } from 'crypto';
 
@@ -15,6 +15,7 @@ export async function GET(
 
   let connection;
   try {
+    const pool = await getDbPool();
     connection = await pool.getConnection();
 
     // Header justification removed from select
@@ -92,6 +93,7 @@ export async function PUT(
 
   let connection;
   try {
+    const pool = await getDbPool();
     // Expecting header siteId, no header justification. Item justification is in item.justification.
     const requisitionData = await request.json() as Omit<RequisitionPayload, 'totalEstimatedValue' | 'items' | 'justification'> & { items: RequisitionItem[], siteId: number };
     
@@ -213,6 +215,7 @@ export async function DELETE(
     }
     let connection;
     try {
+        const pool = await getDbPool();
         connection = await pool.getConnection();
         await connection.beginTransaction();
 
