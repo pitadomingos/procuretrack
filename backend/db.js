@@ -14,14 +14,18 @@ if (missingEnvVars.length > 0) {
 // The CA certificate content is now expected to be in an environment variable.
 const caCert = process.env.DB_SSL_CA;
 
-const sslConfig = caCert 
-  ? { ssl: { ca: caCert, rejectUnauthorized: true } } 
-  : {};
+// Modern cloud databases like TiDB Cloud require SSL. This configuration enables it.
+const sslConfig = { 
+    // If a CA cert is provided in the .env file, use it.
+    // Otherwise, mysql2 will use the system's trusted CAs.
+    ca: caCert || undefined 
+};
 
+console.log("DB_INIT_INFO: Attempting to connect with SSL enabled by default.");
 if (caCert) {
-    console.log("DB_INIT_INFO: DB_SSL_CA variable found. Attempting to connect with SSL.");
+    console.log("DB_INIT_INFO: DB_SSL_CA variable found and will be used for SSL connection.");
 } else {
-    console.warn(`DB_WARN: The DB_SSL_CA environment variable is not set. Attempting to connect without SSL. This may fail if SSL is required by your provider.`);
+    console.warn(`DB_WARN: The DB_SSL_CA environment variable is not set. Connecting with SSL using system default CAs. If connection fails, please ensure you have provided the correct CA certificate content in the .env file for your database provider.`);
 }
 
 let pool;
@@ -32,7 +36,7 @@ try {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-    ...sslConfig,
+    ssl: sslConfig, // Always pass the ssl object to enable SSL
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
