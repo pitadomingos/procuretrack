@@ -191,9 +191,9 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$dotenv$2f$li
 ;
 ;
 ;
-// Configure dotenv to load the .env file from the backend directory
+// Configure dotenv to load the .env file from the backend directory at module load time.
 __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$dotenv$2f$lib$2f$main$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].config({
-    path: __TURBOPACK__imported__module__$5b$externals$5d2f$path__$5b$external$5d$__$28$path$2c$__cjs$29$__["default"].resolve(process.cwd(), '.env')
+    path: __TURBOPACK__imported__module__$5b$externals$5d2f$path__$5b$external$5d$__$28$path$2c$__cjs$29$__["default"].resolve(process.cwd(), 'backend', '.env')
 });
 let pool = null;
 async function getDbPool() {
@@ -226,7 +226,7 @@ async function getDbPool() {
             }
         }
         if (missingEnvVars.length > 0) {
-            const errorMsg = `Configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file. For JWT_SECRET, use a long, random string.`;
+            const errorMsg = `Configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your backend/.env file. For JWT_SECRET, use a long, random string.`;
             console.error(`[DB_INIT_ERROR] ${errorMsg}`);
             throw new Error(errorMsg);
         }

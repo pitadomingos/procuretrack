@@ -288,6 +288,7 @@ export interface QuotePayload {
   status: QuoteStatus;
   approverId?: string | null;
   approverName?: string;
+  approverSignatureUrl?: string;
   approvalDate?: string | null | undefined;
   createdAt?: string;
   updatedAt?: string;

@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { PrintableQuote } from '@/components/quotes/printable-quote';
-import type { QuotePayload, QuoteStatus } from '@/types'; 
+import type { QuotePayload, QuoteStatus, Approver } from '@/types'; 
 import { ArrowLeft, Printer, Loader2, Edit, FileText } from 'lucide-react'; // Removed ThumbsUp, ThumbsDown
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +28,10 @@ function PrintQuotePageContent() {
     setLoading(true);
     setError(null);
     try {
-      const quoteRes = await fetch(`/api/quotes/${quoteId}`); 
+      const [quoteRes, approversRes] = await Promise.all([
+        fetch(`/api/quotes/${quoteId}`),
+        fetch('/api/approvers')
+      ]);
 
       if (!quoteRes.ok) {
         let errorDetail = `Server responded with ${quoteRes.status} ${quoteRes.statusText || '(No status text)'}`;
@@ -42,7 +45,20 @@ function PrintQuotePageContent() {
       }
 
       const data: QuotePayload = await quoteRes.json();
-      setQuoteData(data);
+
+      let approverSignatureUrl: string | undefined = undefined;
+      if (approversRes.ok && data.status === 'Approved' && data.approverId) {
+        const allApprovers: Approver[] = await approversRes.json();
+        const approverDetails = allApprovers.find(a => a.id === data.approverId);
+        if (approverDetails) {
+          approverSignatureUrl = `/signatures/${approverDetails.id}.png`;
+        }
+      }
+
+      setQuoteData({
+        ...data,
+        approverSignatureUrl,
+      });
 
       try {
         const logoResponse = await fetch('/jachris-logo.png'); 
@@ -156,7 +172,7 @@ function PrintQuotePageContent() {
           </CardContent>
         </Card>
         
-        <div className="printable-quote-content">
+        <div className="printable-quote-content-wrapper">
          <PrintableQuote quoteData={quoteData} logoDataUri={logoDataUri} />
         </div>
       </div>
@@ -171,4 +187,3 @@ export default function PrintQuotePage() {
     </Suspense>
   );
 }
-    

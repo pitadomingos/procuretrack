@@ -407,8 +407,28 @@ export function POForm({ poIdToEditProp }: POFormProps) {
         const errorData = await response.json().catch(() => ({ error: `Failed to ${isEditingLoadedPO ? 'update' : 'submit'} PO. Server error.` }));
         throw new Error(errorData.error || `Server error: ${response.status} - ${errorData.details || response.statusText}`);
       }
+      
       const result = await response.json();
+      const finalStatus = isEditingLoadedPO && loadedPOId && form.getValues('status' as any) === 'Rejected' ? 'Pending Approval' : payload.status;
+      if (finalStatus !== 'Draft') {
+        successMessage += ` Status set to: ${finalStatus}.`
+      }
       toast({ title: 'Success!', description: successMessage });
+
+      // SIMULATED EMAIL NOTIFICATION
+      if (finalStatus === 'Pending Approval') {
+        const approver = approvers.find(a => a.id === payload.approverId);
+        if (approver) {
+          const approvalLink = `${window.location.origin}/approvals`;
+          setTimeout(() => {
+            toast({
+              title: "Approval Request Sent (Simulated)",
+              description: `An email notification has been sent to ${approver.name} (${approver.email}) with a link to review the PO. Link: ${approvalLink}`,
+              duration: 9000
+            });
+          }, 1000); 
+        }
+      }
 
       if (result.poId) {
         const contextParam = (isEditingLoadedPO || loadedPOId) ? '' : '?context=creator';
@@ -722,4 +742,3 @@ export function POForm({ poIdToEditProp }: POFormProps) {
     </Card>
   );
 }
-    

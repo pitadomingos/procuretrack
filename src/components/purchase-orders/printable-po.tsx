@@ -18,7 +18,7 @@ const JACHRIS_COMPANY_DETAILS = {
 
 
 export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
-  const { supplierDetails, items } = poData;
+  const { supplierDetails, items, approverName, approverSignatureUrl, status } = poData;
 
   const poCreationDate = poData.creationDate ? new Date(poData.creationDate).toLocaleDateString('en-GB') : 'N/A';
   const approvalDate = poData.approvalDate ? new Date(poData.approvalDate).toLocaleDateString('en-GB') : 'N/A';
@@ -152,25 +152,30 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
 
         <div className="text-xs pt-2 border-t-2 border-black">
           <h4 className="font-bold mb-2">Authorisation:</h4>
-          <div className="space-y-1">
-              <div className="flex">
-                  <span className="w-32 font-medium">Requested By:</span>
-                  <span>{poData.requestedByName || poData.creatorName || 'N/A'}</span>
-              </div>
-              <div className="flex">
-                  <span className="w-32 font-medium">Approved By:</span>
-                  <span>
-                      {poData.status === 'Approved' && poData.approverName
-                          ? poData.approverName
-                          : (poData.status === 'Approved' ? 'Approved (Name Missing)' : (poData.status === 'Rejected' ? 'Rejected' : 'Pending Approval'))}
-                  </span>
-              </div>
-              {poData.status === 'Approved' && (
-                   <div className="flex">
-                      <span className="w-32 font-medium">Approval Date:</span>
-                      <span>{approvalDate}</span>
-                  </div>
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <p className="mb-1"><strong>Requested By:</strong></p>
+              <p>{poData.requestedByName || poData.creatorName || 'N/A'}</p>
+              <div className="mt-8 border-b border-black w-4/5"></div>
+              <p className="text-center w-4/5">Requester Signature</p>
+            </div>
+            <div>
+              <p className="mb-1"><strong>Approved By:</strong></p>
+              <p className="font-semibold h-4">{status === 'Approved' ? (approverName || 'Approved') : `(${status || 'N/A'})`}</p>
+              {status === 'Approved' && approverSignatureUrl && (
+                <div className="mt-1 h-12 w-28">
+                  <img 
+                    src={approverSignatureUrl} 
+                    alt={`${approverName || 'Approver'}'s signature`} 
+                    className="max-h-full max-w-full object-contain"
+                    data-ai-hint="signature image"
+                  />
+                </div>
               )}
+              {status === 'Approved' && <p className="text-xs mt-1">Date: {approvalDate}</p>}
+              <div className="mt-2 border-b border-black w-4/5"></div>
+              <p className="text-center w-4/5">Approver Signature</p>
+            </div>
           </div>
         </div>
       </div>
