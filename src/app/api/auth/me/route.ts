@@ -2,6 +2,12 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from backend/.env
+dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
+
 
 const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
 const JWT_SECRET = process.env.JWT_SECRET;

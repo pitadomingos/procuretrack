@@ -1585,7 +1585,7 @@ var _s = __turbopack_context__.k.signature();
 ;
 function ApprovalsPage() {
     _s();
-    const { user } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
+    const { user, loading: authLoading } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"])();
     const { toast } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useToast"])();
     const [pendingItems, setPendingItems] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])([]);
     const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
@@ -1596,19 +1596,14 @@ function ApprovalsPage() {
     const [isReviewModalOpen, setIsReviewModalOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [isProcessingItemId, setIsProcessingItemId] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     const fetchPendingApprovals = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCallback"])({
-        "ApprovalsPage.useCallback[fetchPendingApprovals]": async ()=>{
-            if (!user || !user.email) {
-                setLoading(false);
-                setError("User not authenticated or email not available.");
-                return;
-            }
+        "ApprovalsPage.useCallback[fetchPendingApprovals]": async (email)=>{
             setLoading(true);
             setError(null);
             try {
                 const [poResponse, quoteResponse, requisitionResponse] = await Promise.all([
-                    fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(user.email)}`),
-                    fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(user.email)}`),
-                    fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(user.email)}`)
+                    fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(email)}`),
+                    fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(email)}`),
+                    fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(email)}`)
                 ]);
                 let allPendingItems = [];
                 if (poResponse.ok) {
@@ -1683,7 +1678,6 @@ function ApprovalsPage() {
                     }["ApprovalsPage.useCallback[fetchPendingApprovals]"]);
                     console.warn('Error fetching Requisition approvals:', reqErrorData.message);
                 }
-                console.log("Fetched and mapped pending items:", allPendingItems);
                 allPendingItems.sort({
                     "ApprovalsPage.useCallback[fetchPendingApprovals]": (a, b)=>new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime()
                 }["ApprovalsPage.useCallback[fetchPendingApprovals]"]);
@@ -1701,31 +1695,26 @@ function ApprovalsPage() {
             }
         }
     }["ApprovalsPage.useCallback[fetchPendingApprovals]"], [
-        toast,
-        user
+        toast
     ]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "ApprovalsPage.useEffect": ()=>{
-            fetchPendingApprovals();
+            if (authLoading) {
+                setLoading(true);
+                return;
+            }
+            if (user && user.email) {
+                fetchPendingApprovals(user.email);
+            } else {
+                setLoading(false);
+                setError("User not authenticated or email not available.");
+            }
         }
     }["ApprovalsPage.useEffect"], [
+        user,
+        authLoading,
         fetchPendingApprovals
     ]);
-    const handleOpenRejectModal = (item)=>{
-        setSelectedItemForReject(item);
-        setIsRejectModalOpen(true);
-    };
-    const handleOpenReviewModal = (item)=>{
-        if (item.documentType === 'PO') {
-            setSelectedPOForReview(item);
-            setIsReviewModalOpen(true);
-        } else {
-            toast({
-                title: "Info",
-                description: `Review comments for ${item.documentType}s can be added manually after viewing.`
-            });
-        }
-    };
     const handleApproveItem = async (item)=>{
         if (item.status !== 'Pending Approval') {
             toast({
@@ -1774,7 +1763,7 @@ function ApprovalsPage() {
                 title: "Success!",
                 description: result.message || `${item.documentType} ${item.documentNumber} approved.`
             });
-            fetchPendingApprovals();
+            if (user?.email) fetchPendingApprovals(user.email);
         } catch (err) {
             toast({
                 title: `Error Approving ${item.documentType}`,
@@ -1786,14 +1775,29 @@ function ApprovalsPage() {
         }
     };
     const handleRejectConfirmed = ()=>{
-        fetchPendingApprovals();
+        if (user?.email) fetchPendingApprovals(user.email);
         setSelectedItemForReject(null);
+    };
+    const handleOpenRejectModal = (item)=>{
+        setSelectedItemForReject(item);
+        setIsRejectModalOpen(true);
+    };
+    const handleOpenReviewModal = (item)=>{
+        if (item.documentType === 'PO') {
+            setSelectedPOForReview(item);
+            setIsReviewModalOpen(true);
+        } else {
+            toast({
+                title: "Info",
+                description: `Review comments for ${item.documentType}s can be added manually after viewing.`
+            });
+        }
     };
     const columns = [
         {
-            accessorKey: 'documentType',
             header: 'Type',
-            cell: (item)=>{
+            cell: ({ row })=>{
+                const item = row.original;
                 if (item.documentType === 'PO') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                     className: "flex items-center",
                     children: [
@@ -1801,14 +1805,14 @@ function ApprovalsPage() {
                             className: "mr-2 h-4 w-4 text-blue-500"
                         }, void 0, false, {
                             fileName: "[project]/src/app/approvals/page.tsx",
-                            lineNumber: 196,
+                            lineNumber: 200,
                             columnNumber: 84
                         }, this),
                         " PO"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 196,
+                    lineNumber: 200,
                     columnNumber: 48
                 }, this);
                 if (item.documentType === 'Quote') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1818,14 +1822,14 @@ function ApprovalsPage() {
                             className: "mr-2 h-4 w-4 text-green-500"
                         }, void 0, false, {
                             fileName: "[project]/src/app/approvals/page.tsx",
-                            lineNumber: 197,
+                            lineNumber: 201,
                             columnNumber: 87
                         }, this),
                         " Quote"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 197,
+                    lineNumber: 201,
                     columnNumber: 51
                 }, this);
                 if (item.documentType === 'Requisition') return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -1835,14 +1839,14 @@ function ApprovalsPage() {
                             className: "mr-2 h-4 w-4 text-purple-500"
                         }, void 0, false, {
                             fileName: "[project]/src/app/approvals/page.tsx",
-                            lineNumber: 198,
+                            lineNumber: 202,
                             columnNumber: 93
                         }, this),
                         " Requisition"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 198,
+                    lineNumber: 202,
                     columnNumber: 57
                 }, this);
                 return item.documentType;
@@ -1851,34 +1855,35 @@ function ApprovalsPage() {
         {
             accessorKey: 'documentNumber',
             header: 'Doc. Number',
-            cell: (item)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+            cell: ({ row })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                     className: "font-medium",
-                    children: item.documentNumber
+                    children: row.original.documentNumber
                 }, void 0, false, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 205,
-                    columnNumber: 23
+                    lineNumber: 209,
+                    columnNumber: 26
                 }, this)
         },
         {
             accessorKey: 'creationDate',
             header: 'Created On',
-            cell: (item)=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$format$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["format"])(new Date(item.creationDate), 'PP')
+            cell: ({ row })=>(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$date$2d$fns$2f$format$2e$mjs__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$locals$3e$__["format"])(new Date(row.original.creationDate), 'PP')
         },
         {
             accessorKey: 'submittedBy',
             header: 'Submitted By',
-            cell: (item)=>item.submittedBy || 'N/A'
+            cell: ({ row })=>row.original.submittedBy || 'N/A'
         },
         {
             accessorKey: 'entityName',
             header: 'Supplier/Client/Site',
-            cell: (item)=>item.entityName || 'N/A'
+            cell: ({ row })=>row.original.entityName || 'N/A'
         },
         {
             accessorKey: 'totalAmount',
             header: 'Total Amount',
-            cell: (item)=>{
+            cell: ({ row })=>{
+                const item = row.original;
                 if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
                 return `${item.totalAmount.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
@@ -1889,17 +1894,17 @@ function ApprovalsPage() {
         {
             accessorKey: 'status',
             header: 'Status',
-            cell: (item)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+            cell: ({ row })=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                     className: "text-orange-600 font-semibold",
-                    children: item.status
+                    children: row.original.status
                 }, void 0, false, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 233,
-                    columnNumber: 23
+                    lineNumber: 238,
+                    columnNumber: 26
                 }, this)
         }
     ];
-    if (loading && !pendingItems.length) {
+    if (loading) {
         return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "flex flex-col justify-center items-center h-[calc(100vh-200px)]",
             children: [
@@ -1907,7 +1912,7 @@ function ApprovalsPage() {
                     className: "h-12 w-12 animate-spin text-primary mb-4"
                 }, void 0, false, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 240,
+                    lineNumber: 245,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1919,13 +1924,13 @@ function ApprovalsPage() {
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 241,
+                    lineNumber: 246,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/approvals/page.tsx",
-            lineNumber: 239,
+            lineNumber: 244,
             columnNumber: 7
         }, this);
     }
@@ -1937,7 +1942,7 @@ function ApprovalsPage() {
                     className: "h-10 w-10 mb-3"
                 }, void 0, false, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 249,
+                    lineNumber: 254,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1945,7 +1950,7 @@ function ApprovalsPage() {
                     children: "Error loading approvals:"
                 }, void 0, false, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 250,
+                    lineNumber: 255,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -1953,11 +1958,11 @@ function ApprovalsPage() {
                     children: error
                 }, void 0, false, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 251,
+                    lineNumber: 256,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                    onClick: fetchPendingApprovals,
+                    onClick: ()=>user?.email && fetchPendingApprovals(user.email),
                     variant: "outline",
                     className: "border-destructive text-destructive-foreground hover:bg-destructive/20",
                     children: [
@@ -1965,20 +1970,20 @@ function ApprovalsPage() {
                             className: `mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`
                         }, void 0, false, {
                             fileName: "[project]/src/app/approvals/page.tsx",
-                            lineNumber: 253,
+                            lineNumber: 258,
                             columnNumber: 11
                         }, this),
                         "Retry"
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/approvals/page.tsx",
-                    lineNumber: 252,
+                    lineNumber: 257,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/approvals/page.tsx",
-            lineNumber: 248,
+            lineNumber: 253,
             columnNumber: 7
         }, this);
     }
@@ -1998,7 +2003,7 @@ function ApprovalsPage() {
                                         children: "My Pending Approvals"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 265,
+                                        lineNumber: 270,
                                         columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardDescription"], {
@@ -2009,81 +2014,58 @@ function ApprovalsPage() {
                                                 children: user?.email || 'loading...'
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                                lineNumber: 267,
+                                                lineNumber: 272,
                                                 columnNumber: 63
                                             }, this),
                                             ")"
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 266,
+                                        lineNumber: 271,
                                         columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                lineNumber: 264,
+                                lineNumber: 269,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Button"], {
-                                onClick: fetchPendingApprovals,
+                                onClick: ()=>user?.email && fetchPendingApprovals(user.email),
                                 variant: "outline",
                                 size: "sm",
-                                disabled: loading,
+                                disabled: loading || !user?.email,
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$refresh$2d$cw$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__RefreshCw$3e$__["RefreshCw"], {
                                         className: `mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 271,
+                                        lineNumber: 276,
                                         columnNumber: 13
                                     }, this),
                                     loading ? 'Refreshing...' : 'Refresh List'
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                lineNumber: 270,
+                                lineNumber: 275,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/approvals/page.tsx",
-                        lineNumber: 263,
+                        lineNumber: 268,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["CardContent"], {
                         children: [
-                            loading && pendingItems.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "flex items-center justify-center py-2 text-muted-foreground",
-                                children: [
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$loader$2d$circle$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__Loader2$3e$__["Loader2"], {
-                                        className: "h-4 w-4 animate-spin mr-2"
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 278,
-                                        columnNumber: 15
-                                    }, this),
-                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                        children: "Refreshing data..."
-                                    }, void 0, false, {
-                                        fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 279,
-                                        columnNumber: 15
-                                    }, this)
-                                ]
-                            }, void 0, true, {
-                                fileName: "[project]/src/app/approvals/page.tsx",
-                                lineNumber: 277,
-                                columnNumber: 13
-                            }, this),
-                            error && pendingItems.length > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                            error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "mb-4 p-3 border-l-4 border-destructive bg-destructive/10 text-destructive-foreground flex items-start text-sm",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$triangle$2d$alert$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__$3c$export__default__as__AlertTriangle$3e$__["AlertTriangle"], {
                                         className: "h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
                                     }, void 0, false, {
                                         fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 284,
+                                        lineNumber: 283,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2093,32 +2075,33 @@ function ApprovalsPage() {
                                                 children: "Failed to refresh fully:"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                                lineNumber: 286,
+                                                lineNumber: 285,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 children: error
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                                lineNumber: 287,
+                                                lineNumber: 286,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/app/approvals/page.tsx",
-                                        lineNumber: 285,
+                                        lineNumber: 284,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                lineNumber: 283,
+                                lineNumber: 282,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$shared$2f$data$2d$table$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["DataTable"], {
                                 columns: columns,
                                 data: pendingItems,
-                                renderRowActions: (item)=>{
+                                renderRowActions: (row)=>{
+                                    const item = row;
                                     let viewPath = '';
                                     if (item.documentType === 'PO') viewPath = `/purchase-orders/${item.id}/print`;
                                     else if (item.documentType === 'Quote') viewPath = `/quotes/${item.id}/print`;
@@ -2233,7 +2216,7 @@ function ApprovalsPage() {
                                 }
                             }, void 0, false, {
                                 fileName: "[project]/src/app/approvals/page.tsx",
-                                lineNumber: 291,
+                                lineNumber: 290,
                                 columnNumber: 11
                             }, this),
                             pendingItems.length === 0 && !loading && !error && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2264,13 +2247,13 @@ function ApprovalsPage() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/app/approvals/page.tsx",
-                        lineNumber: 275,
+                        lineNumber: 280,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/app/approvals/page.tsx",
-                lineNumber: 262,
+                lineNumber: 267,
                 columnNumber: 7
             }, this),
             selectedItemForReject && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$approvals$2f$RejectDocumentModal$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["RejectDocumentModal"], {
@@ -2299,11 +2282,11 @@ function ApprovalsPage() {
         ]
     }, void 0, true, {
         fileName: "[project]/src/app/approvals/page.tsx",
-        lineNumber: 261,
+        lineNumber: 266,
         columnNumber: 5
     }, this);
 }
-_s(ApprovalsPage, "E/CiFTG35Sx6UWgaaOotyZ07vmw=", false, function() {
+_s(ApprovalsPage, "Uz62w14i3vAfmz0JpjSQyfKqTjw=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$auth$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],
         __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$hooks$2f$use$2d$toast$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useToast"]
