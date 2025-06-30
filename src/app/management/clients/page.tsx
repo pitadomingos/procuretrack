@@ -134,7 +134,7 @@ export default function ManageClientsPage() {
     { accessorKey: 'contactPerson', header: 'Contact Person' },
     { accessorKey: 'city', header: 'City' },
     { accessorKey: 'country', header: 'Country' },
-    { accessorKey: 'address', header: 'Address', cell: (row) => <span className="truncate block max-w-xs">{row.address || 'N/A'}</span> },
+    { accessorKey: 'address', header: 'Address', cell: (client) => <span className="truncate block max-w-xs">{client.address || 'N/A'}</span> },
   ];
 
   return (
