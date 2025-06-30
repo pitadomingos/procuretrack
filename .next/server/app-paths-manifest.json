@@ -15,8 +15,11 @@
   "/api/purchase-orders/next-po-number/route": "app/api/purchase-orders/next-po-number/route.js",
   "/api/purchase-orders/pending-approval/route": "app/api/purchase-orders/pending-approval/route.js",
   "/api/purchase-orders/route": "app/api/purchase-orders/route.js",
+  "/api/quotes/[id]/route": "app/api/quotes/[id]/route.js",
   "/api/quotes/next-quote-number/route": "app/api/quotes/next-quote-number/route.js",
   "/api/quotes/pending-approval/route": "app/api/quotes/pending-approval/route.js",
+  "/api/quotes/route": "app/api/quotes/route.js",
+  "/api/requisitions/[id]/route": "app/api/requisitions/[id]/route.js",
   "/api/requisitions/for-po-creation/route": "app/api/requisitions/for-po-creation/route.js",
   "/api/requisitions/next-requisition-number/route": "app/api/requisitions/next-requisition-number/route.js",
   "/api/requisitions/pending-approval/route": "app/api/requisitions/pending-approval/route.js",
@@ -29,5 +32,7 @@
   "/create-document/page": "app/create-document/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js",
-  "/purchase-orders/[id]/print/page": "app/purchase-orders/[id]/print/page.js"
+  "/purchase-orders/[id]/print/page": "app/purchase-orders/[id]/print/page.js",
+  "/quotes/[id]/print/page": "app/quotes/[id]/print/page.js",
+  "/requisitions/[id]/print/page": "app/requisitions/[id]/print/page.js"
 }
