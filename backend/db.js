@@ -5,7 +5,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 
 // Configure dotenv to load the .env file from the backend directory
-dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 let pool = null;
 
@@ -20,23 +20,23 @@ async function getDbPool() {
   
   try {
     // Check for essential DB environment variables
-    const essentialEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+    const essentialEnvVars = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME', 'JWT_SECRET'];
     const missingEnvVars = [];
     for (const v of essentialEnvVars) {
         if (!process.env[v]) {
             missingEnvVars.push(v);
         } else {
             // Avoid logging password in production
-            if (v !== 'DB_PASSWORD') {
+            if (v !== 'DB_PASSWORD' && v !== 'JWT_SECRET') {
                 console.log(`[DB_INIT] Found ENV VAR: ${v} = ${process.env[v]}`);
             } else {
-                 console.log(`[DB_INIT] Found ENV VAR: DB_PASSWORD = (hidden)`);
+                 console.log(`[DB_INIT] Found ENV VAR: ${v} = (hidden)`);
             }
         }
     }
     
     if (missingEnvVars.length > 0) {
-      const errorMsg = `Database configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file.`;
+      const errorMsg = `Configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file. For JWT_SECRET, use a long, random string.`;
       console.error(`[DB_INIT_ERROR] ${errorMsg}`);
       throw new Error(errorMsg);
     }

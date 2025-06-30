@@ -1,26 +1,45 @@
+
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
 
 const SESSION_COOKIE_NAME = 'procuretrack-session-cookie';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Helper to get the secret key as a Uint8Array
+function getJwtSecretKey(): Uint8Array {
+  if (!JWT_SECRET) {
+    // This should not happen if the login check is in place, but good for safety.
+    throw new Error('JWT_SECRET environment variable is not set!');
+  }
+  return new TextEncoder().encode(JWT_SECRET);
+}
 
 export async function GET(request: Request) {
   const sessionCookie = cookies().get(SESSION_COOKIE_NAME);
 
   if (!sessionCookie || !sessionCookie.value) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    return NextResponse.json({ error: 'Not authenticated. No session cookie found.' }, { status: 401 });
   }
 
+  const token = sessionCookie.value;
+
   try {
-    // In a real app with JWTs, you would verify the token here.
-    // For this prototype, we parse the user data stored directly in the cookie.
-    const userData = JSON.parse(sessionCookie.value);
+    // Verify the JWT
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
     
-    // You might want to re-validate against the DB here in a real app,
-    // but for session restoration, this is often sufficient.
-    return NextResponse.json(userData);
+    // Return the user data from the token's payload
+    return NextResponse.json(payload);
   } catch (error) {
-    console.error('Error parsing session cookie:', error);
-    // If cookie is malformed, treat as unauthenticated
-    return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    // Token is invalid (expired, malformed, wrong signature)
+    console.warn('JWT verification failed:', error instanceof Error ? error.message : 'Unknown error');
+    
+    // Create a response to clear the invalid cookie
+    const response = NextResponse.json(
+      { error: 'Invalid session. Please log in again.' },
+      { status: 401 }
+    );
+    response.cookies.set(SESSION_COOKIE_NAME, '', { maxAge: -1, path: '/' });
+    return response;
   }
 }

@@ -323,7 +323,7 @@ async function GET(request) {
       SELECT
         r.id,
         r.requisitionNumber,
-        r.requisitionDate,
+        r.requisitionDate as creationDate,
         r.requestedByName,
         COALESCE(u.name, r.requestedByName) as submittedBy,
         COALESCE(s.siteCode, s.name, 'N/A') as siteName,
