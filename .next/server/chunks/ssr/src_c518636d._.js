@@ -982,10 +982,28 @@ function POForm({ poIdToEditProp }) {
                 throw new Error(errorData.error || `Server error: ${response.status} - ${errorData.details || response.statusText}`);
             }
             const result = await response.json();
+            const finalStatus = isEditingLoadedPO && loadedPOId && form.getValues('status') === 'Rejected' ? 'Pending Approval' : payload.status;
+            if (finalStatus !== 'Draft') {
+                successMessage += ` Status set to: ${finalStatus}.`;
+            }
             toast({
                 title: 'Success!',
                 description: successMessage
             });
+            // SIMULATED EMAIL NOTIFICATION
+            if (finalStatus === 'Pending Approval') {
+                const approver = approvers.find((a)=>a.id === payload.approverId);
+                if (approver) {
+                    const approvalLink = `${window.location.origin}/approvals`;
+                    setTimeout(()=>{
+                        toast({
+                            title: "Approval Request Sent (Simulated)",
+                            description: `An email notification has been sent to ${approver.name} (${approver.email}) with a link to review the PO. Link: ${approvalLink}`,
+                            duration: 9000
+                        });
+                    }, 1000);
+                }
+            }
             if (result.poId) {
                 const contextParam = isEditingLoadedPO || loadedPOId ? '' : '?context=creator';
                 router.push(`/purchase-orders/${result.poId}/print${contextParam}`);
@@ -1083,14 +1101,14 @@ function POForm({ poIdToEditProp }) {
                     className: "h-8 w-8 animate-spin text-primary"
                 }, void 0, false, {
                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                    lineNumber: 472,
+                    lineNumber: 492,
                     columnNumber: 67
                 }, this),
                 " Loading form data..."
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-            lineNumber: 472,
+            lineNumber: 492,
             columnNumber: 12
         }, this);
     }
@@ -1102,14 +1120,14 @@ function POForm({ poIdToEditProp }) {
                     className: "h-8 w-8 animate-spin text-primary"
                 }, void 0, false, {
                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                    lineNumber: 475,
+                    lineNumber: 495,
                     columnNumber: 68
                 }, this),
                 " Loading PO for editing..."
             ]
         }, void 0, true, {
             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-            lineNumber: 475,
+            lineNumber: 495,
             columnNumber: 13
         }, this);
     }
@@ -1122,12 +1140,12 @@ function POForm({ poIdToEditProp }) {
                     children: isEditingLoadedPO ? `Editing PO: ${form.getValues('poNumberDisplay')}` : 'Create New Purchase Order'
                 }, void 0, false, {
                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                    lineNumber: 481,
+                    lineNumber: 501,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                lineNumber: 480,
+                lineNumber: 500,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardContent"], {
@@ -1146,7 +1164,7 @@ function POForm({ poIdToEditProp }) {
                                         children: "Load from Approved Requisition"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 488,
+                                        lineNumber: 508,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1162,7 +1180,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Select Requisition"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 495,
+                                                                lineNumber: 515,
                                                                 columnNumber: 25
                                                             }, void 0),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -1176,17 +1194,17 @@ function POForm({ poIdToEditProp }) {
                                                                                 placeholder: "Choose an approved requisition..."
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 497,
+                                                                                lineNumber: 517,
                                                                                 columnNumber: 57
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 497,
+                                                                            lineNumber: 517,
                                                                             columnNumber: 42
                                                                         }, void 0)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 497,
+                                                                        lineNumber: 517,
                                                                         columnNumber: 29
                                                                     }, void 0),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -1195,7 +1213,7 @@ function POForm({ poIdToEditProp }) {
                                                                             children: "No approved requisitions found"
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 500,
+                                                                            lineNumber: 520,
                                                                             columnNumber: 33
                                                                         }, void 0) : approvedRequisitions.map((req)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
                                                                                 value: req.id,
@@ -1212,34 +1230,34 @@ function POForm({ poIdToEditProp }) {
                                                                                 ]
                                                                             }, req.id, true, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 503,
+                                                                                lineNumber: 523,
                                                                                 columnNumber: 37
                                                                             }, void 0))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 498,
+                                                                        lineNumber: 518,
                                                                         columnNumber: 29
                                                                     }, void 0)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 496,
+                                                                lineNumber: 516,
                                                                 columnNumber: 25
                                                             }, void 0),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 510,
+                                                                lineNumber: 530,
                                                                 columnNumber: 25
                                                             }, void 0)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 494,
+                                                        lineNumber: 514,
                                                         columnNumber: 25
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 490,
+                                                lineNumber: 510,
                                                 columnNumber: 21
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1252,32 +1270,32 @@ function POForm({ poIdToEditProp }) {
                                                         className: "mr-2 h-4 w-4 animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 520,
+                                                        lineNumber: 540,
                                                         columnNumber: 54
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$cloud$2d$download$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__DownloadCloud$3e$__["DownloadCloud"], {
                                                         className: "mr-2 h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 520,
+                                                        lineNumber: 540,
                                                         columnNumber: 106
                                                     }, this),
                                                     "Load Items"
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 514,
+                                                lineNumber: 534,
                                                 columnNumber: 21
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 489,
+                                        lineNumber: 509,
                                         columnNumber: 17
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 487,
+                                lineNumber: 507,
                                 columnNumber: 15
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1287,7 +1305,7 @@ function POForm({ poIdToEditProp }) {
                                         children: "Supplier & PO Information"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 529,
+                                        lineNumber: 549,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1306,7 +1324,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "PO Number"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 535,
+                                                                lineNumber: 555,
                                                                 columnNumber: 23
                                                             }, void 0),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1319,12 +1337,12 @@ function POForm({ poIdToEditProp }) {
                                                                             readOnly: isEditingLoadedPO
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 538,
+                                                                            lineNumber: 558,
                                                                             columnNumber: 27
                                                                         }, void 0)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 537,
+                                                                        lineNumber: 557,
                                                                         columnNumber: 25
                                                                     }, void 0),
                                                                     !isEditingLoadedPO && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -1338,42 +1356,42 @@ function POForm({ poIdToEditProp }) {
                                                                                 className: "h-4 w-4 animate-spin"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 542,
+                                                                                lineNumber: 562,
                                                                                 columnNumber: 51
                                                                             }, void 0) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$search$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Search$3e$__["Search"], {
                                                                                 className: "h-4 w-4"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 542,
+                                                                                lineNumber: 562,
                                                                                 columnNumber: 98
                                                                             }, void 0),
                                                                             " Load"
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 541,
+                                                                        lineNumber: 561,
                                                                         columnNumber: 28
                                                                     }, void 0)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 536,
+                                                                lineNumber: 556,
                                                                 columnNumber: 23
                                                             }, void 0),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 546,
+                                                                lineNumber: 566,
                                                                 columnNumber: 23
                                                             }, void 0)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 534,
+                                                        lineNumber: 554,
                                                         columnNumber: 21
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 531,
+                                                lineNumber: 551,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1386,7 +1404,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Quote No."
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 550,
+                                                                lineNumber: 570,
                                                                 columnNumber: 102
                                                             }, void 0),
                                                             " ",
@@ -1397,30 +1415,30 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 550,
+                                                                    lineNumber: 570,
                                                                     columnNumber: 148
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 550,
+                                                                lineNumber: 570,
                                                                 columnNumber: 135
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 550,
+                                                                lineNumber: 570,
                                                                 columnNumber: 235
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 550,
+                                                        lineNumber: 570,
                                                         columnNumber: 91
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 550,
+                                                lineNumber: 570,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1436,7 +1454,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "PO Date"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 551,
+                                                                lineNumber: 571,
                                                                 columnNumber: 145
                                                             }, void 0),
                                                             " ",
@@ -1446,36 +1464,36 @@ function POForm({ poIdToEditProp }) {
                                                                     ...field
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 551,
+                                                                    lineNumber: 571,
                                                                     columnNumber: 189
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 551,
+                                                                lineNumber: 571,
                                                                 columnNumber: 176
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 551,
+                                                                lineNumber: 571,
                                                                 columnNumber: 236
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 551,
+                                                        lineNumber: 571,
                                                         columnNumber: 134
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 551,
+                                                lineNumber: 571,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 530,
+                                        lineNumber: 550,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1494,7 +1512,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Supplier Name"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 558,
+                                                                lineNumber: 578,
                                                                 columnNumber: 32
                                                             }, void 0),
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -1510,17 +1528,17 @@ function POForm({ poIdToEditProp }) {
                                                                                 placeholder: "Select a supplier"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 560,
+                                                                                lineNumber: 580,
                                                                                 columnNumber: 53
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 560,
+                                                                            lineNumber: 580,
                                                                             columnNumber: 38
                                                                         }, void 0)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 560,
+                                                                        lineNumber: 580,
                                                                         columnNumber: 25
                                                                     }, void 0),
                                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -1534,35 +1552,35 @@ function POForm({ poIdToEditProp }) {
                                                                                 ]
                                                                             }, s.supplierCode, true, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 561,
+                                                                                lineNumber: 581,
                                                                                 columnNumber: 61
                                                                             }, void 0))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 561,
+                                                                        lineNumber: 581,
                                                                         columnNumber: 25
                                                                     }, void 0)
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 559,
+                                                                lineNumber: 579,
                                                                 columnNumber: 23
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 562,
+                                                                lineNumber: 582,
                                                                 columnNumber: 33
                                                             }, void 0)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 558,
+                                                        lineNumber: 578,
                                                         columnNumber: 21
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 555,
+                                                lineNumber: 575,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1575,7 +1593,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Supplier Email"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 566,
+                                                                lineNumber: 586,
                                                                 columnNumber: 106
                                                             }, void 0),
                                                             " ",
@@ -1587,30 +1605,30 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 566,
+                                                                    lineNumber: 586,
                                                                     columnNumber: 157
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 566,
+                                                                lineNumber: 586,
                                                                 columnNumber: 144
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 566,
+                                                                lineNumber: 586,
                                                                 columnNumber: 271
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 566,
+                                                        lineNumber: 586,
                                                         columnNumber: 95
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 566,
+                                                lineNumber: 586,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1623,7 +1641,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Sales Person"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 567,
+                                                                lineNumber: 587,
                                                                 columnNumber: 106
                                                             }, void 0),
                                                             " ",
@@ -1634,36 +1652,36 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 567,
+                                                                    lineNumber: 587,
                                                                     columnNumber: 155
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 567,
+                                                                lineNumber: 587,
                                                                 columnNumber: 142
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 567,
+                                                                lineNumber: 587,
                                                                 columnNumber: 245
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 567,
+                                                        lineNumber: 587,
                                                         columnNumber: 95
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 567,
+                                                lineNumber: 587,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 554,
+                                        lineNumber: 574,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1680,7 +1698,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Supplier Contact"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 571,
+                                                                lineNumber: 591,
                                                                 columnNumber: 142
                                                             }, void 0),
                                                             " ",
@@ -1691,30 +1709,30 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 571,
+                                                                    lineNumber: 591,
                                                                     columnNumber: 195
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 571,
+                                                                lineNumber: 591,
                                                                 columnNumber: 182
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 571,
+                                                                lineNumber: 591,
                                                                 columnNumber: 289
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 571,
+                                                        lineNumber: 591,
                                                         columnNumber: 105
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 571,
+                                                lineNumber: 591,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1728,7 +1746,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "NUIT"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 572,
+                                                                lineNumber: 592,
                                                                 columnNumber: 125
                                                             }, void 0),
                                                             " ",
@@ -1739,30 +1757,30 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 572,
+                                                                    lineNumber: 592,
                                                                     columnNumber: 166
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 572,
+                                                                lineNumber: 592,
                                                                 columnNumber: 153
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 572,
+                                                                lineNumber: 592,
                                                                 columnNumber: 256
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 572,
+                                                        lineNumber: 592,
                                                         columnNumber: 88
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 572,
+                                                lineNumber: 592,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1776,7 +1794,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Supplier Address (for PDF)"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 573,
+                                                                lineNumber: 593,
                                                                 columnNumber: 135
                                                             }, void 0),
                                                             " ",
@@ -1787,42 +1805,42 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 573,
+                                                                    lineNumber: 593,
                                                                     columnNumber: 198
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 573,
+                                                                lineNumber: 593,
                                                                 columnNumber: 185
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 573,
+                                                                lineNumber: 593,
                                                                 columnNumber: 312
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 573,
+                                                        lineNumber: 593,
                                                         columnNumber: 98
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 573,
+                                                lineNumber: 593,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 570,
+                                        lineNumber: 590,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 528,
+                                lineNumber: 548,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1832,7 +1850,7 @@ function POForm({ poIdToEditProp }) {
                                         children: "PO Configuration"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 578,
+                                        lineNumber: 598,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -1850,7 +1868,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Currency"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 581,
+                                                                lineNumber: 601,
                                                                 columnNumber: 129
                                                             }, void 0),
                                                             " ",
@@ -1865,17 +1883,17 @@ function POForm({ poIdToEditProp }) {
                                                                                 placeholder: "Select currency"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 581,
+                                                                                lineNumber: 601,
                                                                                 columnNumber: 258
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 581,
+                                                                            lineNumber: 601,
                                                                             columnNumber: 243
                                                                         }, void 0)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 581,
+                                                                        lineNumber: 601,
                                                                         columnNumber: 230
                                                                     }, void 0),
                                                                     " ",
@@ -1886,7 +1904,7 @@ function POForm({ poIdToEditProp }) {
                                                                                 children: "MZN"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 581,
+                                                                                lineNumber: 601,
                                                                                 columnNumber: 349
                                                                             }, void 0),
                                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectItem"], {
@@ -1894,38 +1912,38 @@ function POForm({ poIdToEditProp }) {
                                                                                 children: "USD"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 581,
+                                                                                lineNumber: 601,
                                                                                 columnNumber: 389
                                                                             }, void 0)
                                                                         ]
                                                                     }, void 0, true, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 581,
+                                                                        lineNumber: 601,
                                                                         columnNumber: 334
                                                                     }, void 0),
                                                                     " "
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 581,
+                                                                lineNumber: 601,
                                                                 columnNumber: 161
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 581,
+                                                                lineNumber: 601,
                                                                 columnNumber: 456
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 581,
+                                                        lineNumber: 601,
                                                         columnNumber: 92
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 581,
+                                                lineNumber: 601,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1942,7 +1960,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Requested By"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 582,
+                                                                lineNumber: 602,
                                                                 columnNumber: 185
                                                             }, void 0),
                                                             " ",
@@ -1953,30 +1971,30 @@ function POForm({ poIdToEditProp }) {
                                                                     value: field.value ?? ''
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 582,
+                                                                    lineNumber: 602,
                                                                     columnNumber: 234
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 582,
+                                                                lineNumber: 602,
                                                                 columnNumber: 221
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 582,
+                                                                lineNumber: 602,
                                                                 columnNumber: 332
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 582,
+                                                        lineNumber: 602,
                                                         columnNumber: 148
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 582,
+                                                lineNumber: 602,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -1993,7 +2011,7 @@ function POForm({ poIdToEditProp }) {
                                                                 children: "Approver"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 583,
+                                                                lineNumber: 603,
                                                                 columnNumber: 176
                                                             }, void 0),
                                                             " ",
@@ -2008,17 +2026,17 @@ function POForm({ poIdToEditProp }) {
                                                                                 placeholder: "Select an approver"
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 583,
+                                                                                lineNumber: 603,
                                                                                 columnNumber: 302
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 583,
+                                                                            lineNumber: 603,
                                                                             columnNumber: 287
                                                                         }, void 0)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 583,
+                                                                        lineNumber: 603,
                                                                         columnNumber: 274
                                                                     }, void 0),
                                                                     " ",
@@ -2028,37 +2046,37 @@ function POForm({ poIdToEditProp }) {
                                                                                 children: appr.name
                                                                             }, appr.id, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 583,
+                                                                                lineNumber: 603,
                                                                                 columnNumber: 420
                                                                             }, void 0))
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 583,
+                                                                        lineNumber: 603,
                                                                         columnNumber: 381
                                                                     }, void 0),
                                                                     " "
                                                                 ]
                                                             }, void 0, true, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 583,
+                                                                lineNumber: 603,
                                                                 columnNumber: 208
                                                             }, void 0),
                                                             " ",
                                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 583,
+                                                                lineNumber: 603,
                                                                 columnNumber: 516
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 583,
+                                                        lineNumber: 603,
                                                         columnNumber: 139
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 583,
+                                                lineNumber: 603,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2074,12 +2092,12 @@ function POForm({ poIdToEditProp }) {
                                                                     onCheckedChange: field.onChange
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 584,
+                                                                    lineNumber: 604,
                                                                     columnNumber: 232
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 584,
+                                                                lineNumber: 604,
                                                                 columnNumber: 219
                                                             }, void 0),
                                                             " ",
@@ -2089,41 +2107,41 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "Prices VAT inclusive"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 584,
+                                                                    lineNumber: 604,
                                                                     columnNumber: 354
                                                                 }, void 0)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 584,
+                                                                lineNumber: 604,
                                                                 columnNumber: 314
                                                             }, void 0),
                                                             " "
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 584,
+                                                        lineNumber: 604,
                                                         columnNumber: 100
                                                     }, void 0)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 584,
+                                                lineNumber: 604,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 579,
+                                        lineNumber: 599,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 577,
+                                lineNumber: 597,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$separator$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Separator"], {}, void 0, false, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 588,
+                                lineNumber: 608,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h3", {
@@ -2131,7 +2149,7 @@ function POForm({ poIdToEditProp }) {
                                 children: "Items"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 589,
+                                lineNumber: 609,
                                 columnNumber: 13
                             }, this),
                             fields.map((itemField, index)=>{
@@ -2154,7 +2172,7 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "Part Number"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 599,
+                                                                    lineNumber: 619,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormControl"], {
@@ -2164,23 +2182,23 @@ function POForm({ poIdToEditProp }) {
                                                                         value: field.value ?? ''
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 600,
+                                                                        lineNumber: 620,
                                                                         columnNumber: 38
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 600,
+                                                                    lineNumber: 620,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 598,
+                                                            lineNumber: 618,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 597,
+                                                    lineNumber: 617,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2196,7 +2214,7 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "Description"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 605,
+                                                                    lineNumber: 625,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormControl"], {
@@ -2205,28 +2223,28 @@ function POForm({ poIdToEditProp }) {
                                                                         ...field
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 606,
+                                                                        lineNumber: 626,
                                                                         columnNumber: 38
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 606,
+                                                                    lineNumber: 626,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 607,
+                                                                    lineNumber: 627,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 604,
+                                                            lineNumber: 624,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 603,
+                                                    lineNumber: 623,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2242,7 +2260,7 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "Category"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 612,
+                                                                    lineNumber: 632,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -2255,17 +2273,17 @@ function POForm({ poIdToEditProp }) {
                                                                                     placeholder: "Select"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                    lineNumber: 614,
+                                                                                    lineNumber: 634,
                                                                                     columnNumber: 55
                                                                                 }, void 0)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 614,
+                                                                                lineNumber: 634,
                                                                                 columnNumber: 40
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 614,
+                                                                            lineNumber: 634,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -2274,34 +2292,34 @@ function POForm({ poIdToEditProp }) {
                                                                                     children: cat.category
                                                                                 }, cat.id, false, {
                                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                    lineNumber: 615,
+                                                                                    lineNumber: 635,
                                                                                     columnNumber: 66
                                                                                 }, void 0))
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 615,
+                                                                            lineNumber: 635,
                                                                             columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 613,
+                                                                    lineNumber: 633,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 617,
+                                                                    lineNumber: 637,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 611,
+                                                            lineNumber: 631,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 610,
+                                                    lineNumber: 630,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2317,7 +2335,7 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "Item Site"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 622,
+                                                                    lineNumber: 642,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Select"], {
@@ -2330,17 +2348,17 @@ function POForm({ poIdToEditProp }) {
                                                                                     placeholder: "Select"
                                                                                 }, void 0, false, {
                                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                    lineNumber: 624,
+                                                                                    lineNumber: 644,
                                                                                     columnNumber: 55
                                                                                 }, void 0)
                                                                             }, void 0, false, {
                                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                lineNumber: 624,
+                                                                                lineNumber: 644,
                                                                                 columnNumber: 40
                                                                             }, void 0)
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 624,
+                                                                            lineNumber: 644,
                                                                             columnNumber: 27
                                                                         }, void 0),
                                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$select$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["SelectContent"], {
@@ -2349,34 +2367,34 @@ function POForm({ poIdToEditProp }) {
                                                                                     children: site.siteCode || site.name
                                                                                 }, site.id, false, {
                                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                                    lineNumber: 625,
+                                                                                    lineNumber: 645,
                                                                                     columnNumber: 62
                                                                                 }, void 0))
                                                                         }, void 0, false, {
                                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                            lineNumber: 625,
+                                                                            lineNumber: 645,
                                                                             columnNumber: 27
                                                                         }, void 0)
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 623,
+                                                                    lineNumber: 643,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 627,
+                                                                    lineNumber: 647,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 621,
+                                                            lineNumber: 641,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 620,
+                                                    lineNumber: 640,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2392,7 +2410,7 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "UOM"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 632,
+                                                                    lineNumber: 652,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormControl"], {
@@ -2401,28 +2419,28 @@ function POForm({ poIdToEditProp }) {
                                                                         ...field
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 633,
+                                                                        lineNumber: 653,
                                                                         columnNumber: 38
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 633,
+                                                                    lineNumber: 653,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 634,
+                                                                    lineNumber: 654,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 631,
+                                                            lineNumber: 651,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 630,
+                                                    lineNumber: 650,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2442,7 +2460,7 @@ function POForm({ poIdToEditProp }) {
                                                                     children: "Quantity"
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 639,
+                                                                    lineNumber: 659,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormControl"], {
@@ -2453,28 +2471,28 @@ function POForm({ poIdToEditProp }) {
                                                                         onChange: (e)=>field.onChange(parseFloat(e.target.value) || 0)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 640,
+                                                                        lineNumber: 660,
                                                                         columnNumber: 38
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 640,
+                                                                    lineNumber: 660,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 641,
+                                                                    lineNumber: 661,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 638,
+                                                            lineNumber: 658,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 637,
+                                                    lineNumber: 657,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormField"], {
@@ -2498,7 +2516,7 @@ function POForm({ poIdToEditProp }) {
                                                                     ]
                                                                 }, void 0, true, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 646,
+                                                                    lineNumber: 666,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormControl"], {
@@ -2510,28 +2528,28 @@ function POForm({ poIdToEditProp }) {
                                                                         onChange: (e)=>field.onChange(parseFloat(e.target.value) || 0.00)
                                                                     }, void 0, false, {
                                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                        lineNumber: 647,
+                                                                        lineNumber: 667,
                                                                         columnNumber: 38
                                                                     }, void 0)
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 647,
+                                                                    lineNumber: 667,
                                                                     columnNumber: 25
                                                                 }, void 0),
                                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormMessage"], {}, void 0, false, {
                                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                    lineNumber: 648,
+                                                                    lineNumber: 668,
                                                                     columnNumber: 25
                                                                 }, void 0)
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 645,
+                                                            lineNumber: 665,
                                                             columnNumber: 23
                                                         }, void 0)
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 644,
+                                                    lineNumber: 664,
                                                     columnNumber: 21
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormItem"], {
@@ -2545,7 +2563,7 @@ function POForm({ poIdToEditProp }) {
                                                             ]
                                                         }, void 0, true, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 652,
+                                                            lineNumber: 672,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2553,19 +2571,19 @@ function POForm({ poIdToEditProp }) {
                                                             children: formatValue(itemTotal)
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 653,
+                                                            lineNumber: 673,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                    lineNumber: 651,
+                                                    lineNumber: 671,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                            lineNumber: 596,
+                                            lineNumber: 616,
                                             columnNumber: 19
                                         }, this),
                                         fields.length > 1 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -2579,18 +2597,18 @@ function POForm({ poIdToEditProp }) {
                                                 className: "h-4 w-4"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 656,
+                                                lineNumber: 676,
                                                 columnNumber: 183
                                             }, this)
                                         }, void 0, false, {
                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                            lineNumber: 656,
+                                            lineNumber: 676,
                                             columnNumber: 42
                                         }, this)
                                     ]
                                 }, itemField.id, true, {
                                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                    lineNumber: 595,
+                                    lineNumber: 615,
                                     columnNumber: 17
                                 }, this);
                             }),
@@ -2607,21 +2625,21 @@ function POForm({ poIdToEditProp }) {
                                         className: "mr-2 h-4 w-4"
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 660,
+                                        lineNumber: 680,
                                         columnNumber: 137
                                     }, this),
                                     " Add Item"
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 660,
+                                lineNumber: 680,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$separator$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Separator"], {
                                 className: "my-6"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 662,
+                                lineNumber: 682,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2637,7 +2655,7 @@ function POForm({ poIdToEditProp }) {
                                                         children: "Notes"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 670,
+                                                        lineNumber: 690,
                                                         columnNumber: 23
                                                     }, void 0),
                                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$form$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["FormControl"], {
@@ -2648,23 +2666,23 @@ function POForm({ poIdToEditProp }) {
                                                             value: field.value ?? ''
                                                         }, void 0, false, {
                                                             fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                            lineNumber: 672,
+                                                            lineNumber: 692,
                                                             columnNumber: 25
                                                         }, void 0)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 671,
+                                                        lineNumber: 691,
                                                         columnNumber: 23
                                                     }, void 0)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 669,
+                                                lineNumber: 689,
                                                 columnNumber: 21
                                             }, void 0)
                                     }, void 0, false, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 665,
+                                        lineNumber: 685,
                                         columnNumber: 17
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2681,13 +2699,13 @@ function POForm({ poIdToEditProp }) {
                                                         children: formatValue(subTotal)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 684,
+                                                        lineNumber: 704,
                                                         columnNumber: 71
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 684,
+                                                lineNumber: 704,
                                                 columnNumber: 17
                                             }, this),
                                             (()=>{
@@ -2703,13 +2721,13 @@ function POForm({ poIdToEditProp }) {
                                                                 children: formatValue(vatAmount)
                                                             }, void 0, false, {
                                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                                lineNumber: 687,
+                                                                lineNumber: 707,
                                                                 columnNumber: 83
                                                             }, this)
                                                         ]
                                                     }, void 0, true, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 687,
+                                                        lineNumber: 707,
                                                         columnNumber: 28
                                                     }, this);
                                                 }
@@ -2719,7 +2737,7 @@ function POForm({ poIdToEditProp }) {
                                                         children: "VAT is included in item prices."
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 690,
+                                                        lineNumber: 710,
                                                         columnNumber: 28
                                                     }, this);
                                                 }
@@ -2736,19 +2754,19 @@ function POForm({ poIdToEditProp }) {
                                                         children: formatValue(grandTotal)
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 694,
+                                                        lineNumber: 714,
                                                         columnNumber: 98
                                                     }, this)
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 694,
+                                                lineNumber: 714,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 683,
+                                        lineNumber: 703,
                                         columnNumber: 15
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2764,26 +2782,26 @@ function POForm({ poIdToEditProp }) {
                                                         className: "mr-2 h-4 w-4 animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 699,
+                                                        lineNumber: 719,
                                                         columnNumber: 35
                                                     }, this) : isEditingLoadedPO ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$square$2d$pen$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Edit$3e$__["Edit"], {
                                                         className: "mr-2 h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 699,
+                                                        lineNumber: 719,
                                                         columnNumber: 108
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$send$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Send$3e$__["Send"], {
                                                         className: "mr-2 h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 699,
+                                                        lineNumber: 719,
                                                         columnNumber: 144
                                                     }, this),
                                                     isSubmitting ? isEditingLoadedPO ? 'Updating PO...' : 'Submitting PO...' : isEditingLoadedPO ? 'Update PO' : 'Submit PO'
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 698,
+                                                lineNumber: 718,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -2798,20 +2816,20 @@ function POForm({ poIdToEditProp }) {
                                                         className: "mr-2 h-4 w-4 animate-spin"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 703,
+                                                        lineNumber: 723,
                                                         columnNumber: 40
                                                     }, this) : /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$lucide$2d$react$2f$dist$2f$esm$2f$icons$2f$printer$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__$3c$export__default__as__Printer$3e$__["Printer"], {
                                                         className: "mr-2 h-4 w-4"
                                                     }, void 0, false, {
                                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                        lineNumber: 703,
+                                                        lineNumber: 723,
                                                         columnNumber: 92
                                                     }, this),
                                                     isPrintingLoading ? 'Loading Preview...' : 'View/Print PO'
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 702,
+                                                lineNumber: 722,
                                                 columnNumber: 17
                                             }, this),
                                             !isEditingLoadedPO && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$button$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["Button"], {
@@ -2824,35 +2842,35 @@ function POForm({ poIdToEditProp }) {
                                                 children: "Clear / New PO"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                                lineNumber: 707,
+                                                lineNumber: 727,
                                                 columnNumber: 19
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                        lineNumber: 697,
+                                        lineNumber: 717,
                                         columnNumber: 15
                                     }, this)
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                                lineNumber: 664,
+                                lineNumber: 684,
                                 columnNumber: 13
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                        lineNumber: 485,
+                        lineNumber: 505,
                         columnNumber: 11
                     }, this)
                 }, void 0, false, {
                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                    lineNumber: 484,
+                    lineNumber: 504,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                lineNumber: 483,
+                lineNumber: 503,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$ui$2f$card$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["CardFooter"], {
@@ -2864,18 +2882,18 @@ function POForm({ poIdToEditProp }) {
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                    lineNumber: 717,
+                    lineNumber: 737,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-                lineNumber: 716,
+                lineNumber: 736,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/purchase-orders/po-form.tsx",
-        lineNumber: 479,
+        lineNumber: 499,
         columnNumber: 5
     }, this);
 }

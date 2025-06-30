@@ -19,7 +19,7 @@ const JACHRIS_COMPANY_DETAILS = {
     nuit: '400 415 954'
 };
 function PrintablePO({ poData, logoDataUri }) {
-    const { supplierDetails, items } = poData;
+    const { supplierDetails, items, approverName, approverSignatureUrl, status } = poData;
     const poCreationDate = poData.creationDate ? new Date(poData.creationDate).toLocaleDateString('en-GB') : 'N/A';
     const approvalDate = poData.approvalDate ? new Date(poData.approvalDate).toLocaleDateString('en-GB') : 'N/A';
     const formatCurrency = (value)=>{
@@ -703,79 +703,124 @@ function PrintablePO({ poData, logoDataUri }) {
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                className: "space-y-1",
+                                className: "grid grid-cols-2 gap-8",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex",
                                         children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "w-32 font-medium",
-                                                children: "Requested By:"
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mb-1",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                                    children: "Requested By:"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                    lineNumber: 157,
+                                                    columnNumber: 35
+                                                }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
                                                 lineNumber: 157,
-                                                columnNumber: 19
+                                                columnNumber: 15
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                                 children: poData.requestedByName || poData.creatorName || 'N/A'
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
                                                 lineNumber: 158,
-                                                columnNumber: 19
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mt-8 border-b border-black w-4/5"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                lineNumber: 159,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-center w-4/5",
+                                                children: "Requester Signature"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                lineNumber: 160,
+                                                columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
                                         lineNumber: 156,
-                                        columnNumber: 15
+                                        columnNumber: 13
                                     }, this),
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex",
                                         children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "w-32 font-medium",
-                                                children: "Approved By:"
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "mb-1",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                                    children: "Approved By:"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                    lineNumber: 163,
+                                                    columnNumber: 35
+                                                }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 161,
-                                                columnNumber: 19
+                                                lineNumber: 163,
+                                                columnNumber: 15
                                             }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                children: poData.status === 'Approved' && poData.approverName ? poData.approverName : poData.status === 'Approved' ? 'Approved (Name Missing)' : poData.status === 'Rejected' ? 'Rejected' : 'Pending Approval'
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "font-semibold h-4",
+                                                children: status === 'Approved' ? approverName || 'Approved' : `(${status || 'N/A'})`
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 162,
-                                                columnNumber: 19
+                                                lineNumber: 164,
+                                                columnNumber: 15
+                                            }, this),
+                                            status === 'Approved' && approverSignatureUrl && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mt-1 h-12 w-28",
+                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                                                    src: approverSignatureUrl,
+                                                    alt: `${approverName || 'Approver'}'s signature`,
+                                                    className: "max-h-full max-w-full object-contain",
+                                                    "data-ai-hint": "signature image"
+                                                }, void 0, false, {
+                                                    fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                    lineNumber: 167,
+                                                    columnNumber: 19
+                                                }, this)
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                lineNumber: 166,
+                                                columnNumber: 17
+                                            }, this),
+                                            status === 'Approved' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-xs mt-1",
+                                                children: [
+                                                    "Date: ",
+                                                    approvalDate
+                                                ]
+                                            }, void 0, true, {
+                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                lineNumber: 175,
+                                                columnNumber: 41
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                                                className: "mt-2 border-b border-black w-4/5"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                lineNumber: 176,
+                                                columnNumber: 15
+                                            }, this),
+                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                                className: "text-center w-4/5",
+                                                children: "Approver Signature"
+                                            }, void 0, false, {
+                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                                lineNumber: 177,
+                                                columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                        lineNumber: 160,
-                                        columnNumber: 15
-                                    }, this),
-                                    poData.status === 'Approved' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        className: "flex",
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                className: "w-32 font-medium",
-                                                children: "Approval Date:"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 170,
-                                                columnNumber: 23
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
-                                                children: approvalDate
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 171,
-                                                columnNumber: 23
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
-                                        fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                        lineNumber: 169,
-                                        columnNumber: 20
+                                        lineNumber: 162,
+                                        columnNumber: 13
                                     }, this)
                                 ]
                             }, void 0, true, {

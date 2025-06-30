@@ -154,10 +154,7 @@ export function PrintablePO({ poData, logoDataUri }: PrintablePOProps) {
           <h4 className="font-bold mb-2">Authorisation:</h4>
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <p className="mb-1"><strong>Requested By:</strong></p>
-              <p>{poData.requestedByName || poData.creatorName || 'N/A'}</p>
-              <div className="mt-8 border-b border-black w-4/5"></div>
-              <p className="text-center w-4/5">Requester Signature</p>
+              <p className="mb-1"><strong>Requested By:</strong> {poData.requestedByName || poData.creatorName || 'N/A'}</p>
             </div>
             <div>
               <p className="mb-1"><strong>Approved By:</strong></p>
