@@ -706,45 +706,25 @@ function PrintablePO({ poData, logoDataUri }) {
                                 className: "grid grid-cols-2 gap-8",
                                 children: [
                                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                        children: [
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "mb-1",
-                                                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
+                                        children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
+                                            className: "mb-1",
+                                            children: [
+                                                /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                                     children: "Requested By:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
                                                     lineNumber: 157,
                                                     columnNumber: 35
-                                                }, this)
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 157,
-                                                columnNumber: 15
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                children: poData.requestedByName || poData.creatorName || 'N/A'
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 158,
-                                                columnNumber: 15
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                                                className: "mt-8 border-b border-black w-4/5"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 159,
-                                                columnNumber: 15
-                                            }, this),
-                                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
-                                                className: "text-center w-4/5",
-                                                children: "Requester Signature"
-                                            }, void 0, false, {
-                                                fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 160,
-                                                columnNumber: 15
-                                            }, this)
-                                        ]
-                                    }, void 0, true, {
+                                                }, this),
+                                                " ",
+                                                poData.requestedByName || poData.creatorName || 'N/A'
+                                            ]
+                                        }, void 0, true, {
+                                            fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
+                                            lineNumber: 157,
+                                            columnNumber: 15
+                                        }, this)
+                                    }, void 0, false, {
                                         fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
                                         lineNumber: 156,
                                         columnNumber: 13
@@ -757,12 +737,12 @@ function PrintablePO({ poData, logoDataUri }) {
                                                     children: "Approved By:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                    lineNumber: 163,
+                                                    lineNumber: 160,
                                                     columnNumber: 35
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 163,
+                                                lineNumber: 160,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -770,7 +750,7 @@ function PrintablePO({ poData, logoDataUri }) {
                                                 children: status === 'Approved' ? approverName || 'Approved' : `(${status || 'N/A'})`
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 164,
+                                                lineNumber: 161,
                                                 columnNumber: 15
                                             }, this),
                                             status === 'Approved' && approverSignatureUrl && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -782,12 +762,12 @@ function PrintablePO({ poData, logoDataUri }) {
                                                     "data-ai-hint": "signature image"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                    lineNumber: 167,
+                                                    lineNumber: 164,
                                                     columnNumber: 19
                                                 }, this)
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 166,
+                                                lineNumber: 163,
                                                 columnNumber: 17
                                             }, this),
                                             status === 'Approved' && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -798,14 +778,14 @@ function PrintablePO({ poData, logoDataUri }) {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 175,
+                                                lineNumber: 172,
                                                 columnNumber: 41
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                 className: "mt-2 border-b border-black w-4/5"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 176,
+                                                lineNumber: 173,
                                                 columnNumber: 15
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -813,13 +793,13 @@ function PrintablePO({ poData, logoDataUri }) {
                                                 children: "Approver Signature"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                                lineNumber: 177,
+                                                lineNumber: 174,
                                                 columnNumber: 15
                                             }, this)
                                         ]
                                     }, void 0, true, {
                                         fileName: "[project]/src/components/purchase-orders/printable-po.tsx",
-                                        lineNumber: 162,
+                                        lineNumber: 159,
                                         columnNumber: 13
                                     }, this)
                                 ]
