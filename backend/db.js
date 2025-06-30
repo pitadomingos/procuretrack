@@ -4,8 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 
-// Configure dotenv to load the .env file from the backend directory
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// Configure dotenv to load the .env file from the backend directory at module load time.
+dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
 
 let pool = null;
 
@@ -36,7 +36,7 @@ async function getDbPool() {
     }
     
     if (missingEnvVars.length > 0) {
-      const errorMsg = `Configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file. For JWT_SECRET, use a long, random string.`;
+      const errorMsg = `Configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your backend/.env file. For JWT_SECRET, use a long, random string.`;
       console.error(`[DB_INIT_ERROR] ${errorMsg}`);
       throw new Error(errorMsg);
     }

@@ -193,7 +193,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$dotenv$2f$li
 ;
 // Configure dotenv to load the .env file from the backend directory
 __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$dotenv$2f$lib$2f$main$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["default"].config({
-    path: __TURBOPACK__imported__module__$5b$externals$5d2f$path__$5b$external$5d$__$28$path$2c$__cjs$29$__["default"].resolve(process.cwd(), 'backend', '.env')
+    path: __TURBOPACK__imported__module__$5b$externals$5d2f$path__$5b$external$5d$__$28$path$2c$__cjs$29$__["default"].resolve(process.cwd(), '.env')
 });
 let pool = null;
 async function getDbPool() {
@@ -209,7 +209,8 @@ async function getDbPool() {
             'DB_HOST',
             'DB_USER',
             'DB_PASSWORD',
-            'DB_NAME'
+            'DB_NAME',
+            'JWT_SECRET'
         ];
         const missingEnvVars = [];
         for (const v of essentialEnvVars){
@@ -217,15 +218,15 @@ async function getDbPool() {
                 missingEnvVars.push(v);
             } else {
                 // Avoid logging password in production
-                if (v !== 'DB_PASSWORD') {
+                if (v !== 'DB_PASSWORD' && v !== 'JWT_SECRET') {
                     console.log(`[DB_INIT] Found ENV VAR: ${v} = ${process.env[v]}`);
                 } else {
-                    console.log(`[DB_INIT] Found ENV VAR: DB_PASSWORD = (hidden)`);
+                    console.log(`[DB_INIT] Found ENV VAR: ${v} = (hidden)`);
                 }
             }
         }
         if (missingEnvVars.length > 0) {
-            const errorMsg = `Database configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file.`;
+            const errorMsg = `Configuration is incomplete. Missing variables: ${missingEnvVars.join(', ')}. Please define these in your root .env file. For JWT_SECRET, use a long, random string.`;
             console.error(`[DB_INIT_ERROR] ${errorMsg}`);
             throw new Error(errorMsg);
         }
