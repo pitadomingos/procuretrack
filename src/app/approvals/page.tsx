@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,7 +15,7 @@ import { ReviewPOModal } from '@/components/approvals/ReviewPOModal';
 import { useAuth } from '@/hooks/use-auth';
 
 export default function ApprovalsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   const [pendingItems, setPendingItems] = useState<UnifiedApprovalItem[]>([]);
@@ -29,20 +30,14 @@ export default function ApprovalsPage() {
   
   const [isProcessingItemId, setIsProcessingItemId] = useState<string | number | null>(null);
 
-  const fetchPendingApprovals = useCallback(async () => {
-    if (!user || !user.email) {
-      setLoading(false);
-      setError("User not authenticated or email not available.");
-      return;
-    }
-
+  const fetchPendingApprovals = useCallback(async (email: string) => {
     setLoading(true);
     setError(null);
     try {
       const [poResponse, quoteResponse, requisitionResponse] = await Promise.all([
-        fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(user.email)}`),
-        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(user.email)}`),
-        fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(user.email)}`)
+        fetch(`/api/purchase-orders/pending-approval?approverEmail=${encodeURIComponent(email)}`),
+        fetch(`/api/quotes/pending-approval?approverEmail=${encodeURIComponent(email)}`),
+        fetch(`/api/requisitions/pending-approval?approverEmail=${encodeURIComponent(email)}`)
       ]);
 
       let allPendingItems: UnifiedApprovalItem[] = [];
@@ -104,7 +99,6 @@ export default function ApprovalsPage() {
         console.warn('Error fetching Requisition approvals:', reqErrorData.message);
       }
       
- console.log("Fetched and mapped pending items:", allPendingItems);
       allPendingItems.sort((a, b) => new Date(b.creationDate).getTime() - new Date(a.creationDate).getTime());
       setPendingItems(allPendingItems);
 
@@ -115,25 +109,21 @@ export default function ApprovalsPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast, user]);
+  }, [toast]);
 
   useEffect(() => {
-    fetchPendingApprovals();
-  }, [fetchPendingApprovals]);
-
-  const handleOpenRejectModal = (item: UnifiedApprovalItem) => {
-    setSelectedItemForReject(item);
-    setIsRejectModalOpen(true);
-  };
-
-  const handleOpenReviewModal = (item: UnifiedApprovalItem) => {
-    if (item.documentType === 'PO') {
-      setSelectedPOForReview(item);
-      setIsReviewModalOpen(true);
-    } else {
-      toast({ title: "Info", description: `Review comments for ${item.documentType}s can be added manually after viewing.`});
+    if (authLoading) {
+      setLoading(true);
+      return;
     }
-  };
+    if (user && user.email) {
+      fetchPendingApprovals(user.email);
+    } else {
+      setLoading(false);
+      setError("User not authenticated or email not available.");
+    }
+  }, [user, authLoading, fetchPendingApprovals]);
+
 
   const handleApproveItem = async (item: UnifiedApprovalItem) => {
     if (item.status !== 'Pending Approval') {
@@ -175,7 +165,7 @@ export default function ApprovalsPage() {
         title: "Success!",
         description: result.message || `${item.documentType} ${item.documentNumber} approved.`,
       });
-      fetchPendingApprovals(); 
+      if (user?.email) fetchPendingApprovals(user.email); 
     } catch (err: any) {
       toast({ title: `Error Approving ${item.documentType}`, description: err.message, variant: 'destructive' });
     } finally {
@@ -184,15 +174,29 @@ export default function ApprovalsPage() {
   };
   
   const handleRejectConfirmed = () => { 
-    fetchPendingApprovals();
+    if (user?.email) fetchPendingApprovals(user.email);
     setSelectedItemForReject(null);
   };
 
+  const handleOpenRejectModal = (item: UnifiedApprovalItem) => {
+    setSelectedItemForReject(item);
+    setIsRejectModalOpen(true);
+  };
+
+  const handleOpenReviewModal = (item: UnifiedApprovalItem) => {
+    if (item.documentType === 'PO') {
+      setSelectedPOForReview(item);
+      setIsReviewModalOpen(true);
+    } else {
+      toast({ title: "Info", description: `Review comments for ${item.documentType}s can be added manually after viewing.`});
+    }
+  };
+  
   const columns: ColumnDef<UnifiedApprovalItem>[] = [
     { 
-      accessorKey: 'documentType', 
       header: 'Type',
-      cell: (item) => { 
+      cell: ({ row }) => {
+        const item = row.original;
         if (item.documentType === 'PO') return <span className="flex items-center"><ShoppingBag className="mr-2 h-4 w-4 text-blue-500" /> PO</span>;
         if (item.documentType === 'Quote') return <span className="flex items-center"><FileText className="mr-2 h-4 w-4 text-green-500" /> Quote</span>;
         if (item.documentType === 'Requisition') return <span className="flex items-center"><RequisitionListIcon className="mr-2 h-4 w-4 text-purple-500" /> Requisition</span>;
@@ -202,27 +206,28 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'documentNumber', 
       header: 'Doc. Number',
-      cell: (item) => <span className="font-medium">{item.documentNumber}</span>
+      cell: ({ row }) => <span className="font-medium">{row.original.documentNumber}</span>
     },
     { 
       accessorKey: 'creationDate', 
       header: 'Created On',
-      cell: (item) => format(new Date(item.creationDate), 'PP')
+      cell: ({ row }) => format(new Date(row.original.creationDate), 'PP')
     },
     { 
       accessorKey: 'submittedBy', 
       header: 'Submitted By',
-      cell: (item) => item.submittedBy || 'N/A'
+      cell: ({ row }) => row.original.submittedBy || 'N/A'
     },
     { 
       accessorKey: 'entityName', 
       header: 'Supplier/Client/Site',
-      cell: (item) => item.entityName || 'N/A'
+      cell: ({ row }) => row.original.entityName || 'N/A'
     },
     { 
       accessorKey: 'totalAmount', 
       header: 'Total Amount',
-      cell: (item) => {
+      cell: ({ row }) => {
+        const item = row.original;
         if (item.totalAmount === null || item.totalAmount === undefined) return 'N/A';
         return `${item.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${item.currency || ''}`;
       }
@@ -230,11 +235,11 @@ export default function ApprovalsPage() {
     { 
       accessorKey: 'status', 
       header: 'Status',
-      cell: (item) => <span className="text-orange-600 font-semibold">{item.status}</span>
+      cell: ({ row }) => <span className="text-orange-600 font-semibold">{row.original.status}</span>
     },
   ];
 
-  if (loading && !pendingItems.length) { 
+  if (loading) { 
     return (
       <div className="flex flex-col justify-center items-center h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -249,7 +254,7 @@ export default function ApprovalsPage() {
         <AlertTriangle className="h-10 w-10 mb-3" />
         <p className="font-semibold text-center mb-2">Error loading approvals:</p>
         <p className="text-sm text-center mb-4">{error}</p>
-        <Button onClick={fetchPendingApprovals} variant="outline" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
+        <Button onClick={() => user?.email && fetchPendingApprovals(user.email)} variant="outline" className="border-destructive text-destructive-foreground hover:bg-destructive/20">
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           Retry
         </Button>
@@ -267,19 +272,13 @@ export default function ApprovalsPage() {
               Documents awaiting your approval. (Showing for: <span className="font-semibold">{user?.email || 'loading...'}</span>)
             </CardDescription>
           </div>
-          <Button onClick={fetchPendingApprovals} variant="outline" size="sm" disabled={loading}>
+          <Button onClick={() => user?.email && fetchPendingApprovals(user.email)} variant="outline" size="sm" disabled={loading || !user?.email}>
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Refreshing...' : 'Refresh List'}
           </Button>
         </CardHeader>
         <CardContent>
-          {loading && pendingItems.length > 0 && ( 
-            <div className="flex items-center justify-center py-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              <span>Refreshing data...</span>
-            </div>
-          )}
-          {error && pendingItems.length > 0 && ( 
+          {error && ( 
             <div className="mb-4 p-3 border-l-4 border-destructive bg-destructive/10 text-destructive-foreground flex items-start text-sm">
               <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
               <div>
@@ -291,7 +290,8 @@ export default function ApprovalsPage() {
           <DataTable
             columns={columns}
             data={pendingItems}
-            renderRowActions={(item) => {
+            renderRowActions={(row) => {
+              const item = row;
               let viewPath = '';
               if (item.documentType === 'PO') viewPath = `/purchase-orders/${item.id}/print`;
               else if (item.documentType === 'Quote') viewPath = `/quotes/${item.id}/print`;

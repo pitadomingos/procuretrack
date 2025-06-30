@@ -1,8 +1,14 @@
 {
+  "/api/activity-log/route": "app/api/activity-log/route.js",
   "/api/approvers/route": "app/api/approvers/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/me/route": "app/api/auth/me/route.js",
   "/api/categories/route": "app/api/categories/route.js",
+  "/api/charts/monthly-po-status/route": "app/api/charts/monthly-po-status/route.js",
+  "/api/charts/quotes-by-status/route": "app/api/charts/quotes-by-status/route.js",
+  "/api/charts/requisitions-by-status/route": "app/api/charts/requisitions-by-status/route.js",
+  "/api/charts/site-po-value-status/route": "app/api/charts/site-po-value-status/route.js",
+  "/api/dashboard-stats/route": "app/api/dashboard-stats/route.js",
   "/api/purchase-orders/[poId]/items/route": "app/api/purchase-orders/[poId]/items/route.js",
   "/api/purchase-orders/[poId]/route": "app/api/purchase-orders/[poId]/route.js",
   "/api/purchase-orders/next-po-number/route": "app/api/purchase-orders/next-po-number/route.js",
@@ -10,8 +16,10 @@
   "/api/sites/route": "app/api/sites/route.js",
   "/api/suppliers/route": "app/api/suppliers/route.js",
   "/api/users/route": "app/api/users/route.js",
+  "/approvals/page": "app/approvals/page.js",
   "/auth/page": "app/auth/page.js",
   "/create-document/page": "app/create-document/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/page": "app/page.js",
   "/purchase-orders/[id]/print/page": "app/purchase-orders/[id]/print/page.js"
 }
